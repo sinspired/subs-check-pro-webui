@@ -84,6 +84,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     analysisBtn: $('#analysisBtn'),
     btnAnalysis: $('#btnAnalysis'),
     projectInfoBtn: $('#project-info'),
+    projectInfoText: $('#project-info-text'),
     btnProjectInfo: $('#btnProjectInfo'),
     downloadLogsBtnSide: $('#downloadLogsBtnSide'),
     searchBtn: $('#searchBtn'),
@@ -2866,9 +2867,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       // 调用 Wails binding 切回登录小窗
       // 设置按钮文本
       els.logoutText.textContent = "切换配置";
+      els.projectInfoText.textContent = "关于软件"
     } else {
       // 设置按钮文本
       els.logoutText.textContent = "退出登录";
+      els.projectInfoText.textContent = "关于软件"
     }
 
     els.logoutBtn?.addEventListener('click', logoutHandler)
