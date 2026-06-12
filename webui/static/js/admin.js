@@ -54,16 +54,17 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   // ==================== DOM 元素缓存 ====================
   const $ = s => document.querySelector(s)
-  // ==================== 版本号相关元素 ====================
-  const versionEls = {
+  // ── 版本号元素分组 ──────────────────────────────────────────────
+  // 侧边栏组（post-auth，行内角标 B）
+  const sidebarVersionEls = {
     versionInline: $('#versionInline'),
     versionInlineAnalysis: $('#versionInline-analysis'),
-    versionInlineMobile: $('#versionInline-mobile'),
-  };
-  function applyToVersionEls(action) {
-    Object.values(versionEls).forEach(el => {
-      if (el) action(el)
-    })
+  }
+  // 小屏顶栏（与 .version-badge 共用绝对角标 A，pre-auth 即可见）
+  const versionInlineMobileEl = $('#versionInline-mobile')
+
+  function applyToSidebarVersionEls(action) {
+    Object.values(sidebarVersionEls).forEach(el => { if (el) action(el) })
   }
   const els = {
     apiKeyInput: $('#apiKeyInput'),
@@ -2596,8 +2597,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   async function getVersion() {
     if (!sessionKey) return
 
-    // 默认点击跳转 Release 页面
-    applyToVersionEls(el => {
+    applyToSidebarVersionEls(el => {
       el.onclick = () =>
         window.open('https://github.com/sinspired/subs-check-pro/releases', '_blank')
     })
@@ -2611,50 +2611,31 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const latestV = p.latest_version
       const isPre = v => v && v.includes('-')
 
-      // 1. 设置当前版本显示内容
-      versionEls.versionInline.textContent = currentV
-      versionEls.versionInlineMobile.textContent = currentV
-      versionEls.versionInlineAnalysis.textContent = currentV
+      // span 只负责文字
+      applyToSidebarVersionEls(el => {
+        el.textContent = currentV
+        if (isPre(currentV)) el.classList.add('is-pre')
+      })
 
-      // 2. 如果当前是预览版，添加样式
-      if (isPre(currentV)) {
-        versionEls.versionInline.classList.add('is-pre')
-        versionEls.versionInlineMobile.classList.add('is-pre')
-        versionEls.versionInlineAnalysis.classList.add('is-pre')
-      }
-
-      // 3. 检查更新
-      if (latestV && currentV != latestV) {
-        versionEls.versionInline.classList.add('new-version')
-        versionEls.versionInlineMobile.classList.add('new-version')
-        versionEls.versionInlineAnalysis.classList.add('new-version')
-
-        if (isPre(latestV)) {
-          // 新版本是预览版
-          versionEls.versionInline.classList.add('pre-release')
-          versionEls.versionInlineMobile.classList.add('pre-release')
-          versionEls.versionInlineAnalysis.classList.add('pre-release')
-
-          versionEls.versionInline.title = `发现新预览版，建议谨慎更新`
-          versionEls.versionInlineMobile.title = `发现新预览版，建议谨慎更新`
-          versionEls.versionInlineAnalysis.title = `发现新预览版，建议谨慎更新`
-        } else {
-          // 新版本是稳定版
-          versionEls.versionInline.title = `点击前往 GitHub 更新稳定版`
-          versionEls.versionInlineMobile.title = `点击前往 GitHub 更新稳定版`
-          versionEls.versionInlineAnalysis.title = `点击前往 GitHub 更新稳定版`
-        }
-
-        // 有更新时点击最新的 Release
-        versionEls.versionInline.onclick = () =>
-          window.open(
-            'https://github.com/sinspired/subs-check-pro/releases/latest',
-            '_blank'
-          )
+      if (latestV && currentV !== latestV) {
+        applyToSidebarVersionEls(el => {
+          const row = el.closest('.sb-status-row')
+          if (!row) return
+          row.classList.add('sb-has-update')
+          if (isPre(latestV)) {
+            row.classList.add('sb-pre-release')
+            row.title = '发现新预览版，建议谨慎更新'
+          } else {
+            row.title = '点击前往 GitHub 更新稳定版'
+          }
+          row.onclick = () =>
+            window.open('https://github.com/sinspired/subs-check-pro/releases/latest', '_blank')
+        })
       } else {
-        versionEls.versionInline.title = `当前已是最新版本`
-        versionEls.versionInlineMobile.title = `当前已是最新版本`
-        versionEls.versionInlineAnalysis.title = `当前已是最新版本`
+        applyToSidebarVersionEls(el => {
+          const row = el.closest('.sb-status-row')
+          if (row) row.title = '当前已是最新版本'
+        })
       }
     } catch (e) {
       console.error('Version check failed', e)
@@ -2669,49 +2650,56 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       const currentV = d.version
       const latestV = d.latest_version
-
-      // 工具函数：判断是否为预览版
       const isPre = v => v && v.includes('-')
 
-      // 设置当前版本显示
+      // 登录框
       if (els.versionLogin) {
         els.versionLogin.textContent = currentV
-        // 如果当前是预览版，标记样式
         if (isPre(currentV)) {
-          els.versionBadge.classList.add('is-pre')
+          els.versionBadge?.classList.add('is-pre')
           els.versionLogin.classList.add('is-pre')
         }
       }
 
-      // 检查是否有新版本
-      if (latestV && currentV != latestV) {
-        els.versionBadge.classList.add('new-version')
+      // 小屏顶栏（共用绝对角标 A）
+      if (versionInlineMobileEl) {
+        versionInlineMobileEl.textContent = currentV
+        if (isPre(currentV)) versionInlineMobileEl.classList.add('is-pre')
+      }
 
-        if (isPre(latestV)) {
-          // 新版本是预览版
-          els.versionBadge.classList.add('pre-release')
-          els.versionBadge.title = `发现新预览版 v${latestV}，建议谨慎更新`
-          els.versionLogin.textContent = currentV
-        } else {
-          // 新版本是正式版
-          els.versionBadge.title = `有新版本 v${latestV}`
-          els.versionLogin.textContent = currentV
+      if (latestV && currentV !== latestV) {
+        const openLatest = e => {
+          e.preventDefault()
+          window.open('https://github.com/sinspired/subs-check-pro/releases/latest', '_blank')
         }
+        const isPreLatest = isPre(latestV)
 
-        // 点击跳转
-        els.versionBadge.onclick = e => {
-          e.preventDefault() // 阻止默认 anchor 跳转，统一由 window.open 处理或按需保留
-          window.open(
-            'https://github.com/sinspired/subs-check-pro/releases/latest',
-            '_blank'
-          )
+        // version-badge
+        els.versionBadge?.classList.add('new-version')
+        if (isPreLatest) {
+          els.versionBadge?.classList.add('pre-release')
+          if (els.versionBadge) els.versionBadge.title = `发现新预览版 v${latestV}，建议谨慎更新`
+        } else {
+          if (els.versionBadge) els.versionBadge.title = `有新版本 v${latestV}`
+        }
+        if (els.versionBadge) els.versionBadge.onclick = openLatest
+
+        // versionInline-mobile
+        if (versionInlineMobileEl) {
+          versionInlineMobileEl.classList.add('new-version')
+          if (isPreLatest) {
+            versionInlineMobileEl.classList.add('pre-release')
+            versionInlineMobileEl.title = `发现新预览版 v${latestV}，建议谨慎更新`
+          } else {
+            versionInlineMobileEl.title = `有新版本 v${latestV}`
+          }
+          versionInlineMobileEl.onclick = openLatest
         }
       }
     } catch (e) {
       console.error('Version check failed', e)
     }
   }
-
   // ==================== 初始化 ====================
 
   function bindControls() {

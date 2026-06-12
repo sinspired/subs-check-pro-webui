@@ -408,6 +408,8 @@ header.card {
   cursor: pointer;
   border: 1px solid transparent;
   cursor: help;
+  position: relative;
+  /* required for ::after "NEW" badge */
 }
 
 /* 当前是预览版时的样式 */
@@ -623,6 +625,7 @@ main {
 
 
 .sb-status-row {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2565,6 +2568,41 @@ main {
   100% {
     opacity: 1;
   }
+}
+
+/* ── 侧边栏版本更新提示（.sb-status-row 专用） ── */
+.sb-status-row.sb-has-update {
+  cursor: pointer;
+  background: color-mix(in srgb, var(--accent) 0%, var(--input-bg));
+  border-color: color-mix(in srgb, var(--accent) 8%, transparent);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.sb-status-row.sb-has-update:hover {
+  background: color-mix(in srgb, var(--success) 14%, var(--input-bg));
+}
+
+.sb-status-row.sb-has-update::after {
+  content: "NEW";
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  line-height: 1.5;
+  white-space: nowrap;
+  background: #e53935;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sb-status-row.sb-has-update.sb-pre-release::after {
+  content: "PRE";
+  background: #ff9800;
 }
 
 /* apikey输入框 */
