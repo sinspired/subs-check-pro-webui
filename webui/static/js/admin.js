@@ -2624,9 +2624,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           row.classList.add('sb-has-update')
           if (isPre(latestV)) {
             row.classList.add('sb-pre-release')
-            row.title = '发现新预览版，建议谨慎更新'
+            row.title = '发现新预览版 ${{latestV}}，建议谨慎更新，点击下载'
           } else {
-            row.title = '点击前往 GitHub 更新稳定版'
+            row.title = '有新版本 ${{latestV}}，点击下载'
           }
           row.onclick = () =>
             window.open('https://github.com/sinspired/subs-check-pro/releases/latest', '_blank')
