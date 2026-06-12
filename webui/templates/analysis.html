@@ -123,17 +123,24 @@
     <div class="body-area">
       <nav class="sidebar" id="sidebar">
         <!-- 品牌块：大屏时替代 topbar -->
-        <div class="sidebar-brand-ana" id="sidebarBrandAna">
-          <a href="/admin" title="返回管理面板" class="sb-ana-logo-link">
-            <img src="/static/icon/favicon.svg" alt="logo" class="sb-ana-logo" />
-          </a>
-          <div class="sb-ana-name">Subs Check <span class="sb-ana-pro">PRO⁺</span></div>
-          <div class="sb-sub">分析报告</div>
+        <div class="sidebar-brand" id="sidebarBrand">
+          <div class="sb-brand-top">
+            <a href="https://github.com/sinspired/subs-check-pro-gui" target="_blank" rel="noopener noreferrer"
+              title="访问 GitHub 项目" class="sb-logo-link">
+              <img src="/static/icon/favicon.svg" alt="logo" class="sb-logo" />
+            </a>
+            <div class="sb-info">
+              <div class="sb-name">Subs Check<span class="sb-pro pro-plus-golden">+</span></div>
+              <div class="sb-sub">节点检测 · 分析报告</div>
+            </div>
+          </div>
+
           <div class="sb-status-row">
             <span id="versionInline-analysis" class="sb-ver-val version">-</span>
           </div>
         </div>
-        <div class="sidebar-label">导航</div>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-label">功能导航</div>
         <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -179,6 +186,7 @@
         </button>
         <!-- 侧边栏底部操作：大屏时替代 topbar 按钮 -->
         <div class="sidebar-ana-bottom">
+          <div class="sidebar-divider"></div>
           <button class="sidebar-btn sidebar-ana-action" id="sidebarThemeToggleAna" aria-label="切换主题" title="切换主题"
             onclick="document.getElementById('themeToggle').click()">
             <svg id="anaIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -198,7 +206,7 @@
             </svg>
             <span id="anaThemeLabel">浅色</span>
           </button>
-          <div class="sidebar-divider"></div>
+        
           <button class="sidebar-btn sidebar-ana-action sidebar-ana-danger" onclick="doLogout()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">

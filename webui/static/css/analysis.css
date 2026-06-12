@@ -234,7 +234,7 @@ body {
   flex-direction: column;
   justify-content: flex-start;
   gap: 2px;
-  padding: 12px 14px 6px;
+  padding: 12px 0px 6px;
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -311,7 +311,7 @@ body {
   display: block;
   height: 0;
   border-top: 1px solid var(--border);
-  margin: 4px;
+  margin: 8px 4px;
   flex-shrink: 0;
   align-self: stretch;
 }
@@ -2441,6 +2441,30 @@ code {
   gap: 8px;
   flex-shrink: 0;
   position: relative;
+}
+
+.sidebar-brand {
+  flex-direction: column;
+  justify-content: flex-start;
+  height: calc(var(--brand-top-height) + var(--brand-status-height) + 1px);
+  /* +1px 分割线 */
+  width: 100%;
+  padding: 10px 14px 0;
+  box-sizing: border-box;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.sb-brand-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;   /* ← 新增 */
+  gap: 6px;
+  height: var(--brand-top-height);
+  min-width: 0;
+}
+
+.sb-status-row{
 }
 
 .sb-ana-logo-link {

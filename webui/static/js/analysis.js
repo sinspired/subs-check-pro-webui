@@ -1766,43 +1766,48 @@ if (document.getElementById('loginScene')) initPage();
 // 独立版本获取 —— 不依赖 admin.js 模块内部函数
 // 用 applyVersion 函数封装，支持延迟重试，避免与 admin.js 的 checkVersion 产生竞争。
 (async function fetchAnalysisVersion() {
-    const el = document.getElementById('versionInline-analysis');
-    if (!el) return;
+    const versionEl = document.getElementById('versionInline-analysis')
+    if (!versionEl) return
 
-    function applyVersion(d) {
-        const cur = d?.version;
-        if (!cur) return false;
-        el.textContent = cur;
-        el.style.cursor = 'pointer';
-        el.onclick = () => window.open('https://github.com/sinspired/subs-check-pro/releases', '_blank');
-        if (cur.includes('-')) el.classList.add('is-pre');
-        const lat = d?.latest_version;
-        if (lat && lat !== cur) {
-            el.classList.add('new-version');
-            if (lat.includes('-')) el.classList.add('pre-release');
-            el.title = lat.includes('-') ? '发现新预览版，建议谨慎更新' : '点击前往 GitHub 更新稳定版';
-            el.onclick = () => window.open('https://github.com/sinspired/subs-check-pro/releases/latest', '_blank');
-        } else {
-            el.title = '当前已是最新版本';
-        }
-        return true;
+    const row = versionEl.closest('.sb-status-row')
+
+    // 默认点击跳转 Release 页
+    if (row) {
+        row.style.cursor = 'pointer'
+        row.onclick = () =>
+            window.open('https://github.com/sinspired/subs-check-pro/releases', '_blank')
     }
 
     try {
-        const r = await fetch('/admin/version');
-        if (!r.ok) return;
-        const d = await r.json();
-        if (applyVersion(d)) return;
-    } catch (e) { console.warn('[analysis] version fetch failed', e); }
+        const r = await fetch('/admin/version')
+        const p = await r.json()
+        if (!p?.version) return
 
-    // admin.js（type=module，延迟执行）可能尚未填充元素，300ms 后检查并补填
-    setTimeout(async () => {
-        if (el.textContent && el.textContent !== '-') return; // 已被 admin.js 填充
-        try {
-            const r = await fetch('/admin/version');
-            if (!r.ok) return;
-            const d = await r.json();
-            applyVersion(d);
-        } catch (e) { console.warn('[analysis] version retry failed', e); }
-    }, 300);
+        const currentV = p.version
+        const latestV = p.latest_version
+        const isPre = v => v && v.includes('-')
+
+        // span 只负责文字
+        versionEl.textContent = currentV
+        if (isPre(currentV)) versionEl.classList.add('is-pre')
+
+        if (!row) return
+
+        if (latestV && currentV !== latestV) {
+            row.classList.add('sb-has-update')
+            if (isPre(latestV)) {
+                row.classList.add('sb-pre-release')
+                row.title = '发现新预览版，建议谨慎更新'
+            } else {
+                row.title = '点击前往 GitHub 更新稳定版'
+            }
+            row.onclick = () =>
+                window.open('https://github.com/sinspired/subs-check-pro/releases/latest', '_blank')
+        } else {
+            row.title = '当前已是最新版本'
+        }
+    } catch (e) {
+        console.error('Version check failed', e)
+    }
+
 })();
