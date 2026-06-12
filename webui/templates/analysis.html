@@ -201,6 +201,20 @@
       </div>
       <div class="body-area">
         <nav class="sidebar" id="sidebar">
+          <!-- 品牌块：大屏时替代 topbar -->
+          <div class="sidebar-brand-ana" id="sidebarBrandAna">
+            <a href="/admin" title="返回管理面板" class="sb-ana-logo-link">
+              <img src="/static/icon/favicon.svg" alt="logo" class="sb-ana-logo" />
+            </a>
+            <div class="sb-ana-name">Subs Check <span class="sb-ana-pro">PRO⁺</span></div>
+            <div class="sb-sub">分析报告</div>
+            <div class="sb-status-row">
+              <div class="sb-ver-block">
+                <span class="sb-ver-dot"></span>
+                <span id="versionInline-analysis" class="sb-ver-val">-</span>
+              </div>
+            </div>
+          </div>
           <div class="sidebar-label">导航</div>
           <button
             class="sidebar-btn active"
@@ -297,6 +311,32 @@
               /></svg
             >配置分析
           </button>
+          <!-- 侧边栏底部操作：大屏时替代 topbar 按钮 -->
+          <div class="sidebar-ana-bottom">
+            <button class="sidebar-btn sidebar-ana-action" id="sidebarThemeToggleAna" aria-label="切换主题" title="切换主题" onclick="document.getElementById('themeToggle').click()">
+              <svg id="anaIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+              <svg id="anaIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+              <span id="anaThemeLabel">浅色</span>
+            </button>
+            <div class="sidebar-divider"></div>
+            <button class="sidebar-btn sidebar-ana-action sidebar-ana-danger" onclick="doLogout()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              退出登录
+            </button>
+          </div>
         </nav>
         <div class="content-area">
           <div class="tab-bar" id="tabBar" role="tablist">
@@ -490,5 +530,29 @@
 
     <script type="module" src="/static/js/admin.js?v20260324"></script>
     <script src="/static/js/analysis.js?v20260324"></script>
+    <script>
+      // 同步侧边栏主题图标与 topbar themeToggle 状态
+      (function () {
+        function syncAnaIcons(isDark) {
+          var am = document.getElementById('anaIconMoon'), as_ = document.getElementById('anaIconSun');
+          if (am && as_) { am.style.display = isDark ? 'block' : 'none'; as_.style.display = isDark ? 'none' : 'block'; }
+          var lbl = document.getElementById('anaThemeLabel');
+          if (lbl) lbl.textContent = isDark ? '深色' : '浅色';
+          var bm = document.getElementById('anaBrandIconMoon'), bs = document.getElementById('anaBrandIconSun');
+          if (bm && bs) { bm.style.display = isDark ? 'block' : 'none'; bs.style.display = isDark ? 'none' : 'block'; }
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+          var brandBtn = document.getElementById('anaBrandThemeBtn');
+          if (brandBtn) brandBtn.addEventListener('click', function () {
+            var t = document.getElementById('themeToggle');
+            if (t) t.click();
+          });
+          new MutationObserver(function () {
+            syncAnaIcons(document.documentElement.getAttribute('data-theme') === 'dark');
+          }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+          syncAnaIcons(document.documentElement.getAttribute('data-theme') === 'dark');
+        });
+      })();
+    </script>
   </body>
 </html>

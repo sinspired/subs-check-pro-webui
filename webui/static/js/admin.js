@@ -54,6 +54,17 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   // ==================== DOM 元素缓存 ====================
   const $ = s => document.querySelector(s)
+  // ==================== 版本号相关元素 ====================
+  const versionEls = {
+    versionInline: $('#versionInline'),
+    versionInlineAnalysis: $('#versionInline-analysis'),
+    versionInlineMobile: $('#versionInline-mobile'),
+  };
+  function applyToVersionEls(action) {
+    Object.values(versionEls).forEach(el => {
+      if (el) action(el)
+    })
+  }
   const els = {
     apiKeyInput: $('#apiKeyInput'),
     showApikeyBtn: $('#show-apikey'),
@@ -64,7 +75,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     logContainer: $('#logContainer'),
     versionBadge: $('#version-badge'),
     versionLogin: $(`#version-login`),
-    versionInline: $('#versionInline'),
     toggleBtn: $('#btnToggleCheck'),
     refreshLogsBtn: $('#refreshLogs'),
     saveCfgBtn: $('#saveCfg'),
@@ -2586,53 +2596,65 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   async function getVersion() {
     if (!sessionKey) return
 
-    // 点击事件：跳转到 Release 页面
-    els.versionInline.onclick = () =>
-      window.open(
-        'https://github.com/sinspired/subs-check-pro/releases',
-        '_blank'
-      )
+    // 默认点击跳转 Release 页面
+    applyToVersionEls(el => {
+      el.onclick = () =>
+        window.open('https://github.com/sinspired/subs-check-pro/releases', '_blank')
+    })
 
     try {
       const r = await sfetch(API.publicVersion)
       const p = r.payload
-      if (!p?.version || !els.versionInline) return
+      if (!p?.version) return
 
       const currentV = p.version
       const latestV = p.latest_version
       const isPre = v => v && v.includes('-')
 
       // 1. 设置当前版本显示内容
-      els.versionInline.textContent = currentV
+      versionEls.versionInline.textContent = currentV
+      versionEls.versionInlineMobile.textContent = currentV
+      versionEls.versionInlineAnalysis.textContent = currentV
 
       // 2. 如果当前是预览版，添加样式
       if (isPre(currentV)) {
-        els.versionInline.classList.add('is-pre')
+        versionEls.versionInline.classList.add('is-pre')
+        versionEls.versionInlineMobile.classList.add('is-pre')
+        versionEls.versionInlineAnalysis.classList.add('is-pre')
       }
 
       // 3. 检查更新
       if (latestV && currentV != latestV) {
-        els.versionInline.classList.add('new-version')
+        versionEls.versionInline.classList.add('new-version')
+        versionEls.versionInlineMobile.classList.add('new-version')
+        versionEls.versionInlineAnalysis.classList.add('new-version')
 
         if (isPre(latestV)) {
           // 新版本是预览版
-          els.versionInline.classList.add('pre-release')
-          els.versionInline.textContent = currentV
-          els.versionInline.title = `发现新预览版，建议谨慎更新`
+          versionEls.versionInline.classList.add('pre-release')
+          versionEls.versionInlineMobile.classList.add('pre-release')
+          versionEls.versionInlineAnalysis.classList.add('pre-release')
+
+          versionEls.versionInline.title = `发现新预览版，建议谨慎更新`
+          versionEls.versionInlineMobile.title = `发现新预览版，建议谨慎更新`
+          versionEls.versionInlineAnalysis.title = `发现新预览版，建议谨慎更新`
         } else {
           // 新版本是稳定版
-          els.versionInline.textContent = currentV
-          els.versionInline.title = `点击前往 GitHub 更新稳定版`
+          versionEls.versionInline.title = `点击前往 GitHub 更新稳定版`
+          versionEls.versionInlineMobile.title = `点击前往 GitHub 更新稳定版`
+          versionEls.versionInlineAnalysis.title = `点击前往 GitHub 更新稳定版`
         }
 
         // 有更新时点击最新的 Release
-        els.versionInline.onclick = () =>
+        versionEls.versionInline.onclick = () =>
           window.open(
             'https://github.com/sinspired/subs-check-pro/releases/latest',
             '_blank'
           )
       } else {
-        els.versionInline.title = `当前已是最新版本`
+        versionEls.versionInline.title = `当前已是最新版本`
+        versionEls.versionInlineMobile.title = `当前已是最新版本`
+        versionEls.versionInlineAnalysis.title = `当前已是最新版本`
       }
     } catch (e) {
       console.error('Version check failed', e)
@@ -3132,7 +3154,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           pm.style.top = `${rect.top}px`
           pm.style.left = `${rect.right * 0.9}px`
         }
-      }else{
+      } else {
         fetch('/gui/open-about').catch(() => { })
       }
     }

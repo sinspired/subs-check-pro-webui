@@ -33,6 +33,25 @@
   <div id="loginModal" class="login-modal{{if .wailsGUI}} login-hidden{{end}}" role="dialog" aria-modal="true"
     aria-labelledby="loginTitle">
     <div class="login-card" role="document">
+      <!-- 登录框独立主题切换（大屏顶栏隐藏后补位） -->
+      <button id="loginThemeToggle" class="login-theme-btn icon-btn" aria-label="切换主题" title="切换主题">
+        <svg id="loginIconMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" style="display:none;">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg id="loginIconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
       <div class="login-logo" aria-hidden="true">
         <img src="/static/icon/favicon.svg" alt="logo" style="width:100px;height:100px" />
       </div>
@@ -88,7 +107,7 @@
           <div class="pro-plus-wrap">
             <span class="pro-plus">⁺</span>
           </div>
-          <span id="versionInline" class="version btn">-</span>
+          <span id="versionInline-mobile" class="version btn" aria-hidden="true">-</span>
         </div>
       </div>
     </div>
@@ -170,9 +189,26 @@
       <!-- 左侧边栏 -->
       <section class="siderbar-wrapper">
         <aside class="card sidebar glass" id="sidebar">
+          <!-- 品牌块：大屏时替代顶部 header -->
+          <div class="sidebar-brand" id="sidebarBrand">
+            <div class="sb-brand-top">
+              <a href="https://github.com/sinspired/subs-check-pro-gui" target="_blank" rel="noopener noreferrer"
+                title="访问 GitHub 项目" class="sb-logo-link">
+                <img src="/static/icon/favicon.svg" alt="logo" class="sb-logo" />
+              </a>
+              <div class="sb-info">
+                <div class="sb-name">Subs Check<span class="sb-pro pro-plus-golden">+</span></div>
+                <div class="sb-sub">订阅检测 · 配置管理</div>
+              </div>
+            </div>
+
+            <div class="sb-status-row">
+              <span id="versionInline" class="sb-ver-val">-</span>
+            </div>
+          </div>
+
           <div class="sidebar-top">
             <!-- <div class="title-wrap">
-              <div class="title">订阅管理</div>
             </div> -->
             <div class="sidebar-list">
               <div class="list-item" id="share" title="V2Ray、Mihomo 、Singbox订阅地址" style="cursor:pointer;">
@@ -235,6 +271,26 @@
             </div>
           </div>
           <div class="sidebar-bottom">
+            <!-- 主题切换（与其他 list-item 完全一致） -->
+            <div class="list-item" id="sidebarThemeBtn" title="切换亮/暗主题" style="cursor:pointer;">
+              <svg class="sidebar-icon" id="sidebarIconMoon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <svg class="sidebar-icon" id="sidebarIconSun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+              <span id="sidebarThemeLabel">切换主题</span>
+            </div>
             <div class="list-item" id="logoutBtn" title="清除保存的 API 密钥并退出" style="cursor:pointer;">
               <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -244,9 +300,9 @@
               </svg>
               <span id="logoutText">退出登录</span>
             </div>
+          </div>
         </aside>
       </section>
-
 
       <!-- 日志和检测进度 -->
       <section class="content" id="mainContent">
@@ -672,6 +728,7 @@
   <script src="/static/js/icons.js?v20260324"></script>
   <script type="module" src="/static/js/admin.js?v2026060601"></script>
   <script src="/static/js/reg-sw.js?v20260606"></script>
+  <!-- 侧边栏主题切换 & 登录框主题切换 代理到主按钮，并同步小屏 header 版本角标 -->
 </body>
 
 </html>

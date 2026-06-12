@@ -14,7 +14,7 @@
   --chip-sub: #64748b;
 }
 
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   --chip-nodes: #0ea5a0;
   --chip-passrate-good: #16a34a;
   --chip-passrate-warn: #d97706;
@@ -44,7 +44,7 @@
   --unlock-ai-fallback: var(--success);
 }
 
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   --unlock-tiktok: #06de9d;
   --unlock-gpt: #0da5e6;
   --unlock-disney: #3b5fe0; /* 深色背景下略提亮 */
@@ -194,7 +194,10 @@ body {
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
   white-space: nowrap;
 }
 
@@ -231,7 +234,7 @@ body {
   flex-direction: column;
   justify-content: flex-start;
   gap: 2px;
-  padding: 12px 8px;
+  padding: 12px 14px 6px;
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -248,13 +251,15 @@ body {
   color: var(--muted);
   padding: 4px 8px 8px;
   opacity: 0.6;
+  display: none;
+  text-align: center;
 }
 
 .sidebar-btn {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
+  padding: 9px 0px 9px 20px;
   border-radius: 8px;
   border: none;
   background: transparent;
@@ -263,7 +268,9 @@ body {
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
   text-align: left;
   width: 100%;
 }
@@ -275,7 +282,7 @@ body {
 }
 
 .sidebar-btn .s-badge {
-  margin-left: auto;
+  margin-left: 4px;
   font-size: 9px;
   font-weight: 700;
   padding: 1px 5px;
@@ -342,7 +349,9 @@ body {
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
   flex-shrink: 0;
 }
 
@@ -438,7 +447,7 @@ h1 svg {
 }
 
 .section-title::after {
-  content: '';
+  content: "";
   flex: 1;
   height: 1px;
   background: var(--border);
@@ -492,7 +501,9 @@ h1 svg {
   color: var(--fg);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   font-family: inherit;
 }
 
@@ -524,7 +535,9 @@ h1 svg {
   font-size: 14px;
   font-weight: 600;
   font-family: inherit;
-  transition: opacity 0.18s, transform 0.12s;
+  transition:
+    opacity 0.18s,
+    transform 0.12s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -626,7 +639,9 @@ h1 svg {
   gap: 2px;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .summary-chip:hover {
@@ -837,7 +852,9 @@ h1 svg {
   cursor: pointer;
   font-family: inherit;
   color: var(--fg);
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   text-align: left;
   width: 100%;
   margin-bottom: 6px;
@@ -1437,7 +1454,9 @@ h1 svg {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: border-color 0.15s, transform 0.15s;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
 }
 
 .proto-card:hover {
@@ -1565,7 +1584,10 @@ h1 svg {
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -1648,7 +1670,9 @@ h1 svg {
   font-weight: 600;
   color: var(--muted);
   opacity: 0.6;
-  transition: opacity 0.2s, color 0.2s;
+  transition:
+    opacity 0.2s,
+    color 0.2s;
 }
 
 .threshold-chip.visible {
@@ -1698,7 +1722,10 @@ h1 svg {
   background: var(--accent);
   pointer-events: none;
   z-index: 2;
-  transition: width 0.12s, height 0.12s, box-shadow 0.12s;
+  transition:
+    width 0.12s,
+    height 0.12s,
+    box-shadow 0.12s;
 }
 
 .ruler-dot-hit:hover + .ruler-dot,
@@ -1734,14 +1761,20 @@ h1 svg {
 .ruler-text-bottom {
   fill: color-mix(in srgb, var(--muted) 40%, transparent);
   font-size: 10px;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 .ruler-text-top {
   fill: color-mix(in srgb, var(--accent) 90%, transparent);
   font-size: 10px;
   font-weight: 600;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 .threshold-foot {
@@ -1763,7 +1796,10 @@ h1 svg {
 /* ── 被隐藏的列表项动态效果 ── */
 .sub-item {
   /* 基础项增加平滑动画 */
-  transition: background 0.15s, opacity 0.3s ease, transform 0.3s ease,
+  transition:
+    background 0.15s,
+    opacity 0.3s ease,
+    transform 0.3s ease,
     filter 0.3s ease;
   transform-origin: top center;
 }
@@ -2112,7 +2148,10 @@ h1 svg {
   color: var(--fg);
   text-decoration: none;
   background: var(--input-bg);
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
 }
 
 .deploy-badge svg {
@@ -2222,25 +2261,25 @@ h1 svg {
 
 /* ── 其他 ── */
 .loading-dots::after {
-  content: '';
+  content: "";
   animation: dots 1.2s steps(4, end) infinite;
 }
 
 @keyframes dots {
   0% {
-    content: '';
+    content: "";
   }
 
   25% {
-    content: '.';
+    content: ".";
   }
 
   50% {
-    content: '..';
+    content: "..";
   }
 
   75% {
-    content: '...';
+    content: "...";
   }
 }
 
@@ -2383,4 +2422,148 @@ code {
   .proto-grid {
     grid-template-columns: repeat(4, 1fr);
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   analysis 侧边栏品牌块 — 参考 about 页 .aw-brand 设计语言
+   注意：基础 display:none 必须在 ≥721px 媒体查询之前
+══════════════════════════════════════════════════════════════ */
+
+/* ── 品牌块（默认隐藏） ── */
+.sidebar-brand-ana {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 14px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 8px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.sb-ana-logo-link {
+  display: block;
+  text-decoration: none;
+  border-radius: 12px;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+.sb-ana-logo-link:hover {
+  transform: scale(1.06);
+}
+
+.sb-ana-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: block;
+  filter: drop-shadow(0 3px 10px color-mix(in srgb, var(--fg) 5%, transparent));
+}
+
+.sb-ana-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--fg);
+  letter-spacing: -0.2px;
+  text-align: center;
+  line-height: 1.2;
+  margin-bottom: 5px;
+  display: none;
+}
+
+.sb-ana-pro {
+  color: var(--accent);
+  font-size: 9px;
+  vertical-align: super;
+  font-weight: 700;
+  margin-left: 1px;
+  animation: neon-glow 2s infinite alternate;
+}
+
+/* ── 底部操作区（默认隐藏） ── */
+.sidebar-ana-bottom {
+  display: none;
+  flex-direction: column;
+  margin-top: auto;
+  gap: 2px;
+  padding: 4px 0 0;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.sidebar-ana-action {
+  /* inherits .sidebar-btn */
+}
+
+.sidebar-ana-danger:hover {
+  color: var(--danger, #dc2626) !important;
+  background: color-mix(
+    in srgb,
+    var(--danger, #dc2626) 8%,
+    transparent
+  ) !important;
+}
+
+/* ── ≥721px：显示侧边栏品牌块和底部操作，隐藏 topbar ── */
+@media (min-width: 721px) {
+  .sidebar-brand-ana {
+    display: flex;
+  }
+  .sidebar-ana-bottom {
+    display: flex;
+  }
+
+  .topbar {
+    display: none;
+  }
+  .body-area {
+    height: 100vh;
+  }
+}
+
+/* ── analysis 页版本 pill：独立定义，避免跨文件对 admin.css 的隐式依赖 ─────────────
+   admin.css 中的 #versionInline-analysis.sb-ver-val 选择器优先级更高，
+   此处用 .sidebar-brand-ana 作用域保证即使 admin.css 未加载也能正常显示。     ── */
+.sidebar-brand-ana .sb-ver-block {
+  background: var(--surface, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-brand-ana .sb-ver-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--accent);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.sidebar-brand-ana .sb-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+#versionInline-analysis {
+  font-size: 10px;
+  font-family: "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+  color: var(--accent);
+  font-weight: 500;
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* 覆盖可能从 .version.btn 继承的 padding / border */
+  padding: 0;
+  border: none;
+  border-radius: 0;
 }
