@@ -104,6 +104,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     logoutText: $('#logoutText'),
     openEditorBtn: $('#openEditor'),
     themeToggleBtn: $('#mainThemeToggle'),
+    loginThemeToggle: $('#loginThemeToggle'),
+    sidebarThemeToggle: $('#sidebarThemeToggle'),
     iconMoon: $('#iconMoon'),
     iconSun: $('#iconSun'),
     projectMenu: $('#projectMenu'),
@@ -2624,9 +2626,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           row.classList.add('sb-has-update')
           if (isPre(latestV)) {
             row.classList.add('sb-pre-release')
-            row.title = '发现新预览版 ${{latestV}}，建议谨慎更新，点击下载'
+            row.title = `发现新预览版 v${latestV}，建议谨慎更新，点击下载`
           } else {
-            row.title = '有新版本 ${{latestV}}，点击下载'
+            row.title = `有新版本 v${latestV}，点击下载`
           }
           row.onclick = () =>
             window.open('https://github.com/sinspired/subs-check-pro/releases/latest', '_blank')
@@ -2881,7 +2883,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     } else {
       // 设置按钮文本
       els.logoutText.textContent = "退出登录";
-      els.projectInfoText.textContent = "关于软件"
+      els.projectInfoText.textContent = "项目信息"
     }
 
     els.logoutBtn?.addEventListener('click', logoutHandler)
@@ -2913,6 +2915,16 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       if (els.themeToggleBtn) {
         els.themeToggleBtn.title =
+          t === 'dark' ? '切换到浅色模式' : '切换到深色模式'
+      }
+
+      if (els.sidebarThemeToggle) {
+        els.sidebarThemeToggle.title =
+          t === 'dark' ? '切换到浅色模式' : '切换到深色模式'
+      }
+
+      if (els.loginThemeToggle) {
+        els.loginThemeToggle.title =
           t === 'dark' ? '切换到浅色模式' : '切换到深色模式'
       }
 
@@ -2968,11 +2980,36 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       showToast('主题已重置为系统默认', 'info')
     })
 
+    els.sidebarThemeToggle?.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+      applyTheme(next)
+      saveTheme(next)
+    })
+
+
+    els.sidebarThemeToggle?.addEventListener('dblclick', () => {
+      saveTheme('auto')
+      const sys = resolveTheme('auto')
+      applyTheme(sys)
+      showToast('主题已重置为系统默认', 'info')
+    })
+
+    els.loginThemeToggle?.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+      applyTheme(next)
+      saveTheme(next)
+    })
+
+
+    els.loginThemeToggle?.addEventListener('dblclick', () => {
+      saveTheme('auto')
+      const sys = resolveTheme('auto')
+      applyTheme(sys)
+      showToast('主题已重置为系统默认', 'info')
+    })
+
     // 分享菜单逻辑
     const setupShare = id => {
-
-
-
       const btn = document.getElementById(id)
       if (!btn) return
       btn.addEventListener('click', async e => {
