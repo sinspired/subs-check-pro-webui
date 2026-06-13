@@ -594,9 +594,11 @@ const FIELD_VALIDATORS = {
 
   'check-interval': v => {
     const n = Number(v);
-    if (!Number.isFinite(n) || n <= 0) return null;
+    if (!Number.isFinite(n) || n < 0) return null;
 
     const hours = Math.round(n / 60);
+
+    if (n === 0) return { level: 'info', msg: `默认间隔 2880 分钟（48h）` };
 
     if (n < 120) {
       return { level: 'warn', msg: `间隔 ${n} 分钟过于频繁，易触发运营商阻断，建议 ≥ 2880` };
