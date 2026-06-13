@@ -1274,9 +1274,13 @@ function renderSubs(subs, subsBad, cfg) {
         </div>
         <div class="sub-bar-wrap"><div class="sub-bar" style="width:${Math.min(rateNum, 100)}%;background:${barColor}"></div></div>
         <div class="sub-meta">
-          <span>${stats.success || 0} / ${stats.total || 0} 节点</span>
-          ${locs.map(l => `<span class="tag-pill">${l}</span>`).join('')}
-          ${protos.map(([k, v]) => `<span class="tag-pill">${k}:${v}</span>`).join('')}
+          <div class="tag-wrap">
+          ${locs.map(l => `<span class="tag-pill loc">${l}</span>`).join('')}
+          ${protos.map(([k, v]) => `<span class="tag-pill proto">${k}:${v}</span>`).join('')}
+          </div>
+          <div class="stats-wrap">
+          <span class="stats-success">${stats.success || 0}</span> / <span class="stats-total">${stats.total || 0}</span>
+          </div>
         </div>
       </div>`;
         }).join('');
