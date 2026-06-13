@@ -2675,6 +2675,14 @@ main {
   opacity: 0.5;
 }
 
+.apikey-hint{
+  color: var(--muted);
+  font-size: 11px;
+  opacity: 0.3;
+  text-align: left;
+  margin-top: 4px;
+}
+
 /* 登录按钮 */
 #login-button {
   padding: 15px 25px;
@@ -2847,6 +2855,7 @@ main {
     padding: 0 6px;
   } */
   main {
+    padding: var(--gap) 0;
     height: auto;
   }
 
