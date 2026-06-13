@@ -505,15 +505,15 @@ class GeoFlightMap {
         const { ctx } = this;
         const { x2, y2, color, ratio, code } = arc;
         const sc = this.scale || 1;
-        // TODO:调整半径
-        const r = (2 + ratio * 4) * sc;
+        // 目的地半径
+        const r = (1 + ratio * 2) * sc;
         const pulse = 0.4 + 0.6 * Math.sin(now * 0.003 + arc.x2 * 0.1);
 
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.beginPath();
-        // TODO:调整半径
-        ctx.arc(x2, y2, r + (2 + pulse * 4) * sc, 0, Math.PI * 2);
+        // 目的地脉冲光环半径
+        ctx.arc(x2, y2, r + (1.5 + pulse * 2.5) * sc, 0, Math.PI * 2);
         ctx.strokeStyle = hexToRgba(color, 0.15 + pulse * 0.15);
         ctx.lineWidth = 0.7 * sc;
         ctx.stroke();
