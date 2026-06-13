@@ -55,15 +55,15 @@ const SCHEMA = [
         fields: [
           {
             key: 'cron-expression', label: 'Cron 表达式', type: 'cron', fullWidth: true,
-            placeholder: '0 4,16 * * *',
-            hint: '优先级高于检测间隔；推荐凌晨 4 点和 16 点执行',
-            hintExamples: ['0 4,16 * * *'],
+            placeholder: '0 4 */2 * *',
+            hint: '优先级高于检测间隔；推荐隔两天的凌晨 4 点执行',
+            hintExamples: ['0 4 */2 * *'],
             links: [
               { label: 'Cron 语法文档', href: 'https://crontab.guru/examples.html', icon: 'docs' },
               { label: '在线测试', href: 'https://crontab.guru', icon: 'link' },
             ],
           },
-          { key: 'check-interval', label: '检测间隔 (分钟)', type: 'number', min: 1, placeholder: '720', hint: 'Cron 为空时生效；建议 720–1440' },
+          { key: 'check-interval', label: '检测间隔 (分钟)', type: 'number', min: 1, placeholder: '2880', hint: 'Cron 为空时生效；建议 > 2880' },
         ],
       },
       {
@@ -592,7 +592,33 @@ const FIELD_VALIDATORS = {
   // ── 时间与数值限制 ──
   'timeout': v => { const n = Number(v); if (n < 3000) return { level: 'warn', msg: `超时 ${n}ms 超时过短易误杀正常节点` }; if (n > 15000) return { level: 'info', msg: `超时 ${n}ms 较长，检测耗时会明显增加` }; return null; },
 
-  'check-interval': v => { const n = Number(v); if (!n) return null; if (n < 120) return { level: 'warn', msg: `间隔 ${n} 分钟过于频繁，易触发运营商阻断，建议 ≥ 720` }; if (n < 360) return { level: 'info', msg: `间隔 ${n} 分钟偏短，建议 720+` }; if (n >= 720) return { level: 'ok', msg: `间隔 ${n} 分钟（约 ${Math.round(n / 60)} 小时），频率合理` }; return null; },
+  'check-interval': v => {
+    const n = Number(v);
+    if (!Number.isFinite(n) || n <= 0) return null;
+
+    const hours = Math.round(n / 60);
+
+    if (n < 120) {
+      return { level: 'warn', msg: `间隔 ${n} 分钟过于频繁，易触发运营商阻断，建议 ≥ 2880` };
+    }
+    if (n < 360) {
+      return { level: 'info', msg: `间隔 ${n} 分钟（约 ${hours} 小时），如开启下载测速，建议调大` };
+    }
+    if (n < 720) {
+      return { level: 'warn', msg: `间隔 ${n} 分钟（约 ${hours} 小时），一天多测，注意运营商 Qos` };
+    }
+    if (n < 1440) {
+      return { level: 'warn', msg: `间隔 ${n} 分钟（约 ${hours} 小时），两天三测` };
+    }
+    if (n < 2880) {
+      return { level: 'info', msg: `间隔 ${n} 分钟（约 ${hours} 小时），一天一测，如可用节点减少，调到 2880` };
+    }
+    if (n >= 2880) {
+      return { level: 'ok', msg: `间隔 ${n} 分钟（约 ${hours} 小时），频率合理` };
+    }
+
+    return null;
+  },
 
   'min-speed': v => { const n = Number(v); if (n === 0) return { level: 'info', msg: '未设置最低速度' }; if (n > 2000) return { level: 'warn', msg: `${n} KB/s 偏高，建议 ≤ 500` }; return null; },
   'download-timeout': v => { if (Number(v) === 0) return { level: 'warn', msg: '未设置，极慢节点会阻塞测速队列，建议设为 10s' }; if (Number(v) > 15) return { level: 'warn', msg: '下载超时不宜设置过高，节点易被测死' }; return null; },
@@ -1590,7 +1616,7 @@ function mkCronInput(field, value) {
     class: 'cfg-input cfg-cron-input',
     type: 'text',
     'data-key': field.key,
-    placeholder: field.placeholder ?? '0 4,16 * * *',
+    placeholder: field.placeholder ?? '0 4 */2 * *',
     spellcheck: 'false',
     autocomplete: 'off',
     autocorrect: 'off',
@@ -1624,7 +1650,7 @@ function mkCronInput(field, value) {
     if (!raw) {
       // 暂停/空值时完全隐藏标签行，不占空间，display 层自然上移
       labelsRow.style.display = 'none';
-      display.appendChild(el('span', { class: 'cfg-cron-placeholder', textContent: field.placeholder ?? '0 4,16 * * *' }));
+      display.appendChild(el('span', { class: 'cfg-cron-placeholder', textContent: field.placeholder ?? '0 4 */2 * *' }));
       return;
     }
     if (commented) {
@@ -1960,7 +1986,7 @@ function _bindCronInterval(panel) {
       delete cronInput.dataset.pausedValue;
     } else if (val === '') {
       /* 未配置 → 启用：用 placeholder 作为默认值填入 */
-      cronInput.value = cronInput.placeholder || '0 4,16 * * *';
+      cronInput.value = cronInput.placeholder || '0 4 */2 * *';
       delete cronInput.dataset.pausedValue;
     } else {
       return; // 输入中但非法，不响应

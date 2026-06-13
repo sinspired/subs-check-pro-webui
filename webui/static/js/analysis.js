@@ -1624,7 +1624,7 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     ];
 
     const deployCards = [];
-    if (!ghProxy) deployCards.push({ tab: 'advanced', title: 'Github 代理未设置', desc: '国内环境获取 GitHub 订阅源易超时，建议部署自有代理加速（或使用内置 ghproxy-group）。', actions: [{ label: 'CF-Proxy 一键部署', href: 'https://github.com/sinspired/CF-Proxy', primary: true }] });
+    if (!ghProxy) deployCards.push({ tab: 'schedule', title: 'Github 代理未设置', desc: '国内环境获取 GitHub 订阅源易超时，建议部署自有代理加速（或使用内置 ghproxy-group）。', actions: [{ label: 'CF-Proxy 一键部署', href: 'https://github.com/sinspired/CF-Proxy', primary: true }] });
     if (!hasNotify) deployCards.push({ tab: 'notify', title: '通知渠道未配置', desc: '配置 Apprise 后，检测完成自动推送到微信、Telegram、邮件等 100+ 渠道。', actions: [{ label: '3分钟快速配置', href: 'https://apprise.linkpc.dpdns.org/docs/QuicSet', primary: true }, { label: '测试通知渠道', href: 'https://apprise.linkpc.dpdns.org', primary: false }] });
 
     function analyzeCron(cronExpr) {
@@ -1646,29 +1646,39 @@ function renderConfig(ci, ga, sr, sb, cfg) {
         }
     }
 
-    function addDeployCard(title, desc) {
-        deployCards.push({ tab: 'subscriptions', title, desc, actions: [] });
+    function addCard(target, level, tab, title, desc, actions = []) {
+        // deployCards 用 title/desc/actions，suggests 用 l/tab/t
+        if (target === 'deploy') {
+            deployCards.push({ tab, title, desc, actions });
+        } else if (target === 'suggest') {
+            suggests.push({ l: level, tab, t: desc }); // suggest 没有 actions/title
+        }
     }
+
+    const cronActions = [
+        { label: 'Cron 语法文档', href: 'https://crontab.guru/examples.html' },
+        { label: '在线测试', href: 'https://crontab.guru', primary: true }
+    ];
 
     if (cronExpr) {
         const avgInterval = analyzeCron(cronExpr);
         if (avgInterval === null) {
-            addDeployCard('Cron 表达式错误', '检测到无效的 cron 表达式，请检查配置。');
+            addCard('deploy', null, 'schedule', 'Cron 表达式错误', '检测到无效的 cron 表达式，请检查配置。', cronActions);
         } else if (avgInterval < 6) {
-            addDeployCard('检测间隔过短', `当前 cron 表达式平均间隔约 ${avgInterval} 小时，过于频繁，可能触发 QoS。建议间隔大于 48h（2880）。`);
+            addCard('deploy', null, 'schedule', '检测间隔过短', `当前 cron 表达式平均间隔约 ${avgInterval} 小时，过于频繁，可能触发 QoS。建议间隔大于 48h（2880）。`, cronActions);
         } else if (avgInterval < 48) {
-            addDeployCard('建议使用更长的检测间隔', `当前 cron 表达式平均间隔约 ${avgInterval} 小时，建议检测间隔大于 48h（2880）。`);
+            addCard('deploy', null, 'schedule', '建议使用更长的检测间隔', `当前 cron 表达式平均间隔约 ${avgInterval} 小时，建议检测间隔大于 48h（2880）。`, cronActions);
         }
     } else {
         if (checkInterval <= 120) {
             const desc = !speedTestUrl
                 ? '频繁的检测间隔可能触发运营商 QoS，导致代理节点拒绝服务。请使用 <code>check-interval: 2880</code> 设置较长的检测间隔，建议检测间隔大于 48h（2880）。'
                 : '开启下载测速的情况下，过于频繁的检测间隔将在一段时间后获取到的可用节点急剧减少，直到无可用节点！请使用 <code>check-interval: 2880</code> 设置较长的检测间隔，建议检测间隔大于 48h（2880）。';
-            addDeployCard('检测间隔过短', desc);
+            addCard('deploy', null, 'schedule', '检测间隔过短', desc);
         } else if (checkInterval <= 360 && speedTestUrl) {
-            addDeployCard('检测间隔过短', '开启下载测速的情况下，过于频繁的检测间隔将在一段时间后获取到的可用节点急剧减少，直到无可用节点！请使用 <code>check-interval: 2880</code> 设置较长的检测间隔，建议检测间隔大于 48h（2880）。');
+            addCard('deploy', null, 'schedule', '检测间隔过短', '开启下载测速的情况下，过于频繁的检测间隔将在一段时间后获取到的可用节点急剧减少，直到无可用节点！请使用 <code>check-interval: 2880</code> 设置较长的检测间隔，建议检测间隔大于 48h（2880）。');
         } else if (checkInterval <= 2880 && speedTestUrl) {
-            addDeployCard('建议使用更长的检测间隔', '开启下载测速的情况下，建议检测间隔大于 48h（2880），仅在可用节点过少时加大检测频率。');
+            addCard('deploy', null, 'schedule', '建议使用更长的检测间隔', '开启下载测速的情况下，建议检测间隔大于 48h（2880），仅在可用节点过少时加大检测频率。');
         }
     }
 
@@ -1702,11 +1712,30 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     if (!dlMb) suggests.push({ l: 'info', tab: 'subscriptions', t: '<code>download-mb</code> 未限制单节点下载量，高并发时可能占满带宽，建议设为 20–50 MB。' });
 
     // 4. 检测间隔
-    if (!cronExpr && checkInterval > 0) {
-        if (checkInterval < 120) suggests.push({ l: 'warn', tab: 'schedule', t: `检测间隔 ${checkInterval} 分钟过于频繁，高频检测消耗流量大且易触发运营商阻断，建议设为 720 分钟（每天两次）或使用 <code>cron-expression</code>。` });
-        else if (checkInterval >= 480) suggests.push({ l: 'good', t: `检测间隔 ${checkInterval} 分钟（约 ${Math.round(checkInterval / 60)} 小时），频率合理。` });
+    if (cronExpr) {
+        const avgInterval = analyzeCron(cronExpr);
+        if (avgInterval === null) {
+            addCard('suggest', 'warn', 'schedule', null, `检测到无效的 cron 表达式 <code>${esc(cronExpr)}</code>，请检查配置。`);
+        } else if (avgInterval < 6) {
+            addCard('suggest', 'warn', 'schedule', null, `当前 cron 表达式平均间隔约 ${avgInterval} 小时，过于频繁，建议调整至 48h（2880）以上。`);
+        }else if (avgInterval <= 24) {
+            addCard('suggest', 'info', 'schedule', null, `当前 cron 表达式平均间隔约 ${avgInterval} 小时，建议 48 小时，每周两次比较好。`);
+        } else if (avgInterval < 48) {
+            addCard('suggest', 'good', '', null, `使用 cron 表达式 <code>${esc(cronExpr)}</code> 精确调度检测任务，推荐在网络空闲时段执行。`);
+        }
+    } else {
+        if (checkInterval <= 120) {
+            const desc = !speedTestUrl
+                ? '频繁的检测间隔可能触发运营商 QoS，导致代理节点拒绝服务。请使用 <code>check-interval: 2880</code> 设置较长的检测间隔，建议检测间隔大于 48h（2880）。'
+                : '开启下载测速的情况下，过于频繁的检测间隔将在一段时间后获取到的可用节点急剧减少，直到无可用节点！请使用 <code>check-interval: 2880</code> 设置较长的检测间隔，建议检测间隔大于 48h（2880）。';
+            addCard('suggest', 'warn', 'schedule', null, `检测间隔 ${checkInterval} 分钟过于频繁，建议设为 720 分钟或使用 <code>cron-expression</code>。`);
+        } else if (checkInterval <= 360 && speedTestUrl) {
+            addCard('suggest', null, 'subscriptions', '检测间隔过短', '开启下载测速的情况下，过于频繁的检测间隔将在一段时间后获取到的可用节点急剧减少，直到无可用节点！请使用 <code>check-interval: 2880</code> 设置较长的检测间隔，建议检测间隔大于 48h（2880）。');
+        } else if (checkInterval <= 2880 && speedTestUrl) {
+            addCard('suggest', 'good', 'schedule', null, `检测间隔 ${checkInterval} 分钟（约 ${Math.round(checkInterval / 60)} 小时），频率合理。`);
+        }
     }
-    if (cronExpr) suggests.push({ l: 'good', t: `使用 cron 表达式 <code>${esc(cronExpr)}</code> 精确调度检测任务，推荐在网络空闲时段（凌晨/早晨）执行。` });
+
 
     // 5. keep-success-proxies + localhost all.yaml 冗余
     if (keepSuccess) {

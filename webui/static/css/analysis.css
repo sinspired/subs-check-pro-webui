@@ -2084,7 +2084,7 @@ h1 svg {
 
 @media (min-width: 1101px) {
   .cfg-analysis-grid {
-    grid-template-columns: 1fr 1.45fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
   }
 }
 
@@ -2093,6 +2093,7 @@ h1 svg {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--glass-bg);
+  box-shadow: 4px 4px 10px color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .cfg-card-title {
@@ -2117,9 +2118,14 @@ h1 svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 0;
+  padding: 5px 10px;
+  border-radius: 5px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
   gap: 8px;
+}
+
+.cfg-kv:hover {
+  background: var(--bg-hover);
 }
 
 .cfg-kv:last-child {
@@ -2176,6 +2182,16 @@ h1 svg {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--glass-bg);
+  box-shadow: 4px 4px 10px color-mix(in srgb, var(--warning) 5%, transparent);
+}
+
+.deploy-card:hover{
+  border: 1px solid color-mix(in srgb, var(--warning) 20%, transparent);
+  background: color-mix(in srgb, var(--warning) 2%, transparent);
+}
+
+.suggest-item.good{
+  color: var(--success)
 }
 
 .deploy-card-title {
