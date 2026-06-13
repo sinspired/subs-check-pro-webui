@@ -2250,33 +2250,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
     // ── Wails GUI 路径：无弹窗拦截问题，先完成所有异步再触发原生窗口 ──────
     if (isWails) {
-      try {
-        const r = await sfetch(API.status)
-        if (!r.ok) {
-          if (els.statusEl) {
-            els.statusEl.textContent = '获取状态失败'
-            els.statusEl.className = 'muted status-label status-error'
-          }
-          return
-        }
-        const d = r.payload || {}
-        if (!d.isSubStoreRunning) {
-          showToast('Sub-Store 服务未运行', 'warn')
-          return
-        }
-
-        if (!_cachedSubStoreConfig) {
-          _cachedSubStoreConfig = await fetchSubStoreConfig()
-        }
-        const result = buildSubStoreUrl(_cachedSubStoreConfig)
-        lastSubStorePath = result.subStorePath
-
-        fetch('/gui/popup?url=' + encodeURIComponent(result.url) + '&size=medium')
-          .catch(err => showToast('打开窗口失败: ' + err.message, 'error'))
-      } catch (err) {
-        console.error(err)
-        showToast(err.message || '打开失败', 'error')
-      }
+      fetch('/gui/open-sub-store').catch(err =>
+        showToast('打开订阅管理失败: ' + err.message, 'error')
+      )
       return
     }
 
@@ -3015,6 +2991,12 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       btn.addEventListener('click', async e => {
         e.preventDefault()
         e.stopPropagation()
+
+        // ── Wails GUI：直接打开独立订阅链接窗口 ──────────────────
+        if (window.__WAILS_GUI?.baseURL) {
+          fetch('/gui/open-sub-links').catch(() => { })
+          return
+        }
 
         const r = await sfetch(API.status)
         if (!r.ok) {
