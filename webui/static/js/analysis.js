@@ -1626,7 +1626,51 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     const deployCards = [];
     if (!ghProxy) deployCards.push({ tab: 'advanced', title: 'Github 代理未设置', desc: '国内环境获取 GitHub 订阅源易超时，建议部署自有代理加速（或使用内置 ghproxy-group）。', actions: [{ label: 'CF-Proxy 一键部署', href: 'https://github.com/sinspired/CF-Proxy', primary: true }] });
     if (!hasNotify) deployCards.push({ tab: 'notify', title: '通知渠道未配置', desc: '配置 Apprise 后，检测完成自动推送到微信、Telegram、邮件等 100+ 渠道。', actions: [{ label: '3分钟快速配置', href: 'https://apprise.linkpc.dpdns.org/docs/QuicSet', primary: true }, { label: '测试通知渠道', href: 'https://apprise.linkpc.dpdns.org', primary: false }] });
-    if (!speedTestUrl) deployCards.push({ tab: 'subscriptions', title: '测速功能已关闭', desc: '设置 <code>speed-test-url</code> 启用下载测速，可过滤低速节点。建议使用 random 分散测速压力。', actions: [{ label: '自建测速说明', href: 'https://github.com/sinspired/subs-check-pro/wiki/Speedtest', primary: false }] });
+
+    function analyzeCron(cronExpr) {
+        try {
+            const parts = cronExpr.trim().split(/\s+/);
+            if (parts.length < 5) return null;
+            const hours = parts[1].split(',').map(h => parseInt(h, 10)).filter(h => !isNaN(h));
+            if (hours.length === 0) return null;
+            hours.sort((a, b) => a - b);
+            let intervals = [];
+            for (let i = 0; i < hours.length; i++) {
+                const next = hours[(i + 1) % hours.length];
+                const diff = (next - hours[i] + 24) % 24 || 24;
+                intervals.push(diff);
+            }
+            return intervals.reduce((a, b) => a + b, 0) / intervals.length; // 平均间隔（小时）
+        } catch {
+            return null;
+        }
+    }
+
+    function addDeployCard(title, desc) {
+        deployCards.push({ tab: 'subscriptions', title, desc, actions: [] });
+    }
+
+    if (cronExpr) {
+        const avgInterval = analyzeCron(cronExpr);
+        if (avgInterval === null) {
+            addDeployCard('Cron 表达式错误', '检测到无效的 cron 表达式，请检查配置。');
+        } else if (avgInterval < 6) {
+            addDeployCard('检测间隔过短', `当前 cron 表达式平均间隔约 ${avgInterval} 小时，过于频繁，可能触发 QoS。建议间隔大于 48h（2880）。`);
+        } else if (avgInterval < 48) {
+            addDeployCard('建议使用更长的检测间隔', `当前 cron 表达式平均间隔约 ${avgInterval} 小时，建议检测间隔大于 48h（2880）。`);
+        }
+    } else {
+        if (checkInterval <= 120) {
+            const desc = !speedTestUrl
+                ? '频繁的检测间隔可能触发运营商 QoS，导致代理节点拒绝服务。请使用 <code>check-interval: 2880</code> 设置较长的检测间隔，建议检测间隔大于 48h（2880）。'
+                : '开启下载测速的情况下，过于频繁的检测间隔将在一段时间后获取到的可用节点急剧减少，直到无可用节点！请使用 <code>check-interval: 2880</code> 设置较长的检测间隔，建议检测间隔大于 48h（2880）。';
+            addDeployCard('检测间隔过短', desc);
+        } else if (checkInterval <= 360 && speedTestUrl) {
+            addDeployCard('检测间隔过短', '开启下载测速的情况下，过于频繁的检测间隔将在一段时间后获取到的可用节点急剧减少，直到无可用节点！请使用 <code>check-interval: 2880</code> 设置较长的检测间隔，建议检测间隔大于 48h（2880）。');
+        } else if (checkInterval <= 2880 && speedTestUrl) {
+            addDeployCard('建议使用更长的检测间隔', '开启下载测速的情况下，建议检测间隔大于 48h（2880），仅在可用节点过少时加大检测频率。');
+        }
+    }
 
     //配置分析建议
     const suggests = [];
