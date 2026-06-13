@@ -2789,25 +2789,25 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     )
 
     els.fileManagerBtn?.addEventListener('click', () => {
+      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-files').catch(() => {}); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/files', 'small');
     });
 
     els.btnFiles?.addEventListener('click', () => {
+      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-files').catch(() => {}); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/files', 'small');
     });
 
     els.analysisBtn?.addEventListener('click', () => {
-      // 打开新标签前，将当前 sessionKey 写入 localStorage
-      // 使 analysis.html 可以跨标签读取（无论是否勾选"记住密钥"）
+      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-analysis').catch(() => {}); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/analysis');
     });
 
     els.btnAnalysis?.addEventListener('click', () => {
-      // 打开新标签前，将当前 sessionKey 写入 localStorage
-      // 使 analysis.html 可以跨标签读取（无论是否勾选"记住密钥"）
+      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-analysis').catch(() => {}); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/analysis');
     });
