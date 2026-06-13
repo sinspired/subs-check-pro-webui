@@ -2525,21 +2525,6 @@ code {
    analysis 侧边栏品牌块 — 参考 about 页 .aw-brand 设计语言
    注意：基础 display:none 必须在 ≥721px 媒体查询之前
 ══════════════════════════════════════════════════════════════ */
-
-/* ── 品牌块（默认隐藏） ── */
-.sidebar-brand-ana {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 14px 14px 12px;
-  width: 100%;
-  box-sizing: border-box;
-  gap: 8px;
-  flex-shrink: 0;
-  position: relative;
-}
-
 .sidebar-brand {
   flex-direction: column;
   justify-content: flex-start;
@@ -2629,7 +2614,7 @@ code {
 
 /* ── ≥721px：显示侧边栏品牌块和底部操作，隐藏 topbar ── */
 @media (min-width: 721px) {
-  .sidebar-brand-ana {
+  .sidebar-brand{
     display: flex;
   }
 
@@ -2644,35 +2629,6 @@ code {
   .body-area {
     height: 100vh;
   }
-}
-
-/* ── analysis 页版本 pill：独立定义，避免跨文件对 admin.css 的隐式依赖 ─────────────
-   admin.css 中的 #versionInline-analysis.sb-ver-val 选择器优先级更高，
-   此处用 .sidebar-brand-ana 作用域保证即使 admin.css 未加载也能正常显示。     ── */
-.sidebar-brand-ana .sb-ver-block {
-  background: var(--surface, var(--bg));
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 5px 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.sidebar-brand-ana .sb-ver-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--accent);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--accent) 55%, transparent);
-}
-
-.sidebar-brand-ana .sb-status-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
 }
 
 #versionInline-analysis {
