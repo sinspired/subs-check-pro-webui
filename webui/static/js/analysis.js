@@ -257,7 +257,8 @@ class GeoFlightMap {
             const dist = Math.hypot(dx - ox, dy - oy);
             const lift = Math.min(dist * 0.42, this.H * 0.45);
             const lineW = (0.5 + ratio * 1.8) * sc;
-            const planeSize = (3 + ratio * 3) * sc;
+            // 飞机大小
+            const planeSize = (2.5 + ratio * 3) * sc;
             const speedFactor = this.isMobile ? 1.25 : 1;
             return {
                 code, count, ratio, color,
