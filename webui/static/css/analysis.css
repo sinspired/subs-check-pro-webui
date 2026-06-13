@@ -1339,6 +1339,7 @@ h1 svg {
   border: 1px solid var(--border);
   margin-bottom: 14px;
   flex-wrap: wrap;
+  box-shadow: 4px 4px 10px color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .proto-stat-item {
@@ -1369,6 +1370,7 @@ h1 svg {
   border: 1px solid var(--border);
   border-radius: 10px;
   margin-bottom: 14px;
+  box-shadow: 4px 4px 10px color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .proto-donut-svg {
@@ -1476,6 +1478,8 @@ h1 svg {
   transition:
     border-color 0.15s,
     transform 0.15s;
+
+  box-shadow: 4px 4px 10px color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .proto-card:hover {
