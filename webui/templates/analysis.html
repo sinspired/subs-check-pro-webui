@@ -86,6 +86,7 @@
 
   <!-- report scene -->
   <div class="report-scene" id="reportScene">
+    <!-- 小屏顶栏 -->
     <div class="topbar">
       <a class="topbar-brand" href="/admin">
         <img src="/static/icon/favicon.svg" alt="logo" />Subs-Check-PRO
@@ -120,8 +121,10 @@
         </button>
       </div>
     </div>
+
     <div class="body-area">
-      <nav class="sidebar" id="sidebar">
+      <!-- 左侧边栏 -->
+      <nav class="card sidebar" id="sidebar">
         <!-- 品牌块：大屏时替代 topbar -->
         <div class="sidebar-brand" id="sidebarBrand">
           <div class="sb-brand-top">
@@ -148,7 +151,7 @@
             <rect x="14" y="3" width="7" height="7" />
             <rect x="14" y="14" width="7" height="7" />
             <rect x="3" y="14" width="7" height="7" />
-          </svg>概览
+          </svg>分析概览
         </button>
         <button class="sidebar-btn" data-tab="geo" onclick="switchTab('geo')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -218,8 +221,9 @@
           </button>
         </div>
       </nav>
+
       <div class="content-area">
-        <div class="tab-bar" id="tabBar" role="tablist">
+        <div class="card tab-bar" id="tabBar" role="tablist">
           <button class="tab-btn active" role="tab" data-tab="overview" onclick="switchTab('overview')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">
@@ -262,6 +266,8 @@
             </svg><span>配置</span>
           </button>
         </div>
+
+        <!-- 概览 -->
         <div class="tab-content active" id="tab-overview" role="tabpanel">
           <div class="tab-inner">
             <div id="heroSummary"></div>
@@ -270,6 +276,8 @@
             <div id="overviewExtra"></div>
           </div>
         </div>
+
+        <!-- 地图 -->
         <div class="tab-content" id="tab-geo" role="tabpanel">
           <div class="tab-inner">
             <div class="geo-view">
@@ -284,13 +292,17 @@
                   </svg><span>地图视图（开发中）</span>
                 </div>
               </div>
-              <div id="geoBars"></div>
+              <div class="geo-info" id="geoBars"></div>
             </div>
           </div>
         </div>
+
+        <!-- 代理协议 -->
         <div class="tab-content" id="tab-proto" role="tabpanel">
           <div class="tab-inner" id="protoContent"></div>
         </div>
+
+        <!-- 订阅排名 -->
         <div class="tab-content" id="tab-subs" role="tabpanel">
           <div class="tab-inner">
             <div id="copyToolbar"></div>
@@ -298,11 +310,14 @@
             <div id="badContent" style="margin-top: 16px"></div>
           </div>
         </div>
+
+        <!-- 配置分析 -->
         <div class="tab-content" id="tab-cfgana" role="tabpanel">
           <div class="tab-inner" id="cfganaContent"></div>
         </div>
       </div>
     </div>
+    
     <footer class="page-footer">
       <div class="footer-icons">
         <a href="https://github.com/sinspired/subs-check-pro" title="GitHub"><img src="/static/icon/github.svg"
@@ -330,7 +345,7 @@
         var am = document.getElementById('anaIconMoon'), as_ = document.getElementById('anaIconSun');
         if (am && as_) { am.style.display = isDark ? 'block' : 'none'; as_.style.display = isDark ? 'none' : 'block'; }
         var lbl = document.getElementById('anaThemeLabel');
-        if (lbl) lbl.textContent = isDark ? '深色' : '浅色';
+        if (lbl) lbl.textContent = isDark ? '深色主题' : '浅色主题';
         var bm = document.getElementById('anaBrandIconMoon'), bs = document.getElementById('anaBrandIconSun');
         if (bm && bs) { bm.style.display = isDark ? 'block' : 'none'; bs.style.display = isDark ? 'none' : 'block'; }
       }

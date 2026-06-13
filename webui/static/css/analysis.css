@@ -3,9 +3,12 @@
 :root {
   --chip-nodes: #0ea5a0;
   /* 通过率：三档动态 */
-  --chip-passrate-good: #0fd056; /* 绿   ≥ 5%  */
-  --chip-passrate-warn: #d97706; /* 橙   > 0%  */
-  --chip-passrate-bad: #ed1717; /* 红   = 0%  */
+  --chip-passrate-good: #0fd056;
+  /* 绿   ≥ 5%  */
+  --chip-passrate-warn: #d97706;
+  /* 橙   > 0%  */
+  --chip-passrate-bad: #ed1717;
+  /* 红   = 0%  */
   --chip-geo: #0198d3;
   --chip-proto: #8b5cf6;
   --chip-cf: #ed430b;
@@ -37,7 +40,8 @@
   --unlock-gemini: #47be0c;
   --unlock-copilot: #a84ddf;
   --unlock-iprisk: #f97316;
-  --unlock-openai: #d34300; /* 与 GPT 同源 */
+  --unlock-openai: #d34300;
+  /* 与 GPT 同源 */
 
   /* 未匹配的平台回退色 */
   --unlock-media-fallback: var(--idle);
@@ -47,7 +51,8 @@
 :root[data-theme="dark"] {
   --unlock-tiktok: #06de9d;
   --unlock-gpt: #0da5e6;
-  --unlock-disney: #3b5fe0; /* 深色背景下略提亮 */
+  --unlock-disney: #3b5fe0;
+  /* 深色背景下略提亮 */
   --unlock-gemini: #84bb0e;
 }
 
@@ -260,7 +265,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 9px 0px 9px 20px;
-  border-radius: 8px;
+  border-radius: 0px;
   border: none;
   background: transparent;
   color: var(--muted);
@@ -273,6 +278,10 @@ body {
     background 0.15s;
   text-align: left;
   width: 100%;
+
+  transition:
+    background-color 0.12s ease,
+    transform 0.08s ease;
 }
 
 .sidebar-btn svg {
@@ -299,11 +308,11 @@ body {
 
 .sidebar-btn.active {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
 }
 
 .sidebar-btn.active .s-badge {
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  background: color-mix(in srgb, var(--success) 20%, transparent);
   color: var(--accent);
 }
 
@@ -582,21 +591,22 @@ h1 svg {
 }
 
 .hero-summary {
-  padding: 12px 16px;
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  border-radius: 8px;
+  padding: 12px 12px;
+  background: color-mix(in srgb, var(--muted) 5%, var(--card));
+  border-radius: 12px;
   border: 1px solid var(--border);
   margin-bottom: 16px;
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  box-shadow: 4px 4px 10px color-mix(in srgb, var(--card-shadow) 15%, transparent);
 }
 
 .hero-summary svg {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 4px;
   color: var(--muted);
 }
 
@@ -642,6 +652,7 @@ h1 svg {
   transition:
     border-color 0.15s,
     background 0.15s;
+  box-shadow: 4px 4px 10px color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .summary-chip:hover {
@@ -704,6 +715,7 @@ h1 svg {
   font-weight: 600;
   border: 1px solid var(--border);
   background: var(--glass-bg);
+  box-shadow: 4px 4px 10px color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .unlock-tag .ut-dot {
@@ -747,6 +759,7 @@ h1 svg {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--glass-bg);
+  box-shadow: 4px 4px 10px color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .panel-title {
@@ -771,6 +784,7 @@ h1 svg {
   border-radius: 8px;
   background: var(--input-bg);
   border: 1px solid var(--border);
+  box-shadow: 4px 4px 10px color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .quality-item.card-cf {
@@ -788,6 +802,7 @@ h1 svg {
 .quality-item.card-vps .quality-val {
   color: var(--chip-vps);
 }
+
 .quality-val {
   font-size: 20px;
   font-weight: 700;
@@ -834,6 +849,7 @@ h1 svg {
   border: 1px solid var(--border);
   font-size: 10px;
   background: var(--glass-bg);
+  box-shadow: 2px 2px 4px color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .cf-tag em {
@@ -857,7 +873,7 @@ h1 svg {
     background 0.15s;
   text-align: left;
   width: 100%;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
 }
 
 .nav-card:last-child {
@@ -959,6 +975,8 @@ h1 svg {
   overflow: hidden;
   margin-bottom: 4px;
 }
+
+.geo-info {}
 
 .geo-region-bar {
   display: flex;
@@ -1096,12 +1114,12 @@ h1 svg {
   padding: 10px 14px;
 }
 
-.geo-all-col + .geo-all-col {
+.geo-all-col+.geo-all-col {
   border-left: 1px solid var(--border);
 }
 
 @media (max-width: 540px) {
-  .geo-all-col + .geo-all-col {
+  .geo-all-col+.geo-all-col {
     border-left: none;
     border-top: 1px solid var(--border);
   }
@@ -1168,6 +1186,7 @@ h1 svg {
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   flex-wrap: wrap;
+  box-shadow: -4px -4px 10px color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .geo-summary-item {
@@ -1210,9 +1229,9 @@ h1 svg {
   display: none;
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 6;
+  aspect-ratio: 16 / 10;
   min-height: 180px;
-  max-height: 420px;
+  max-height: 500px;
   overflow: hidden;
   background: #060d1a;
   border-bottom: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
@@ -1627,10 +1646,13 @@ h1 svg {
   gap: 4px;
   cursor: pointer;
 }
+
 /* ── 订阅筛选手柄面板 ── */
 .threshold-container {
-  padding: 10px 14px; /* 压缩内间距，使卡片变得更窄小 */
-  margin-bottom: 16px; /* 留出与下方“订阅排名”标题的距离 */
+  padding: 10px 14px;
+  /* 压缩内间距，使卡片变得更窄小 */
+  margin-bottom: 16px;
+  /* 留出与下方“订阅排名”标题的距离 */
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--border) 100%, var(--bg-hover) 50%);
   background: color-mix(in srgb, var(--bg-hover) 40%, var(--bg) 60%);
@@ -1647,7 +1669,8 @@ h1 svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0; /* 移除底部间距，让组件更紧密 */
+  margin-bottom: 0;
+  /* 移除底部间距，让组件更紧密 */
 }
 
 .threshold-meta {
@@ -1682,7 +1705,8 @@ h1 svg {
 
 .ruler-outer {
   position: relative;
-  height: 40px; /* 配合新的 SVG 高度 40px */
+  height: 40px;
+  /* 配合新的 SVG 高度 40px */
   cursor: pointer;
   margin: 0;
 }
@@ -1728,8 +1752,8 @@ h1 svg {
     box-shadow 0.12s;
 }
 
-.ruler-dot-hit:hover + .ruler-dot,
-.ruler-dot-hit.dragging + .ruler-dot {
+.ruler-dot-hit:hover+.ruler-dot,
+.ruler-dot-hit.dragging+.ruler-dot {
   width: 11px;
   height: 11px;
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 15%, transparent);
@@ -1788,6 +1812,7 @@ h1 svg {
   color: var(--accent);
   font-weight: 600;
 }
+
 .foot-below {
   color: var(--muted);
   opacity: 0.7;
@@ -1806,21 +1831,27 @@ h1 svg {
 
 .sub-item--dim {
   opacity: 0.3;
-  transform: scale(0.99); /* 被过滤掉的项轻微缩小 */
-  filter: grayscale(0.5); /* 降低色彩饱和度 */
-  pointer-events: none; /* 防止拷贝按钮等依然能被误点击 */
+  transform: scale(0.99);
+  /* 被过滤掉的项轻微缩小 */
+  filter: grayscale(0.5);
+  /* 降低色彩饱和度 */
+  pointer-events: none;
+  /* 防止拷贝按钮等依然能被误点击 */
 }
 
 /* ── 订阅排名标题动态高亮 ── */
 .title-divider {
   margin: 0 -3px;
-  opacity: 0.6; /* 让全角竖线颜色稍微淡一点，视觉上更和谐 */
-  font-weight: 400; /* 抵消粗体，让竖线更细致 */
+  opacity: 0.6;
+  /* 让全角竖线颜色稍微淡一点，视觉上更和谐 */
+  font-weight: 400;
+  /* 抵消粗体，让竖线更细致 */
 }
 
 .title-highlight {
   color: var(--accent);
-  margin-left: 2px; /* 与左侧稍微留点微小的呼吸空间 */
+  margin-left: 2px;
+  /* 与左侧稍微留点微小的呼吸空间 */
 }
 
 .sub-list {
@@ -2458,14 +2489,14 @@ code {
 .sb-brand-top {
   display: flex;
   align-items: center;
-  justify-content: center;   /* ← 新增 */
+  justify-content: center;
+  /* ← 新增 */
   gap: 6px;
   height: var(--brand-top-height);
   min-width: 0;
 }
 
-.sb-status-row{
-}
+.sb-status-row {}
 
 .sb-ana-logo-link {
   display: block;
@@ -2475,6 +2506,7 @@ code {
     opacity 0.2s,
     transform 0.2s;
 }
+
 .sb-ana-logo-link:hover {
   transform: scale(1.06);
 }
@@ -2524,11 +2556,9 @@ code {
 
 .sidebar-ana-danger:hover {
   color: var(--danger, #dc2626) !important;
-  background: color-mix(
-    in srgb,
-    var(--danger, #dc2626) 8%,
-    transparent
-  ) !important;
+  background: color-mix(in srgb,
+      var(--danger, #dc2626) 8%,
+      transparent) !important;
 }
 
 /* ── ≥721px：显示侧边栏品牌块和底部操作，隐藏 topbar ── */
@@ -2536,6 +2566,7 @@ code {
   .sidebar-brand-ana {
     display: flex;
   }
+
   .sidebar-ana-bottom {
     display: flex;
   }
@@ -2543,6 +2574,7 @@ code {
   .topbar {
     display: none;
   }
+
   .body-area {
     height: 100vh;
   }
