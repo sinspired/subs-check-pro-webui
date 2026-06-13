@@ -1229,12 +1229,21 @@ h1 svg {
   display: none;
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 7;
   min-height: 180px;
-  max-height: 500px;
+  max-height: 520px;
+  padding-bottom: 100px;
   overflow: hidden;
   background: #060d1a;
   border-bottom: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+@media (max-width: 720px) {
+  .map-slot {
+    aspect-ratio: 16 / 7;
+    min-height: 180px;
+    max-height: 360px;
+  }
 }
 
 .map-slot canvas {
@@ -1262,7 +1271,7 @@ h1 svg {
 .map-overlay-legend {
   position: absolute;
   bottom: 8px;
-  right: 10px;
+  left: 10px;
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
@@ -1295,7 +1304,7 @@ h1 svg {
 .map-origin-hint {
   position: absolute;
   bottom: 7px;
-  left: 10px;
+  right: 10px;
   font-size: 9px;
   color: rgba(255, 255, 255, 0.35);
   pointer-events: none;
@@ -2185,12 +2194,12 @@ h1 svg {
   box-shadow: 4px 4px 10px color-mix(in srgb, var(--warning) 5%, transparent);
 }
 
-.deploy-card:hover{
+.deploy-card:hover {
   border: 1px solid color-mix(in srgb, var(--warning) 20%, transparent);
   background: color-mix(in srgb, var(--warning) 2%, transparent);
 }
 
-.suggest-item.good{
+.suggest-item.good {
   color: var(--success)
 }
 

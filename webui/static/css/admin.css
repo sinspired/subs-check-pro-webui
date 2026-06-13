@@ -1568,8 +1568,8 @@ main {
 /* ── 迷你地图 ── */
 .smr-map-slot {
   width: 100%;
-  aspect-ratio: 16 / 5;
-  max-height: 160px;
+  aspect-ratio: 16 / 7;
+  max-height: 260px;
   border-radius: 7px;
   overflow: hidden;
   background: #060d1a;
@@ -3067,7 +3067,7 @@ main {
 ════════════════════════════════════════════════════════════ */
 @media (max-width: 576px) {
   .smr-map-slot {
-    aspect-ratio: 16 / 8;
+    aspect-ratio: 16 / 7;
   }
 }
 
