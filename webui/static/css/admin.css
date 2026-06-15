@@ -2372,7 +2372,7 @@ main {
   width: 400px;
   max-width: 95%;
   background: var(--bg);
-  border-radius: 1em;
+  border-radius: 2em;
   padding: 36px 28px 30px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
