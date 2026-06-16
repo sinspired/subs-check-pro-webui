@@ -688,7 +688,7 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -733,7 +733,8 @@
 
 .cfg-input::placeholder {
   color: var(--muted);
-  opacity: 0.5;
+  opacity: 0.4;
+  font-size: 12px;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1620,6 +1621,7 @@
   font-style: italic;
 }
 
+/* 删除按钮 */
 .cfg-url-del {
   width: 26px;
   height: 26px;
@@ -1628,7 +1630,7 @@
   color: var(--muted);
   cursor: pointer;
   border-radius: 6px;
-  font-size: 17px;
+  font-size: 17px; /* 删除按钮大小 */
   line-height: 1;
   display: flex;
   align-items: center;
