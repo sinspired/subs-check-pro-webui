@@ -112,6 +112,12 @@ const SCHEMA = [
               "subs-filter.yaml"
             ]
           },
+          {
+            key: 'github-token', label: ' GitHub 密钥', type: 'password', placeholder: 'GITHUB_TOKEN', hint: '用来提高订阅拉取成功率，提升 GitHub 速率限制',
+            links: [
+              { label: '查看文档', href: 'https://docs.github.com/zh/actions/concepts/security/github_token', icon: 'github' },
+              { label: '创建密钥', href: 'https://github.com/settings/personal-access-tokens', icon: 'github' }],
+          },
         ],
       },
       {
