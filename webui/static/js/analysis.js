@@ -804,6 +804,7 @@ function buildCfgStatusPanel(cfg, ci) {
     const SVG_DASH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
 
     const ghProxy = cfg['github-proxy'] || '';
+    const ghToken = cfg['github-token'] || '';
     const recipientUrl = cfg['recipient-url'];
     const speedTestUrl = cfg['speed-test-url'] || '';
     const mediaCheck = cfg['media-check'] !== false;
@@ -823,6 +824,7 @@ function buildCfgStatusPanel(cfg, ci) {
 
     const rows = [
         ['GitHub 代理', ghProxy ? esc(ghProxy.replace(/https?:\/\//, '').replace(/\/$/, '')) : '未设置', ghProxy ? 'ok' : 'warn', ghProxy ? SVG_OK : SVG_WARN],
+        ['GitHub 代理', ghToken ? '已配置' : '未配置', ghToken ? 'ok' : 'warn', ghToken ? SVG_OK : SVG_WARN],
         ['通知渠道', hasNotify ? '已配置' : '未配置', hasNotify ? 'ok' : 'warn', hasNotify ? SVG_OK : SVG_WARN],
         ['流媒体检测', mediaCheck ? '已开启' : '已关闭', mediaCheck ? 'ok' : 'warn', mediaCheck ? SVG_OK : SVG_WARN],
         ['测速功能', speedTestUrl ? '已启用' : '已关闭', speedTestUrl ? 'ok' : 'warn', speedTestUrl ? SVG_OK : SVG_WARN],
@@ -1558,6 +1560,7 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     const vpsTotal = Object.values(vps).reduce((a, b) => a + b, 0);
 
     const ghProxy = cfg['github-proxy'] || '';
+    const ghToken = cfg['github-token'] || '';
     const recipientUrl = cfg['recipient-url'];
     const speedTestUrl = cfg['speed-test-url'] || '';
     const mediaCheck = cfg['media-check'] !== false;
@@ -1605,6 +1608,7 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     // KV: 关键配置项
     const cfgKvs = [
         { k: 'Github 代理', v: ghProxy ? esc(ghProxy) : '未设置', cls: ghProxy ? 'ok' : 'warn', title: ghProxy ? ghProxy : undefined },
+        { k: 'Github 密钥', v: ghToken ? esc(ghToken) : '未设置', cls: ghToken ? 'ok' : 'warn', title: ghToken ? ghToken : undefined },
         { k: '通知渠道', v: hasNotify ? '已配置' : '未配置', cls: hasNotify ? 'ok' : 'warn' },
         { k: '流媒体检测', v: mediaCheck ? '开启' : '关闭', cls: mediaCheck ? 'ok' : 'warn' },
         { k: '测速功能', v: speedTestUrl ? '已启用' : '关闭', cls: speedTestUrl ? 'ok' : 'warn' },
@@ -1628,6 +1632,12 @@ function renderConfig(ci, ga, sr, sb, cfg) {
 
     const deployCards = [];
     if (!ghProxy) deployCards.push({ tab: 'schedule', title: 'Github 代理未设置', desc: '国内环境获取 GitHub 订阅源易超时，建议部署自有代理加速（或使用内置 ghproxy-group）。', actions: [{ label: 'CF-Proxy 一键部署', href: 'https://github.com/sinspired/CF-Proxy', primary: true }] });
+
+    if (!ghToken) deployCards.push({
+        tab: 'schedule', title: 'Github Token 未设置', desc: '如订阅链接较多,设置 GitHub Token 可提升订阅拉取速率及限制', actions: [{ label: '查看文档', href: 'https://docs.github.com/zh/actions/concepts/security/github_token', icon: 'github', primary: true },
+        { label: '创建密钥', href: 'https://github.com/settings/personal-access-tokens', icon: 'github' }]
+    });
+
     if (!hasNotify) deployCards.push({ tab: 'notify', title: '通知渠道未配置', desc: '配置 Apprise 后，检测完成自动推送到微信、Telegram、邮件等 100+ 渠道。', actions: [{ label: '3分钟快速配置', href: 'https://apprise.linkpc.dpdns.org/docs/QuicSet', primary: true }, { label: '测试通知渠道', href: 'https://apprise.linkpc.dpdns.org', primary: false }] });
 
     function analyzeCron(cronExpr) {
@@ -1721,7 +1731,7 @@ function renderConfig(ci, ga, sr, sb, cfg) {
             addCard('suggest', 'warn', 'schedule', null, `检测到无效的 cron 表达式 <code>${esc(cronExpr)}</code>，请检查配置。`);
         } else if (avgInterval < 6) {
             addCard('suggest', 'warn', 'schedule', null, `当前 cron 表达式平均间隔约 ${avgInterval} 小时，过于频繁，建议调整至 48h（2880）以上。`);
-        }else if (avgInterval <= 24) {
+        } else if (avgInterval <= 24) {
             addCard('suggest', 'info', 'schedule', null, `当前 cron 表达式平均间隔约 ${avgInterval} 小时，建议 48 小时，每周两次比较好。`);
         } else if (avgInterval < 48) {
             addCard('suggest', 'good', '', null, `使用 cron 表达式 <code>${esc(cronExpr)}</code> 精确调度检测任务，推荐在网络空闲时段执行。`);
@@ -1739,6 +1749,11 @@ function renderConfig(ci, ga, sr, sb, cfg) {
         }
     }
 
+    if (ghToken) {
+        suggests.push({ l: 'good', t: '已设置 GitHub Token <code>github-token: </code>，将支持更多 GitHub 订阅链接' });
+    } else {
+        suggests.push({ l: 'warn', t: 'GitHub Token <code>github-token: </code> 未设置，如 GitHub 订阅链接较多，可能触发 GitHub 速率限制' });
+    }
 
     // 5. keep-success-proxies + localhost all.yaml 冗余
     if (keepSuccess) {
