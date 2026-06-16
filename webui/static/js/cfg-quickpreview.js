@@ -8,47 +8,48 @@ import { FIELD_VALIDATORS } from './config-form.js';
 // ── 要展示的关键配置分组 ────────────────────────────────────
 const PREVIEW_GROUPS = [
   {
-    title: '代理 & 通知',
+    title: '拉取 & 通知',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>`,
     items: [
-      { key: 'github-proxy',          label: 'GitHub 代理',   fmt: v => v || null, warnIfEmpty: '未配置，国内拉取 GitHub 订阅易超时' },
-      { key: 'recipient-url',         label: '通知渠道',      fmt: v => Array.isArray(v) ? v.filter(Boolean).length + ' 个' : (v ? '已配置' : null), warnIfEmpty: '未配置，检测结果无法推送' },
-      { key: 'media-check',           label: '流媒体检测',    fmt: v => v !== false ? '开启' : '关闭' },
-      { key: 'keep-success-proxies',  label: '保留成功节点',  fmt: v => v !== false ? '开启' : '关闭', warnIfFalse: '关闭后上游更新可能清空可用节点' },
-      { key: 'speed-test-url',        label: '测速地址',      fmt: v => v || null, warnIfEmpty: '未配置，测速功能关闭' },
+      { key: 'github-proxy', label: 'GitHub 代理', fmt: v => v || null, warnIfEmpty: '未配置，国内拉取 GitHub 订阅易超时' },
+      { key: 'github-token', label: 'GitHub 密钥', fmt: v => v || null, warnIfEmpty: '未配置，拉取 GitHub 链接易触发速率限制' },
+      { key: 'recipient-url', label: '通知渠道', fmt: v => Array.isArray(v) ? v.filter(Boolean).length + ' 个' : (v ? '已配置' : null), warnIfEmpty: '未配置，检测结果无法推送' },
+      { key: 'media-check', label: '流媒体检测', fmt: v => v !== false ? '开启' : '关闭' },
+      { key: 'keep-success-proxies', label: '保留成功节点', fmt: v => v !== false ? '开启' : '关闭', warnIfFalse: '关闭后上游更新可能清空可用节点' },
+      { key: 'speed-test-url', label: '测速地址', fmt: v => v || null, warnIfEmpty: '未配置，测速功能关闭' },
     ],
   },
   {
     title: '并发 & 速度',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
     items: [
-      { key: 'alive-concurrent',   label: '测活并发',      fmt: v => v > 0 ? String(v) : '自动' },
-      { key: 'speed-concurrent',   label: '测速并发',      fmt: v => v > 0 ? String(v) : '自动' },
-      { key: 'min-speed',          label: '最低测速',      fmt: v => v > 0 ? v + ' KB/s' : '未设置', warnIfZero: '未设置，极慢节点均会保留' },
-      { key: 'download-timeout',   label: '测速超时',      fmt: v => v > 0 ? v + ' s' : '未设置',   warnIfZero: '未设置，测速可能阻塞' },
-      { key: 'check-interval',     label: '检测间隔',      fmt: (v, cfg) => cfg['cron-expression'] ? ('cron: ' + cfg['cron-expression']) : (v > 0 ? v + ' 分钟' : '未设置') },
+      { key: 'alive-concurrent', label: '测活并发', fmt: v => v > 0 ? String(v) : '自动' },
+      { key: 'speed-concurrent', label: '测速并发', fmt: v => v > 0 ? String(v) : '自动' },
+      { key: 'min-speed', label: '最低测速', fmt: v => v > 0 ? v + ' KB/s' : '未设置', warnIfZero: '未设置，极慢节点均会保留' },
+      { key: 'download-timeout', label: '测速超时', fmt: v => v > 0 ? v + ' s' : '未设置', warnIfZero: '未设置，测速可能阻塞' },
+      { key: 'check-interval', label: '检测间隔', fmt: (v, cfg) => cfg['cron-expression'] ? ('cron: ' + cfg['cron-expression']) : (v > 0 ? v + ' 分钟' : '未设置') },
     ],
   },
   {
     title: '存储 & 安全',
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
     items: [
-      { key: 'save-method',     label: '存储方式',      fmt: v => v || 'local' },
-      { key: 'share-password',  label: '分享密码',      fmt: v => v ? '已设置' : null, warnIfEmpty: '未设置，订阅分享功能未启用' },
-      { key: 'update',          label: '自动更新',      fmt: v => v !== false ? '开启' : '关闭', warnIfFalse: '已关闭，建议保持开启以获取最新修复' },
-      { key: 'system-proxy',    label: '系统代理',      fmt: v => v || null, optional: true },
+      { key: 'save-method', label: '存储方式', fmt: v => v || 'local' },
+      { key: 'share-password', label: '分享密码', fmt: v => v ? '已设置' : null, warnIfEmpty: '未设置，订阅分享功能未启用' },
+      { key: 'update', label: '自动更新', fmt: v => v !== false ? '开启' : '关闭', warnIfFalse: '已关闭，建议保持开启以获取最新修复' },
+      { key: 'system-proxy', label: '系统代理', fmt: v => v || null, optional: true },
     ],
   },
 ];
 
 // ── SVG 图标 ──────────────────────────────────────────────
-const ICON_OK   = `<svg class="pv-status-icon ok"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+const ICON_OK = `<svg class="pv-status-icon ok"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 const ICON_WARN = `<svg class="pv-status-icon warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
 const ICON_INFO = `<svg class="pv-status-icon info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
 const ICON_DASH = `<svg class="pv-status-icon muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
 
 function _esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /**
@@ -61,30 +62,30 @@ function _renderCard(group, cfg) {
 
     // 确定状态和 tooltip
     let statusIcon = ICON_OK;
-    let statusCls  = 'ok';
-    let tooltip    = '';
+    let statusCls = 'ok';
+    let tooltip = '';
 
     if (displayVal === null || displayVal === undefined) {
       // 值为空
       if (item.optional) {
         statusIcon = ICON_DASH;
-        statusCls  = 'muted';
+        statusCls = 'muted';
       } else if (item.warnIfEmpty) {
         statusIcon = ICON_WARN;
-        statusCls  = 'warn';
-        tooltip    = item.warnIfEmpty;
+        statusCls = 'warn';
+        tooltip = item.warnIfEmpty;
       } else {
         statusIcon = ICON_INFO;
-        statusCls  = 'info';
+        statusCls = 'info';
       }
     } else if (item.warnIfFalse && rawVal === false) {
       statusIcon = ICON_WARN;
-      statusCls  = 'warn';
-      tooltip    = item.warnIfFalse;
+      statusCls = 'warn';
+      tooltip = item.warnIfFalse;
     } else if (item.warnIfZero && (rawVal === 0 || rawVal === '0' || !rawVal)) {
       statusIcon = ICON_INFO;
-      statusCls  = 'info';
-      tooltip    = item.warnIfZero;
+      statusCls = 'info';
+      tooltip = item.warnIfZero;
     } else {
       // 对 number 字段跑 FIELD_VALIDATORS
       const validator = FIELD_VALIDATORS[item.key];
@@ -92,8 +93,8 @@ function _renderCard(group, cfg) {
         const result = validator(rawVal);
         if (result) {
           statusIcon = result.level === 'warn' ? ICON_WARN : ICON_INFO;
-          statusCls  = result.level;
-          tooltip    = result.msg;
+          statusCls = result.level;
+          tooltip = result.msg;
         }
       }
     }
@@ -136,8 +137,8 @@ function _buildPanel(cfg) {
   }
 
   const healthLabel = warnCount === 0 ? '配置正常' : `${warnCount} 项待优化`;
-  const healthCls   = warnCount === 0 ? 'ok' : 'warn';
-  const healthIcon  = warnCount === 0 ? ICON_OK : ICON_WARN;
+  const healthCls = warnCount === 0 ? 'ok' : 'warn';
+  const healthIcon = warnCount === 0 ? ICON_OK : ICON_WARN;
 
   const cardsHTML = PREVIEW_GROUPS.map(g => _renderCard(g, cfg)).join('');
 
@@ -180,7 +181,7 @@ export function initQuickPreview(getKey, getCfg) {
   if (!btn) return;
 
   let panelEl = null;
-  let loading  = false;
+  let loading = false;
 
   function close() {
     panelEl?.remove();
@@ -225,23 +226,39 @@ export function initQuickPreview(getKey, getCfg) {
 
     panelEl = _buildPanel(cfg);
 
-    // 定位：优先出现在按钮下方，靠右对齐
+    // ── 定位：紧贴按钮下方，靠右对齐 ──────────────────────────
     const btnRect = btn.getBoundingClientRect();
-    panelEl.style.cssText = `
-      position: fixed;
-      top: ${btnRect.bottom + 8}px;
-      right: ${window.innerWidth - btnRect.right}px;
-    `;
+    const GAP = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
 
+    // 先写入 DOM 以便获取真实尺寸
+    panelEl.style.cssText = 'position:fixed;top:-9999px;right:-9999px;visibility:hidden';
     document.body.appendChild(panelEl);
 
-    // 边界保护：若超出视口底部则向上展开
     requestAnimationFrame(() => {
       if (!panelEl) return;
-      const rect = panelEl.getBoundingClientRect();
-      if (rect.bottom > window.innerHeight - 16) {
-        panelEl.style.top = `${btnRect.top - rect.height - 8}px`;
+      const panelW = panelEl.offsetWidth;
+      const panelH = panelEl.offsetHeight;
+
+      // 水平：右对齐按钮右边，若溢出左侧则贴左边
+      let right = vw - btnRect.right;
+      if (btnRect.right - panelW < GAP) right = vw - Math.min(btnRect.right + panelW, vw - GAP);
+
+      // 垂直：优先在按钮下方，不够则向上展开
+      let top = btnRect.bottom + GAP;
+      if (top + panelH > vh - GAP) {
+        top = btnRect.top - panelH - GAP;
       }
+      // 最终兜底：不超出顶部
+      if (top < GAP) top = GAP;
+
+      panelEl.style.cssText = `
+    position: fixed;
+    top: ${top}px;
+    right: ${right}px;
+    visibility: visible;
+  `;
     });
 
     panelEl.querySelector('#cfgPreviewClose')?.addEventListener('click', close);
