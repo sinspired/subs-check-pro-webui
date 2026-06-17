@@ -2750,7 +2750,7 @@ main {
   z-index: 10001;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .login-theme-btn {
     top: 24px;
     right: 24px;
@@ -2765,7 +2765,7 @@ main {
 /* ════════════════════════════════════════════════════════════
    大屏 ≥ 900px
 ════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .theme-label {
     display: inline-block;
   }
