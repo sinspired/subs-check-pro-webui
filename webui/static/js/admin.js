@@ -108,6 +108,10 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     sidebarThemeToggle: $('#sidebarThemeToggle'),
     iconMoon: $('#iconMoon'),
     iconSun: $('#iconSun'),
+    sidebarIconMoon: $('#sidebarIconMoon'),
+    sidebarIconSun: $('#sidebarIconSun'),
+    loginIconMoon: $('#loginIconMoon'),
+    loginIconSun: $('#loginIconSun'),
     projectMenu: $('#projectMenu'),
     githubMenuBtn: $('#githubMenuBtn'),
     dockerMenuBtn: $('#dockerMenuBtn'),
@@ -2789,25 +2793,25 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     )
 
     els.fileManagerBtn?.addEventListener('click', () => {
-      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-files').catch(() => {}); return; }
+      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-files').catch(() => { }); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/files', 'small');
     });
 
     els.btnFiles?.addEventListener('click', () => {
-      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-files').catch(() => {}); return; }
+      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-files').catch(() => { }); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/files', 'small');
     });
 
     els.analysisBtn?.addEventListener('click', () => {
-      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-analysis').catch(() => {}); return; }
+      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-analysis').catch(() => { }); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/analysis');
     });
 
     els.btnAnalysis?.addEventListener('click', () => {
-      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-analysis').catch(() => {}); return; }
+      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-analysis').catch(() => { }); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/analysis');
     });
@@ -2888,6 +2892,12 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       document.documentElement.setAttribute('data-theme', t)
       if (els.iconMoon) els.iconMoon.style.display = t === 'dark' ? '' : 'none'
       if (els.iconSun) els.iconSun.style.display = t === 'light' ? '' : 'none'
+
+      if (els.sidebarIconMoon) els.sidebarIconMoon.style.display = t === 'dark' ? '' : 'none'
+      if (els.sidebarIconSun) els.sidebarIconSun.style.display = t === 'light' ? '' : 'none'
+
+      if (els.loginIconMoon) els.loginIconMoon.style.display = t === 'dark' ? '' : 'none'
+      if (els.loginIconSun) els.loginIconSun.style.display = t === 'light' ? '' : 'none'
 
       if (els.themeToggleBtn) {
         els.themeToggleBtn.title =

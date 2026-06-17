@@ -12,7 +12,7 @@ const PREVIEW_GROUPS = [
     icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>`,
     items: [
       { key: 'github-proxy', label: 'GitHub 代理', fmt: v => v || null, warnIfEmpty: '未配置，国内拉取 GitHub 订阅易超时' },
-      { key: 'github-token', label: 'GitHub 密钥', fmt: v => v || null, warnIfEmpty: '未配置，拉取 GitHub 链接易触发速率限制' },
+      { key: 'github-token', label: 'GitHub 密钥', fmt: v => v.trim().length >= 20 || null, warnIfEmpty: '未配置，拉取 GitHub 链接易触发速率限制' },
       { key: 'recipient-url', label: '通知渠道', fmt: v => Array.isArray(v) ? v.filter(Boolean).length + ' 个' : (v ? '已配置' : null), warnIfEmpty: '未配置，检测结果无法推送' },
       { key: 'media-check', label: '流媒体检测', fmt: v => v !== false ? '开启' : '关闭' },
       { key: 'keep-success-proxies', label: '保留成功节点', fmt: v => v !== false ? '开启' : '关闭', warnIfFalse: '关闭后上游更新可能清空可用节点' },

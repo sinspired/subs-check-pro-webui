@@ -816,6 +816,14 @@ function buildCfgStatusPanel(cfg, ci) {
     const cronExpr = cfg['cron-expression'] || '';
     const checkInterval = parseInt(cfg['check-interval']) || 0;
 
+    function isGitHubToken(token) {
+        return typeof token === 'string'
+            && /^(ghp_|github_pat_|gho_|ghu_|ghs_)/.test(token.trim())
+            && token.trim().length >= 20;
+    }
+
+    let hasGhToken = isGitHubToken(ghToken);
+
     let hasNotify = false;
     if (Array.isArray(recipientUrl)) hasNotify = recipientUrl.filter(v => typeof v === 'string' && v.trim()).length > 0;
     else if (typeof recipientUrl === 'string') hasNotify = recipientUrl.trim().length > 0;
@@ -824,7 +832,7 @@ function buildCfgStatusPanel(cfg, ci) {
 
     const rows = [
         ['GitHub 代理', ghProxy ? esc(ghProxy.replace(/https?:\/\//, '').replace(/\/$/, '')) : '未设置', ghProxy ? 'ok' : 'warn', ghProxy ? SVG_OK : SVG_WARN],
-        ['GitHub 代理', ghToken ? '已配置' : '未配置', ghToken ? 'ok' : 'warn', ghToken ? SVG_OK : SVG_WARN],
+        ['GitHub 密钥', hasGhToken ? '已配置' : '未配置', hasGhToken ? 'ok' : 'warn', hasGhToken ? SVG_OK : SVG_WARN],
         ['通知渠道', hasNotify ? '已配置' : '未配置', hasNotify ? 'ok' : 'warn', hasNotify ? SVG_OK : SVG_WARN],
         ['流媒体检测', mediaCheck ? '已开启' : '已关闭', mediaCheck ? 'ok' : 'warn', mediaCheck ? SVG_OK : SVG_WARN],
         ['测速功能', speedTestUrl ? '已启用' : '已关闭', speedTestUrl ? 'ok' : 'warn', speedTestUrl ? SVG_OK : SVG_WARN],
@@ -1588,6 +1596,14 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     const subUrls = Array.isArray(cfg['sub-urls']) ? cfg['sub-urls'] : [];
     const hasLocalhostAll = subUrls.some(u => typeof u === 'string' && /127\.0\.0\.1.*all\.yaml/i.test(u));
 
+    function isGitHubToken(token) {
+        return typeof token === 'string'
+            && /^(ghp_|github_pat_|gho_|ghu_|ghs_)/.test(token.trim())
+            && token.trim().length >= 20;
+    }
+
+    let hasGhToken = isGitHubToken(ghToken);
+
     let hasNotify = false;
     if (Array.isArray(recipientUrl)) hasNotify = recipientUrl.filter(v => typeof v === 'string' && v.trim()).length > 0;
     else if (typeof recipientUrl === 'string') hasNotify = recipientUrl.trim().length > 0;
@@ -1608,7 +1624,7 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     // KV: 关键配置项
     const cfgKvs = [
         { k: 'Github 代理', v: ghProxy ? esc(ghProxy) : '未设置', cls: ghProxy ? 'ok' : 'warn', title: ghProxy ? ghProxy : undefined },
-        { k: 'Github 密钥', v: ghToken ? esc(ghToken) : '未设置', cls: ghToken ? 'ok' : 'warn', title: ghToken ? ghToken : undefined },
+        { k: 'Github 密钥', v: hasGhToken ? '已配置' : '未配置', cls: hasGhToken ? 'ok' : 'warn' },
         { k: '通知渠道', v: hasNotify ? '已配置' : '未配置', cls: hasNotify ? 'ok' : 'warn' },
         { k: '流媒体检测', v: mediaCheck ? '开启' : '关闭', cls: mediaCheck ? 'ok' : 'warn' },
         { k: '测速功能', v: speedTestUrl ? '已启用' : '关闭', cls: speedTestUrl ? 'ok' : 'warn' },
@@ -1633,7 +1649,7 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     const deployCards = [];
     if (!ghProxy) deployCards.push({ tab: 'schedule', title: 'Github 代理未设置', desc: '国内环境获取 GitHub 订阅源易超时，建议部署自有代理加速（或使用内置 ghproxy-group）。', actions: [{ label: 'CF-Proxy 一键部署', href: 'https://github.com/sinspired/CF-Proxy', primary: true }] });
 
-    if (!ghToken) deployCards.push({
+    if (!hasGhToken) deployCards.push({
         tab: 'schedule', title: 'Github Token 未设置', desc: '如订阅链接较多,设置 GitHub Token 可提升订阅拉取速率及限制', actions: [{ label: '查看文档', href: 'https://docs.github.com/zh/actions/concepts/security/github_token', icon: 'github', primary: true },
         { label: '创建密钥', href: 'https://github.com/settings/personal-access-tokens', icon: 'github' }]
     });
