@@ -1750,6 +1750,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       return ''   // 返回空字符串，前端就不会显示
     }
 
+    // 过滤掉 HTTP/2 协议错误日志
+    if (/received DATA after END_STREAM/.test(line)) {
+      return ''
+    }
+
     // 1. 切分时间戳
     // const tsMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
     const tsMatch = line.match(/^((\d{4}-)?\d{2}-\d{2} \d{2}:\d{2}:\d{2})/)
