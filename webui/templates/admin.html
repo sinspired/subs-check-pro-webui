@@ -271,6 +271,18 @@
                 <span id="project-info-text">项目信息</span>
               </div>
             </div>
+            <div class="list-item {{if not .wailsGUI}}login-hidden{{end}}" id="siderBarCheckupdate" title="检查 GUI 版本更新"
+              style="cursor:pointer;">
+              <span class="sb-icon-wrap">
+                <svg class="sidebar-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="15"
+                  height="15">
+                  <path
+                    d="M520.533 460.8l-179.2 170.667h358.4L520.533 460.8zm-52.906 170.65v204.817H290.133c-122.47 0-221.866-103.766-221.866-231.63 0-105.13 67.003-193.62 158.856-222.344C275.046 267.861 384.65 187.733 512 187.733s236.954 80.128 284.877 194.56C888.73 410.54 955.733 499.49 955.733 604.638c0 127.863-99.396 231.629-221.866 231.629H556.373V631.45"
+                    fill="currentColor" />
+                </svg>
+              </span>
+              <span>检查更新</span>
+            </div>
           </div>
           <div class="sidebar-bottom">
             <!-- 主题切换（与其他 list-item 完全一致） -->

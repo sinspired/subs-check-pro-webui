@@ -752,6 +752,46 @@ main {
   opacity: 1;
 }
 
+/* 检查更新 - 有新版本时图标高亮 + 脉冲小点
+   ::after 挂在 .sb-icon-wrap（普通 span）上，而不是 svg 本身，
+   因为生成内容在 SVG 命名空间元素上跨内核支持不稳定 */
+#siderBarCheckupdate .sb-icon-wrap {
+  display: inline-flex;
+  position: relative;
+}
+
+#siderBarCheckupdate.has-gui-update .sidebar-icon {
+  color: var(--accent);
+  opacity: 1;
+}
+
+#siderBarCheckupdate.has-gui-update .sb-icon-wrap::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: scp-update-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes scp-update-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .35; transform: scale(.6); }
+}
+
+/* 点击后「检查中」：图标旋转（svg 本身支持 transform 动画，无需挂在 wrapper 上）*/
+#siderBarCheckupdate.checking-update .sidebar-icon {
+  animation: scp-spin 1s linear infinite;
+}
+
+@keyframes scp-spin {
+  to { transform: rotate(360deg); }
+}
+
 .slide-menu {
   user-select: none;
 }

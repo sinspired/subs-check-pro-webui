@@ -102,6 +102,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     logoutBtn: $('#logoutBtn'),
     logoutBtnMobile: $('#btnlogoutMobile'),
     logoutText: $('#logoutText'),
+    siderBarCheckupdate: $('#siderBarCheckupdate'),
     openEditorBtn: $('#openEditor'),
     themeToggleBtn: $('#mainThemeToggle'),
     loginThemeToggle: $('#loginThemeToggle'),
@@ -2687,6 +2688,66 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       console.error('Version check failed', e)
     }
   }
+
+  // ==================== GUI 自身更新检查（Wails 桌面端）====================
+  // webUIWin 也是 Wails 管理的窗口，可以用 /wails/runtime.js 监听
+  // Go 端 CheckForUpdates() 已经在发的事件，不需要改后端。
+  let guiUpdateAvailable = false
+  let guiUpdateVersion = ''
+
+  function applyGuiUpdateBadge() {
+    const el = els.siderBarCheckupdate
+    if (!el) return
+    el.classList.toggle('has-gui-update', guiUpdateAvailable)
+    el.title = guiUpdateAvailable
+      ? `发现新版本 v${guiUpdateVersion || ''}，点击查看`
+      : '检查 GUI 版本更新'
+  }
+
+  function toastForUpdateMessage(text) {
+    if (!text) return
+    if (text.includes('失败') || text.includes('暂不可用')) showToast(text, 'warn')
+    else if (text.includes('最新版')) showToast(text, 'success')
+    else showToast(text, 'info')
+  }
+
+  async function initGuiUpdateBridge() {
+    if (!window.__WAILS_GUI?.baseURL) return
+    try {
+      const { Events } = await import('/wails/runtime.js')
+
+      Events.On('gui:update:toast', e => {
+        els.siderBarCheckupdate?.classList.remove('checking-update')
+        toastForUpdateMessage(e?.data)
+      })
+
+      Events.On('wails:updater:update-available', e => {
+        const rel = e?.data || {}
+        guiUpdateAvailable = true
+        guiUpdateVersion = rel.version ?? rel.Version ?? ''
+        applyGuiUpdateBadge()
+        els.siderBarCheckupdate?.classList.remove('checking-update')
+        showToast(`发现新版本 v${guiUpdateVersion}，点击侧边栏图标查看`, 'info', 5000)
+      })
+
+      Events.On('wails:updater:update-ready', e => {
+        const rel = e?.data || {}
+        guiUpdateAvailable = true
+        guiUpdateVersion = rel.version ?? rel.Version ?? guiUpdateVersion
+        applyGuiUpdateBadge()
+      })
+
+      Events.On('wails:updater:no-update', () => {
+        guiUpdateAvailable = false
+        guiUpdateVersion = ''
+        applyGuiUpdateBadge()
+        els.siderBarCheckupdate?.classList.remove('checking-update')
+      })
+    } catch (e) {
+      console.warn('Wails 更新事件桥接初始化失败:', e)
+    }
+  }
+
   // ==================== 初始化 ====================
 
   function bindControls() {
@@ -2849,6 +2910,17 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       // 延迟 remove，确保下载触发后再清理（部分浏览器/WebView 需要）
       setTimeout(() => { a.remove(); URL.revokeObjectURL(url) }, 500)
       showToast('已开始下载日志', 'success')
+    })
+
+    els.siderBarCheckupdate?.addEventListener('click', () => {
+      if (window.__WAILS_GUI?.baseURL) {
+        els.siderBarCheckupdate.classList.add('checking-update')
+        showToast('正在检查更新...', 'info')
+        fetch('/gui/check-update').catch(() => {
+          els.siderBarCheckupdate.classList.remove('checking-update')
+          showToast('检查更新请求失败', 'error')
+        })
+      }
     })
 
     const logoutHandler = () => {
@@ -3328,6 +3400,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     if (saved && els.apiKeyInput) els.apiKeyInput.value = saved
 
     bindControls()
+    initGuiUpdateBridge()
 
     try {
       if (saved) {
