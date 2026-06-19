@@ -2601,7 +2601,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       // span 只负责文字
       applyToSidebarVersionEls(el => {
-        el.textContent = currentV
+        el.textContent = 'Core '+currentV
         if (isPre(currentV)) el.classList.add('is-pre')
       })
 
