@@ -879,7 +879,7 @@ function renderOverview(r, ci, ga, subCount, geoCount, protoCount, cfg) {
         { label: '协议种类', value: protoCount, sub: '协议分布', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`, color: 'var(--chip-proto)' },
         { label: 'CF 中转', value: cfConTotal, sub: total ? Math.round(cfConTotal / total * 100) + '%' : '0%', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`, color: 'var(--chip-cf)' },
         { label: '独立 VPS', value: vpsTotal, sub: total ? Math.round(vpsTotal / total * 100) + '%' : '0%', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>`, color: 'var(--chip-vps)' },
-        { label: '流量消耗', value: ci.check_traffic || '-', sub: `耗时 ${ci.check_duration || '-'}`, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`, color: 'var(--chip-traffic)' },
+        { label: '流量消耗', value: ci.check_traffic_total || '-', sub: `耗时 ${ci.check_duration || '-'}`, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`, color: 'var(--chip-traffic)' },
         { label: '活跃订阅', value: subCount, sub: `检测时间 ${ci.check_time || '-'}`, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`, color: 'var(--chip-sub)' },
     ];
     document.getElementById('summaryChips').innerHTML = chips.map(c =>
@@ -936,7 +936,7 @@ function buildHeroSentence(ci, ga) {
     const total = ga.alive_count || 0, geo = Object.keys(ga.geography_distribution || {}).length;
     const qm = ga.quality_metrics || {}, cfRatio = qm.cf_consistent_ratio || '';
     const speed = ci.check_min_speed, speedStr = (speed && String(speed) !== '0') ? `，速度下限 <span class="hl">${speed} KB/s</span>` : '';
-    return `本次检测耗时 <span class="hl">${ci.check_duration || '-'}</span>，消耗流量 <span class="hl">${ci.check_traffic || '-'}</span>，共检测 <span class="hl">${ci.check_count_raw || '-'}</span> 个节点${speedStr}，获得 <span class="hl-ok">${total}</span> 个可用节点，覆盖 <span class="hl">${geo}</span> 个国家/地区` + (cfRatio ? `，CF 中转占比 <span class="hl">${cfRatio}</span>` : '') + '。';
+    return `本次检测耗时 <span class="hl">${ci.check_duration || '-'}</span>，消耗流量 <span class="hl">${ci.check_traffic_total || '-'}</span>，共检测 <span class="hl">${ci.check_count_raw || '-'}</span> 个节点${speedStr}，获得 <span class="hl-ok">${total}</span> 个可用节点，覆盖 <span class="hl">${geo}</span> 个国家/地区` + (cfRatio ? `，CF 中转占比 <span class="hl">${cfRatio}</span>` : '') + '。';
 }
 
 function parseUnlockFromSummary(text) {
@@ -1612,7 +1612,7 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     const kvs = [
         { k: '检测节点数', v: ci.check_count_raw || '-' },
         { k: '检测耗时', v: ci.check_duration || '-' },
-        { k: '流量消耗', v: ci.check_traffic || '-' },
+        { k: '流量消耗', v: ci.check_traffic_total || '-' },
         { k: '速度下限', v: speed > 0 ? speed + ' KB/s' : '未设置', cls: speed > 0 ? 'ok' : 'warn' },
         { k: '可用节点', v: total, cls: total > 0 ? 'ok' : 'bad' },
         { k: '通过率', v: checked > 0 ? fmtRate(passRate) : '—', cls: passRate >= 1 ? 'ok' : passRate > 0 ? 'warn' : 'bad' },

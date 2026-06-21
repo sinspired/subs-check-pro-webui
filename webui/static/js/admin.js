@@ -1434,7 +1434,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     ${info.check_min_speed > 0
         ? chip('测速下限', info.check_min_speed + ' KB/s', '--accent')
         : chip('模式', '仅测活', '--muted')}
-    ${chip('流量', info.check_traffic || '-', '--chip-traffic')}
+    ${chip('流量', info.check_traffic_total || '-', '--chip-traffic')}
     ${chip('耗时', info.check_duration || '-', '--idle')}
   </div>`;
 
