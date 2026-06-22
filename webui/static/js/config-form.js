@@ -91,7 +91,7 @@ const SCHEMA = [
     tab: 'subscriptions',
     sections: [
       {
-        title: '线程基准',
+        title: '拉取基准',
         fields: [
           {
             key: 'concurrent',
@@ -99,10 +99,28 @@ const SCHEMA = [
             type: 'number', min: 1, max: 100, placeholder: '20',
             hint: '拉取订阅的并发数；并作为自动并发的计算基准'
           },
+          {
+            key: 'subs-parse-batch',
+            label: '解析基准',
+            type: 'number', min: 0, max: 100000, placeholder: '5000',
+            hint: '解析订阅的基准批次大小，达到该批次会进入一次去重队列'
+          },
+          {
+            key: 'subs-dedupe-batch',
+            label: '去重基准',
+            type: 'number', min: 0, max: 500000, placeholder: '100000',
+            hint: '获取到该数量的节点就进行一次内存释放'
+          },
+          {
+            key: 'github-token', label: ' GitHub 密钥', type: 'password', placeholder: 'GITHUB_TOKEN', hint: '用来提高订阅拉取成功率，提升 GitHub 速率限制',
+            links: [
+              { label: '查看文档', href: 'https://docs.github.com/zh/actions/concepts/security/github_token', icon: 'github' },
+              { label: '创建密钥', href: 'https://github.com/settings/personal-access-tokens', icon: 'github' }],
+          },
         ],
       },
       {
-        title: '获取参数',
+        title: '拉取参数',
         fields: [
           { key: 'sub-urls-retry', label: '重试次数', type: 'number', min: 1, max: 5, placeholder: '3', hint: '获取订阅失败重试次数' },
           { key: 'sub-urls-timeout', label: '下载超时 (s)', type: 'number', min: 5, max: 30, placeholder: '10', hint: '建议 10–60' },
@@ -111,12 +129,6 @@ const SCHEMA = [
             hintExamples: [
               "subs-filter.yaml"
             ]
-          },
-          {
-            key: 'github-token', label: ' GitHub 密钥', type: 'password', placeholder: 'GITHUB_TOKEN', hint: '用来提高订阅拉取成功率，提升 GitHub 速率限制',
-            links: [
-              { label: '查看文档', href: 'https://docs.github.com/zh/actions/concepts/security/github_token', icon: 'github' },
-              { label: '创建密钥', href: 'https://github.com/settings/personal-access-tokens', icon: 'github' }],
           },
         ],
       },
@@ -561,6 +573,34 @@ const FIELD_VALIDATORS = {
     const { alive, speed, media } = _estimateAuto();
     if (n > 100) return { level: 'warn', msg: `并发 ${n} 过高，将影响拉取订阅成功率` };
     return { level: 'info', msg: `自动模式基准 ${n} → 测活 ≈ ${alive} · 测速 ≈ ${speed} · 媒体 ≈ ${media}` };
+  },
+  'subs-parse-batch': v => {
+    const n = Number(v);
+    if (!n || n <= 0) return { level: 'info', msg: '0 = 使用默认值 5000' };
+
+    // 瞬时峰值 ≈ 基准并发 × 该值 × 2
+    // （每个订阅 goroutine 最多同时持有：1 个本地正在攒的批 + 1 个已发往去重队列但还没被消费的批）
+    const concurrent = Math.max(1, _getLiveVal('concurrent', 20));
+    const peak = concurrent * n * 2;
+    const peakStr = peak.toLocaleString();
+
+    if (n < 1000) {
+      return { level: 'info', msg: `批次偏小，进入去重队列的频率变高；按基准并发 ${concurrent} 估算瞬时占用约 ${peakStr} 个节点` };
+    }
+    if (peak > 1000000) {
+      return { level: 'warn', msg: `按基准并发 ${concurrent} 估算最坏瞬时占用约 ${peakStr} 个节点，建议调小批次或同步降低基准并发` };
+    }
+    if (peak > 300000) {
+      return { level: 'info', msg: `按基准并发 ${concurrent} 估算瞬时占用约 ${peakStr} 个节点` };
+    }
+    return { level: 'ok', msg: `批次合理，按基准并发 ${concurrent} 估算瞬时占用约 ${peakStr} 个节点` };
+  },
+  'subs-dedupe-batch': v => {
+    const n = Number(v);
+    if (!n || n <= 0) return { level: 'warn', msg: '0 = 禁用分段释放，全部订阅处理完才统一去重，订阅量大时内存占用会持续增长' };
+    if (n < 20000) return { level: 'warn', msg: `阈值 ${n} 偏低，内存释放过于频繁，增加 CPU 压力` };
+    if (n <= 500000) return { level: 'ok', msg: `阈值 ${n}，每获取到该数量节点释放一次内存` };
+    return { level: 'warn', msg: `阈值 ${n} 较高，释放间隔变长，请关注内存占用` };
   },
   'alive-concurrent': v => {
     const n = Number(v);
@@ -1019,6 +1059,12 @@ function _attachValidator(row, fieldDef) {
         CONCURRENT_KEYS.filter(k => k !== fieldDef.key).forEach(k => {
           document.querySelector(`input[data-key="${k}"]`)?.dispatchEvent(new Event('change'));
         });
+      });
+    }
+
+    if (fieldDef.key === 'concurrent') {
+      inp.addEventListener('input', () => {
+        document.querySelector(`input[data-key="subs-parse-batch"]`)?.dispatchEvent(new Event('change'));
       });
     }
 
