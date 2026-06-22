@@ -1580,6 +1580,7 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     const dlMb = parseInt(cfg['download-mb']) || 0;
     const checkInterval = parseInt(cfg['check-interval']) || 0;
     const cronExpr = cfg['cron-expression'] || '';
+    const concurrent = parseInt(cfg['concurrent']) || 20;
     const aliveCon = parseInt(cfg['alive-concurrent']) || 0;
     const speedCon = parseInt(cfg['speed-concurrent']) || 0;
     const mediaCon = parseInt(cfg['media-concurrent']) || 0;
@@ -1592,6 +1593,10 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     const sharePassword = cfg['share-password'] || '';
     const dropBadCf = cfg['drop-bad-cf-nodes'] === true;
     const updateOnStart = cfg['update-on-startup'] !== false;
+
+    // 拉取订阅内存优化
+    const subsParseBatch = parseInt(cfg['subs-parse-batch']) || 0;
+    const subsDedupeBatch = parseInt(cfg['subs-dedupe-batch']) || 0;
 
     const subUrls = Array.isArray(cfg['sub-urls']) ? cfg['sub-urls'] : [];
     const hasLocalhostAll = subUrls.some(u => typeof u === 'string' && /127\.0\.0\.1.*all\.yaml/i.test(u));
@@ -1630,8 +1635,8 @@ function renderConfig(ci, ga, sr, sb, cfg) {
         { k: '测速功能', v: speedTestUrl ? '已启用' : '关闭', cls: speedTestUrl ? 'ok' : 'warn' },
         { k: '自动更新', v: autoUpdate ? '开启' : '关闭', cls: autoUpdate ? 'ok' : 'warn' },
         { k: '保留成功节点', v: keepSuccess ? '开启' : '关闭', cls: keepSuccess ? 'ok' : 'warn' },
-        { k: '存储方式', v: saveMethod, cls: saveMethod === 'local' ? '' : 'ok' },
-        { k: '节点前缀', v: nodePrefix ? esc(nodePrefix) : '无' },
+        { k: '存储方式', v: saveMethod === 'local' ? '本地' : saveMethod, cls: 'ok' },
+        { k: '节点前缀', v: nodePrefix ? esc(nodePrefix) : '无前缀', cls: 'ok' },
     ];
 
     // KV: 并发 & 速度参数
@@ -1641,9 +1646,11 @@ function renderConfig(ci, ga, sr, sb, cfg) {
         { k: '媒体检测并发', v: mediaCon > 0 ? mediaCon : '自动' },
         { k: '最低测速', v: minSpeed > 0 ? minSpeed + ' KB/s' : '未设置', cls: minSpeed > 0 ? 'ok' : 'warn' },
         { k: '测速超时', v: dlTimeout > 0 ? dlTimeout + 's' : '未设置', cls: dlTimeout > 0 ? 'ok' : 'warn' },
-        { k: '单节点限速', v: dlMb > 0 ? dlMb + ' MB' : '不限' },
-        { k: '检测间隔', v: cronExpr ? cronExpr : (checkInterval ? checkInterval + '分钟' : '未设置') },
-        { k: '节点数上限', v: successLimit > 0 ? successLimit + '个' : '不限' },
+        { k: '单节点下载限制', v: dlMb > 0 ? `${dlMb} MB` : '无限制', cls: dlMb > 0 ? 'ok' : 'warn' },
+        { k: '检测间隔', v: cronExpr || (checkInterval > 0 ? `${checkInterval} 分钟` : '未配置'), cls: (cronExpr || checkInterval >= 720) ? 'ok' : 'warn' },
+        { k: '节点数上限', v: successLimit > 0 ? successLimit : '未设置', cls: successLimit > 0 ? 'ok' : 'warn' },
+        { k: '解析批次', v: subsParseBatch > 0 ? subsParseBatch : '默认 (5000)', cls: (subsParseBatch > 20000 || (subsParseBatch > 0 && subsParseBatch < 1000)) ? 'warn' : 'ok' },
+        { k: '去重释放', v: subsDedupeBatch > 0 ? subsDedupeBatch : '已禁用', cls: subsDedupeBatch > 0 ? (subsDedupeBatch < 20000 ? 'warn' : 'ok') : 'warn' },
     ];
 
     const deployCards = [];
@@ -1805,6 +1812,30 @@ function renderConfig(ci, ga, sr, sb, cfg) {
 
     // 11. 存储方式补充
     if (saveMethod !== 'local') suggests.push({ l: 'info', t: `存储方式为 <code>${esc(saveMethod)}</code>，请确认对应的凭证（gist-id / webdav 等）已正确配置，否则节点文件将无法保存。` });
+
+    // ── 12. 内存与解析批次控制 ──
+    const actualParseBatch = subsParseBatch > 0 ? subsParseBatch : 5000;
+    const peak = Math.max(1, concurrent) * actualParseBatch * 2;
+    const peakStr = peak.toLocaleString();
+
+    if (subsParseBatch > 0 && subsParseBatch < 1000) {
+        suggests.push({ l: 'info', tab: 'advanced', t: `<code>subs-parse-batch: ${subsParseBatch}</code> 偏小，进入去重队列频率变高；按基准并发 ${concurrent} 估算瞬时占用约 ${peakStr} 个节点。` });
+    } else if (peak > 1000000) {
+        suggests.push({ l: 'warn', tab: 'advanced', t: `解析批次与并发配置较高，估算最坏瞬时占用约 ${peakStr} 个节点，可能导致内存溢出，建议调小 <code>subs-parse-batch</code> 或降低并发。` });
+    } else if (peak > 300000) {
+        suggests.push({ l: 'info', tab: 'advanced', t: `当前解析批次配合基准并发，估算瞬时占用约 ${peakStr} 个节点，请关注程序内存占用。` });
+    }
+
+    if (!subsDedupeBatch || subsDedupeBatch <= 0) {
+        suggests.push({ l: 'warn', tab: 'advanced', t: '<code>subs-dedupe-batch</code> 未设置或为 0（禁用分段释放）。全部订阅处理完才统一去重，当订阅量大时会导致内存持续增长并可能 OOM。' });
+    } else if (subsDedupeBatch < 20000) {
+        suggests.push({ l: 'warn', tab: 'advanced', t: `<code>subs-dedupe-batch: ${subsDedupeBatch}</code> 偏低，内存释放过于频繁，会增加 CPU 去重合并带来的开销。` });
+    } else if (subsDedupeBatch <= 500000) {
+        suggests.push({ l: 'good', t: `<code>subs-dedupe-batch: ${subsDedupeBatch}</code> 分段释放阈值设置合理，可有效进行内存削峰。` });
+    } else {
+        suggests.push({ l: 'warn', tab: 'advanced', t: `<code>subs-dedupe-batch: ${subsDedupeBatch}</code> 较高，释放间隔变长，内存波峰会变大，请关注实际系统内存占用。` });
+    }
+
     if (!suggests.length) suggests.push({ l: 'good', t: '配置状态良好，暂无优化建议。' });
 
     // svg 图标

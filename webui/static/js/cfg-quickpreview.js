@@ -28,6 +28,45 @@ const PREVIEW_GROUPS = [
       { key: 'min-speed', label: '最低测速', fmt: v => v > 0 ? v + ' KB/s' : '未设置', warnIfZero: '未设置，极慢节点均会保留' },
       { key: 'download-timeout', label: '测速超时', fmt: v => v > 0 ? v + ' s' : '未设置', warnIfZero: '未设置，测速可能阻塞' },
       { key: 'check-interval', label: '检测间隔', fmt: (v, cfg) => cfg['cron-expression'] ? ('cron: ' + cfg['cron-expression']) : (v > 0 ? v + ' 分钟' : '未设置') },
+      
+      // 解析批次与去重释放逻辑
+      {
+        key: 'subs-parse-batch',
+        label: '解析批次',
+        fmt: v => v > 0 ? String(v) : '默认 (5000)',
+        validator: (v, cfg) => {
+          const n = Number(v);
+          if (!n || n <= 0) return { level: 'info', msg: '0 = 使用默认值 5000' };
+
+          // 从 cfg 对象读取 concurrent，如果没有则取默认值 20
+          const concurrent = Math.max(1, Number(cfg['concurrent']) || 20);
+          const peak = concurrent * n * 2;
+          const peakStr = peak.toLocaleString();
+
+          if (n < 1000) {
+            return { level: 'info', msg: `批次偏小，进入去重队列的频率变高；按基准并发 ${concurrent} 估算瞬时占用约 ${peakStr} 个节点` };
+          }
+          if (peak > 1000000) {
+            return { level: 'warn', msg: `按基准并发 ${concurrent} 估算最坏瞬时占用约 ${peakStr} 个节点，建议调小批次或同步降低基准并发` };
+          }
+          if (peak > 300000) {
+            return { level: 'info', msg: `按基准并发 ${concurrent} 估算瞬时占用约 ${peakStr} 个节点` };
+          }
+          return { level: 'ok', msg: `批次合理，按基准并发 ${concurrent} 估算瞬时占用约 ${peakStr} 个节点` };
+        }
+      },
+      {
+        key: 'subs-dedupe-batch',
+        label: '去重阈值',
+        fmt: v => v > 0 ? String(v) : '禁用分段',
+        validator: (v) => {
+          const n = Number(v);
+          if (!n || n <= 0) return { level: 'warn', msg: '0 = 禁用分段释放，全部订阅处理完才统一去重，订阅量大时内存占用会持续增长' };
+          if (n < 20000) return { level: 'warn', msg: `阈值 ${n} 偏低，内存释放过于频繁，增加 CPU 压力` };
+          if (n <= 500000) return { level: 'ok', msg: `阈值 ${n}，每获取到该数量节点释放一次内存` };
+          return { level: 'warn', msg: `阈值 ${n} 较高，释放间隔变长，请关注内存占用` };
+        }
+      }
     ],
   },
   {
@@ -87,12 +126,15 @@ function _renderCard(group, cfg) {
       statusCls = 'info';
       tooltip = item.warnIfZero;
     } else {
-      // 对 number 字段跑 FIELD_VALIDATORS
-      const validator = FIELD_VALIDATORS[item.key];
+      // 优先使用自身定义的 validator，降级使用全局 FIELD_VALIDATORS
+      const validator = item.validator || FIELD_VALIDATORS[item.key];
       if (validator) {
-        const result = validator(rawVal);
+        const result = validator(rawVal, cfg); // 传入 cfg 对象供跨字段联动使用
         if (result) {
-          statusIcon = result.level === 'warn' ? ICON_WARN : ICON_INFO;
+          if (result.level === 'warn') statusIcon = ICON_WARN;
+          else if (result.level === 'ok') statusIcon = ICON_OK; // 修复原本只有 warn/info 状态的问题
+          else statusIcon = ICON_INFO;
+          
           statusCls = result.level;
           tooltip = result.msg;
         }
@@ -128,9 +170,12 @@ function _buildPanel(cfg) {
       if (!item.optional) {
         if ((displayVal === null || displayVal === undefined) && item.warnIfEmpty) warnCount++;
         else if (item.warnIfFalse && rawVal === false) warnCount++;
-        else if (FIELD_VALIDATORS[item.key]) {
-          const r = FIELD_VALIDATORS[item.key](rawVal);
-          if (r?.level === 'warn') warnCount++;
+        else {
+          const validator = item.validator || FIELD_VALIDATORS[item.key];
+          if (validator) {
+            const r = validator(rawVal, cfg);
+            if (r?.level === 'warn') warnCount++;
+          }
         }
       }
     }
