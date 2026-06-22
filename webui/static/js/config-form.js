@@ -109,7 +109,7 @@ const SCHEMA = [
             key: 'subs-dedupe-batch',
             label: '去重基准',
             type: 'number', min: 0, max: 500000, placeholder: '100000',
-            hint: '获取到该数量的节点就进行一次内存释放'
+            hint: '获取到该数量的节点就进行一次去重，释放内存'
           },
           {
             key: 'github-token', label: ' GitHub 密钥', type: 'password', placeholder: 'GITHUB_TOKEN', hint: '用来提高订阅拉取成功率，提升 GitHub 速率限制',
@@ -578,30 +578,35 @@ const FIELD_VALIDATORS = {
     const n = Number(v);
     if (!n || n <= 0) return { level: 'info', msg: '0 = 使用默认值 5000' };
 
-    // 瞬时峰值 ≈ 基准并发 × 该值 × 2
-    // （每个订阅 goroutine 最多同时持有：1 个本地正在攒的批 + 1 个已发往去重队列但还没被消费的批）
     const concurrent = Math.max(1, _getLiveVal('concurrent', 20));
     const peak = concurrent * n * 2;
     const peakStr = peak.toLocaleString();
 
     if (n < 1000) {
-      return { level: 'info', msg: `批次偏小，进入去重队列的频率变高；按基准并发 ${concurrent} 估算瞬时占用约 ${peakStr} 个节点` };
+      return { level: 'info', msg: `批次偏小，去重队列切换频繁；按并发 ${concurrent} 估算瞬时约 ${peakStr} 个节点` };
     }
-    if (peak > 1000000) {
-      return { level: 'warn', msg: `按基准并发 ${concurrent} 估算最坏瞬时占用约 ${peakStr} 个节点，建议调小批次或同步降低基准并发` };
+    if (peak > 1_000_000) {
+      return { level: 'warn', msg: `瞬时约 ${peakStr} 个节点（并发 ${concurrent}），过高；建议调小批次或降低并发` };
     }
-    if (peak > 300000) {
-      return { level: 'info', msg: `按基准并发 ${concurrent} 估算瞬时占用约 ${peakStr} 个节点` };
+    if (peak > 300_000) {
+      return { level: 'warn', msg: `瞬时约 ${peakStr} 个节点（并发 ${concurrent}）` };
     }
-    return { level: 'ok', msg: `批次合理，按基准并发 ${concurrent} 估算瞬时占用约 ${peakStr} 个节点` };
+    return { level: 'ok', msg: `批次合理，瞬时约 ${peakStr} 个节点（并发 ${concurrent}）` };
   },
   'subs-dedupe-batch': v => {
     const n = Number(v);
-    if (!n || n <= 0) return { level: 'warn', msg: '0 = 禁用分段释放，全部订阅处理完才统一去重，订阅量大时内存占用会持续增长' };
-    if (n < 20000) return { level: 'warn', msg: `阈值 ${n} 偏低，内存释放过于频繁，增加 CPU 压力` };
-    if (n <= 500000) return { level: 'ok', msg: `阈值 ${n}，每获取到该数量节点释放一次内存` };
+    if (!n || n <= 0) {
+      return { level: 'warn', msg: '0 = 禁用分段释放，所有订阅处理完才释放，订阅量大时内存会持续上涨' };
+    }
+    if (n < 20000) {
+      return { level: 'warn', msg: `阈值 ${n} 偏低，释放过于频繁，会增加 CPU 开销` };
+    }
+    if (n <= 500000) {
+      return { level: 'ok', msg: `阈值 ${n}，每处理到该数量时释放一次内存` };
+    }
     return { level: 'warn', msg: `阈值 ${n} 较高，释放间隔变长，请关注内存占用` };
   },
+
   'alive-concurrent': v => {
     const n = Number(v);
     if (n === 0 || _anyAutoMode()) {
