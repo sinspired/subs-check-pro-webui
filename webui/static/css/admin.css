@@ -2457,7 +2457,6 @@ main {
 .login-card {
   width: 400px;
   max-width: 95%;
-  background: var(--bg);
   border-radius: 20px;
   padding: 36px 28px 30px;
   border: 1px solid var(--border);
@@ -2466,12 +2465,18 @@ main {
   gap: 0.85em;
   position: relative;
   align-items: center;
-  z-index: 2;
+  z-index: 10;
+
+  /* 玻璃态背景：card 色 + backdrop blur */
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
 
   box-shadow:
-    4px 4px 12px color-mix(in srgb, var(--card-shadow) 15%, transparent),
-    0 20px 56px color-mix(in srgb, var(--card-shadow) 12%, transparent),
+    2px 2px 10px color-mix(in srgb, var(--card-shadow) 15%, transparent),
     inset 0 1px 0 color-mix(in srgb, #ffffff 7%, transparent);
+
+  animation: logoFloat 5s ease-in-out infinite;
 }
 
 /* 卡片右上角环境光晕（向右上方散射，增加立体悬浮感） */
@@ -2480,13 +2485,13 @@ main {
   position: absolute;
   top: -28px;
   left: 0px;
-  transform: translateX(50%);
+  transform: translateX(80%);
   width: 55%;
   height: 50px;
   background: radial-gradient(ellipse,
-      color-mix(in srgb, var(--accent-2) 14%, transparent),
+      color-mix(in srgb, var(--accent-2) 10%, transparent),
       transparent 70%);
-  filter: blur(18px);
+  filter: blur(28px);
   pointer-events: none;
   z-index: -1;
 }
@@ -2497,13 +2502,13 @@ main {
   position: absolute;
   bottom: -28px;
   left: 20%;
-  transform: translateX(-50%);
+  transform: translateX(-70%);
   width: 65%;
   height: 56px;
   background: radial-gradient(ellipse,
       color-mix(in srgb, var(--accent) 14%, transparent),
       transparent 70%);
-  filter: blur(18px);
+  filter: blur(22px);
   pointer-events: none;
   z-index: -1;
 }
@@ -2521,7 +2526,7 @@ main {
   }
 
   50% {
-    transform: translateY(-5px);
+    transform: translateY(-7px);
   }
 }
 
