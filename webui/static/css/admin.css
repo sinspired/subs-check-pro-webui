@@ -779,8 +779,17 @@ main {
 }
 
 @keyframes scp-update-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: .35; transform: scale(.6); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: .35;
+    transform: scale(.6);
+  }
 }
 
 /* 点击后「检查中」：图标旋转（svg 本身支持 transform 动画，无需挂在 wrapper 上）*/
@@ -789,7 +798,9 @@ main {
 }
 
 @keyframes scp-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .slide-menu {
@@ -2404,79 +2415,67 @@ main {
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  background: var(--bg);
   user-select: none;
+  overflow: hidden;
+
+  /* 三层背景叠加：底色 + 左上角主题光晕 + 右下角次光晕 */
+  background:
+    radial-gradient(ellipse 70% 55% at 18% 22%,
+      color-mix(in srgb, var(--accent) 9%, transparent),
+      transparent 70%),
+    radial-gradient(ellipse 55% 45% at 82% 78%,
+      color-mix(in srgb, var(--accent-2) 5%, transparent),
+      transparent 70%),
+    var(--bg);
+}
+
+/* 点阵背景纹理（轻量，烘托层次感） */
+.login-modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle,
+      color-mix(in srgb, var(--fg) 6%, transparent) 1px,
+      transparent 1px);
+  background-size: 26px 26px;
 }
 
 .login-card {
   width: 400px;
   max-width: 95%;
   background: var(--bg);
-  border-radius: 2em;
+  border-radius: 20px;
   padding: 36px 28px 30px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 0.85em;
   position: relative;
   align-items: center;
+  /* z-index: 1; */
+
+  box-shadow:
+    4px 4px 12px color-mix(in srgb, var(--card-shadow) 15%, transparent),
+    0 20px 56px color-mix(in srgb, var(--card-shadow) 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 7%, transparent);
 }
 
-/* 添加背景烟雾 */
-.login-card::before,
+/* 卡片底部环境光晕（向下散射，增强悬浮感） */
 .login-card::after {
   content: "";
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 400%;
-  height: 400%;
-  transform-origin: 50% 50%;
-  border-radius: 50%;
+  bottom: -28px;
+  left: 20%;
+  transform: translateX(-50%);
+  width: 65%;
+  height: 56px;
+  background: radial-gradient(ellipse,
+      color-mix(in srgb, var(--accent) 14%, transparent),
+      transparent 70%);
+  filter: blur(18px);
   pointer-events: none;
   z-index: -1;
-  background: radial-gradient(circle at 40% 40%,
-      var(--accent),
-      transparent 40%);
-  filter: blur(60px);
-  opacity: 0.5;
-  /* will-change: transform, opacity, filter; */
-}
-
-.login-card::before {
-  animation: swirlA 20s linear infinite;
-}
-
-.login-card::after {
-  animation: swirlB 26s linear infinite;
-}
-
-@keyframes swirlA {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg) translate(0px, 0px) scale(1.1);
-  }
-
-  50% {
-    transform: translate(-50%, -50%) rotate(180deg) translate(20px, -10px) scale(1.13);
-  }
-
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg) translate(0px, 0px) scale(1.05);
-  }
-}
-
-@keyframes swirlB {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg) translate(30px, 10px) scale(1.1);
-  }
-
-  50% {
-    transform: translate(-50%, -50%) rotate(180deg) translate(-10px, 20px) scale(1.13);
-  }
-
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg) translate(50px, -80px) scale(1.05);
-  }
 }
 
 .login-logo {
@@ -2490,6 +2489,12 @@ main {
   display: inline-block;
   width: fit-content;
   /* 容器宽度收缩到文字 */
+  line-height: 1;
+}
+
+.login-plus{
+  font-size: 1.2em;
+  vertical-align: super;
 }
 
 .login-card h3 {
@@ -2649,13 +2654,18 @@ main {
   min-width: 100%;
   display: flex;
   align-items: center;
-  /* 垂直居中 */
-  border: 1px solid rgba(133, 148, 146, 0.1);
+  border: 1px solid var(--border);
   border-radius: 1.5em;
-  background: var(--input-bg);
+  background: color-mix(in srgb, var(--input-bg) 20%, transparent);
   padding: 0 20px;
-  box-shadow: -1 var(--glass-shadow);
+  box-shadow: inset 0 0 12px color-mix(in srgb, var(--edit-shadow) 60%, transparent);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+
+.input-wrapper:hover {
+  box-shadow: inset 0 0 12px color-mix(in srgb, var(--edit-shadow-hover) 30%, transparent);
+}
+
 
 .login-input {
   flex: 1;
@@ -2679,6 +2689,7 @@ main {
   cursor: pointer;
   font-size: 16px;
   color: var(--muted-hard);
+  transition: color 0.15s;
 }
 
 /* 当需要显示时添加 .visible（JS 控制） */
@@ -2712,7 +2723,7 @@ main {
 .remember-hint {
   color: var(--muted);
   font-size: 12px;
-  opacity: 0.5;
+  opacity: 0.3;
 }
 
 .apikey-hint {
@@ -2721,17 +2732,33 @@ main {
   opacity: 0.3;
   text-align: left;
   margin-top: 4px;
+  display: none;
 }
+
+
+/* 登录按钮 */
+.login-actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 
 /* 登录按钮 */
 #login-button {
-  padding: 15px 25px;
-  margin: 16px 0 0 0;
+  padding: 13px 24px;
+  margin: 8px 0 0;
   font-weight: 600;
   transition: all 0.25s ease;
   box-shadow: var(--glass-shadow);
   font-size: 16px;
   border-radius: 2em;
+  border: 1px solid color-mix(in srgb, var(--border) 22%, transparent);
+  cursor: pointer;
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 6%, transparent);
+  transition: all 0.2s ease;
 }
 
 #login-button.btn:hover:not(:disabled) {
@@ -2758,14 +2785,16 @@ main {
 
 /* 登录框专属主题切换按钮（大屏顶栏隐藏后使用） */
 .login-theme-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: transparent;
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--fg);
   cursor: pointer;
   display: flex;
@@ -2795,11 +2824,6 @@ main {
     top: 24px;
     right: 24px;
   }
-}
-
-/* 小屏 header 版本角标（由 JS 从 #versionInline 同步） */
-.header-version-badge {
-  /* 继承 .version.btn 样式 */
 }
 
 /* ════════════════════════════════════════════════════════════
