@@ -2439,8 +2439,21 @@ main {
       color-mix(in srgb, var(--fg) 6%, transparent) 1px,
       transparent 1px);
   background-size: 26px 26px;
+  z-index: 0;
 }
 
+/* 星际连线粒子画布 */
+#login-cv {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  /* 夹在点阵和卡片之间 */
+}
+
+/* 保证卡片在粒子层之上 */
 .login-card {
   width: 400px;
   max-width: 95%;
@@ -2453,12 +2466,29 @@ main {
   gap: 0.85em;
   position: relative;
   align-items: center;
-  /* z-index: 1; */
+  z-index: 2;
 
   box-shadow:
     4px 4px 12px color-mix(in srgb, var(--card-shadow) 15%, transparent),
     0 20px 56px color-mix(in srgb, var(--card-shadow) 12%, transparent),
     inset 0 1px 0 color-mix(in srgb, #ffffff 7%, transparent);
+}
+
+/* 卡片右上角环境光晕（向右上方散射，增加立体悬浮感） */
+.login-card::before {
+  content: "";
+  position: absolute;
+  top: -28px;
+  left: 0px;
+  transform: translateX(50%);
+  width: 55%;
+  height: 50px;
+  background: radial-gradient(ellipse,
+      color-mix(in srgb, var(--accent-2) 14%, transparent),
+      transparent 70%);
+  filter: blur(18px);
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* 卡片底部环境光晕（向下散射，增强悬浮感） */
@@ -2478,6 +2508,24 @@ main {
   z-index: -1;
 }
 
+/* Logo 上下悬浮动画 (这个很清爽，建议保留) */
+.login-logo {
+  animation: logoFloat 5s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+
 .login-logo {
   display: flex;
   justify-content: center;
@@ -2492,7 +2540,7 @@ main {
   line-height: 1;
 }
 
-.login-plus{
+.login-plus {
   font-size: 1.2em;
   vertical-align: super;
 }

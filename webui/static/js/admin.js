@@ -2601,7 +2601,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       // span 只负责文字
       applyToSidebarVersionEls(el => {
-        el.textContent = 'Core '+currentV
+        el.textContent = 'Core ' + currentV
         if (isPre(currentV)) el.classList.add('is-pre')
       })
 
@@ -3388,16 +3388,120 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     });
   }
 
+  // === 1. 封装星际连线粒子动画 ===
+  function initLoginAnimation() {
+    const modal = document.getElementById('loginModal');
+    const cv = document.getElementById('login-cv');
+    const ctx = cv?.getContext('2d');
+
+    if (!cv || !ctx || !modal) return;
+
+    let W = 0, H = 0, P = [];
+    const N = 40, MD = 120; // 稍微增加粒子数量和连线阈值
+    let animFrameId = null;
+
+    const THEME_RGB = "14, 165, 160";
+
+    function initP() {
+      P = Array.from({ length: N }, () => ({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - .5) * .3, // 微调飘移速度
+        vy: (Math.random() - .5) * .3,
+        r: Math.random() * 2.0 + 1.5,   // 放大粒子半径，使其更明显
+        ba: Math.random() * 0.3 + 0.3, // 提升基础透明度至 20%~45% (原本只有 7%)
+        ph: Math.random() * Math.PI * 2
+      }));
+    }
+
+    function drawC(now, br) {
+      ctx.clearRect(0, 0, W, H);
+      const gb = .8 + .2 * br;
+
+      for (const p of P) {
+        p.x = ((p.x + p.vx) + W) % W;
+        p.y = ((p.y + p.vy) + H) % H;
+      }
+
+      ctx.lineWidth = 0.4; // 稍微加粗连线
+      for (let i = 0; i < N; i++) {
+        for (let j = i + 1; j < N; j++) {
+          const dx = P[i].x - P[j].x, dy = P[i].y - P[j].y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < MD) {
+            // 提升连线透明度最高到约 45%
+            ctx.strokeStyle = `rgba(${THEME_RGB}, ${(.9 * (1 - d / MD) * gb).toFixed(3)})`;
+            ctx.beginPath();
+            ctx.moveTo(P[i].x, P[i].y);
+            ctx.lineTo(P[j].x, P[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      for (const p of P) {
+        // 独立呼吸闪烁效果
+        const pa = p.ba * (.72 + .28 * Math.sin(now * .0011 + p.ph)) * gb;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${THEME_RGB}, ${pa.toFixed(2)})`;
+        ctx.fill();
+      }
+    }
+
+    const BREATH = 5000;
+    let t0 = null;
+
+    function loop(ts) {
+      // 性能优化：如果登录框隐藏，则跳过绘制但保持循环
+      if (modal.classList.contains('login-hidden') || modal.style.display === 'none') {
+        animFrameId = requestAnimationFrame(loop);
+        return;
+      }
+
+      if (!t0) t0 = ts;
+      const e = ts - t0;
+      const br = .5 - .5 * Math.cos(2 * Math.PI * e / BREATH);
+
+      drawC(e, br);
+      animFrameId = requestAnimationFrame(loop);
+    }
+
+    function resize() {
+      // 获取尺寸，防止隐藏时 offsetWidth 为 0，采用 innerWidth 兜底
+      W = cv.width = modal.offsetWidth || window.innerWidth;
+      H = cv.height = modal.offsetHeight || window.innerHeight;
+      initP();
+    }
+
+    // 暴露一个全局方法，以便验证失败重新显示 loginModal 时可唤醒重新计算宽高
+    window.wakeUpLoginAnimation = resize;
+
+    // 立即执行一次尺寸计算与循环
+    resize();
+    if (!animFrameId) {
+      animFrameId = requestAnimationFrame(loop);
+    }
+    window.addEventListener('resize', resize);
+  }
+
+  // 启动事件
   ; (async function bootstrap() {
-    // 优先使用 Wails GUI 注入的 apiKey（本地窗口模式，无需手动登录）；
-    // 其次读 sessionStorage（旧 /gui/enter 路由写入）；
-    // 最后读 localStorage（用户勾选"记住密钥"保存的 key）。
+    // 稳妥的初始化方式：兼容 module 延迟加载和正常加载
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initLoginAnimation);
+    } else {
+      initLoginAnimation();
+    }
+
+    // === 2. 原有的登录与认证核心逻辑 ===
     const wailsKey = window.__WAILS_GUI?.apiKey || null
     const sessionSaved = (() => { try { return sessionStorage.getItem('subscheck_session_key') } catch { return null } })()
     const localSaved = safeLS('subscheck_api_key')
     const saved = wailsKey || sessionSaved || localSaved
 
-    if (saved && els.apiKeyInput) els.apiKeyInput.value = saved
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    if (saved && apiKeyInput) apiKeyInput.value = saved
 
     bindControls()
     initGuiUpdateBridge()
@@ -3412,12 +3516,12 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           await loadAll()
           startPollers()
           showToast('自动登录成功', 'success')
-          // 初始化配置快速预览
+
           const qp = initQuickPreview(
             () => sessionKey,
             () => {
               if (editorMode === 'form') {
-                return collectConfigForm();           // 读取表单当前值
+                return collectConfigForm();
               } else {
                 const src = codeMirrorView?.state.doc.toString() || _rawConfigYaml;
                 try { return window.YAML.parse(src); } catch (e) { return null; }
@@ -3435,23 +3539,26 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       sessionKey = null
       safeLS('subscheck_api_key', null)
       try { sessionStorage.removeItem('subscheck_session_key') } catch { }
+
       showLogin(true)
       setAuthUI(false)
+
+      // 认证失败，登录框显示出来后，强制唤醒一次粒子动画计算宽高
+      if (window.wakeUpLoginAnimation) window.wakeUpLoginAnimation();
     }
-
-
 
     window.addEventListener('beforeunload', () => {
       stopPollers()
       if (codeMirrorView) codeMirrorView.destroy()
     })
-    // 页面加载后调用一次
+
     initConfigForm()
-    switchEditorMode('form')   // 确保初始状态正确（搜索按钮隐藏等）
+    switchEditorMode('form')
     initLogsCollapseBtn();
     window.showToast = showToast
     window.saveConfigWithValidation = saveConfigWithValidation
     window.loadConfigValidated = loadConfigValidated
     window.openInternalURL = openInternalURL
-  })()
+
+  })();
 })()

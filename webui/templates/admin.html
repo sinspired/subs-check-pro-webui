@@ -29,9 +29,13 @@
 </head>
 
 <body>
-  <!-- 登录框 -->
+  <!-- 登录窗口 -->
   <div id="loginModal" class="login-modal{{if .wailsGUI}} login-hidden{{end}}" role="dialog" aria-modal="true"
     aria-labelledby="loginTitle">
+
+    <!-- 星际连线粒子画布 -->
+    <canvas id="login-cv"></canvas>
+
     <div class="login-card" role="document">
       <!-- 登录框独立主题切换（大屏顶栏隐藏后补位） -->
       <button id="loginThemeToggle" class="login-theme-btn icon-btn" aria-label="切换主题" title="切换主题">
@@ -274,8 +278,8 @@
             <div class="list-item {{if not .wailsGUI}}login-hidden{{end}}" id="siderBarCheckupdate" title="检查 GUI 版本更新"
               style="cursor:pointer;">
               <span class="sb-icon-wrap">
-                <svg class="sidebar-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="15"
-                  height="15" fill="currentColor" stroke="none">
+                <svg class="sidebar-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                  width="15" height="15" fill="currentColor" stroke="none">
                   <path
                     d="M716.51 826h-46.6a23.75 23.75 0 0 1 0-47.49h46.45c108.16-0.69 196.15-89.25 196.15-197.42 0-102.48-76.83-187-178.72-196.54l-13.64-1.28-5.72-12.45a228.84 228.84 0 0 0-433.1 54.31l-3.16 17.44-17.62 1.93A167.18 167.18 0 0 0 111.49 611c0 92.38 75.15 167.53 167.53 167.53h61.55a23.75 23.75 0 1 1 0 47.49H279C160.46 826 64 729.52 64 611a215.09 215.09 0 0 1 174.19-211.16 276.32 276.32 0 0 1 513.48-61 244.94 244.94 0 0 1-11.41 485.83V826z">
                   </path>
