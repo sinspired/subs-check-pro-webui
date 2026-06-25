@@ -1630,7 +1630,8 @@
   color: var(--muted);
   cursor: pointer;
   border-radius: 6px;
-  font-size: 17px; /* 删除按钮大小 */
+  font-size: 17px;
+  /* 删除按钮大小 */
   line-height: 1;
   display: flex;
   align-items: center;
@@ -2387,4 +2388,19 @@ textarea.cfg-expandable-input:focus {
 
 .cfg-field:hover .cfg-url-count {
   opacity: 0.8;
+}
+
+/* 右侧按钮组：测试 + 折行，贴右对齐 */
+.cfg-label-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.cfg-notify-test-btn svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
 }

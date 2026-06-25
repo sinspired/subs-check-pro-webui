@@ -1926,6 +1926,9 @@ function mkField(fieldDef, value) {
   const isFull = ['url-list', 'chips', 'cron'].includes(fieldDef.type) || !!fieldDef.fullWidth;
   const row = el('div', { class: `cfg-field${isFull ? ' full-width' : ''}`, 'data-key': fieldDef.key });
 
+  // ── 提前声明，if/else 两个分支都能访问 ──
+  let labelRow = null;
+
   if (!isFull) {
     const labelCol = el('div', { class: 'cfg-label-col' });
     labelCol.appendChild(el('span', { class: 'cfg-label-text', textContent: fieldDef.label }));
@@ -1937,7 +1940,7 @@ function mkField(fieldDef, value) {
     row.appendChild(labelCol);
   } else {
     // url-list 需要在 label 右侧放折行按钮，先占位，ctrl 构建后再填入
-    const labelRow = el('div', { class: 'cfg-label-row' });
+    labelRow = el('div', { class: 'cfg-label-row' });  // const 改为赋值
     labelRow.appendChild(el('span', { class: 'cfg-label-text', textContent: fieldDef.label }));
 
     // system-proxy 专属：代理检测按钮
@@ -1968,39 +1971,100 @@ function mkField(fieldDef, value) {
   ctrlWrap.appendChild(ctrl);
   row.appendChild(ctrlWrap);
 
-  // url-list：将折行按钮插入 label 行右侧
+  // 从 ctrl（url-list DOM）读取当前所有非空输入
+  function getRecipients(ctrl) {
+    return [...ctrl.querySelectorAll('.cfg-url-item .cfg-url-input')]
+      .map(t => t.value.trim())
+      .filter(Boolean);
+  }
+
+  // url-list 通用逻辑：先把 toggle 放进 labelRow
   if (fieldDef.type === 'url-list') {
     const toggle = ctrl?._wrapToggle;
-    if (toggle) {
-      row.querySelector('.cfg-label-row')?.appendChild(toggle);
+
+    // 数量徽章
+    const countBadge = el('span', { class: 'cfg-url-count' });
+    const updateCount = () => {
+      const n = ctrl
+        ? [...ctrl.querySelectorAll('.cfg-url-item .cfg-url-input')]
+          .filter(t => t.value.trim() !== '').length
+        : 0;
+      countBadge.textContent = n;
+      countBadge.style.display = n > 0 ? '' : 'none';
+    };
+    updateCount();
+    ctrl?.addEventListener('input', updateCount);
+    new MutationObserver(updateCount).observe(ctrl, { childList: true, subtree: false });
+
+    const labelText = labelRow.querySelector('.cfg-label-text');
+    if (labelText) {
+      const group = el('span', { class: 'cfg-label-group' });
+      labelText.replaceWith(group);
+      group.append(labelText, countBadge);
     }
 
-    // ── 数量徽章 ──────────────────────────────────────────────
-    const labelRow = row.querySelector('.cfg-label-row');
-    if (labelRow) {
-      const countBadge = el('span', { class: 'cfg-url-count' });
+    // 右侧按钮容器：测试 + 折行
+    const btnGroup = el('div', { class: 'cfg-label-btn-group' });
 
-      const updateCount = () => {
-        const n = ctrl
-          ? [...ctrl.querySelectorAll('.cfg-url-item .cfg-url-input')]
-            .filter(t => t.value.trim() !== '').length
-          : 0;
-        countBadge.textContent = n;
-        countBadge.style.display = n > 0 ? '' : 'none';
+    if (fieldDef.key === 'recipient-url') {
+      const testBtn = el('button', {
+        type: 'button',
+        class: 'cfg-url-wrap-toggle cfg-notify-test-btn',
+        title: '发送测试通知',
+      });
+      testBtn.innerHTML = `${_SVG_NOTIFY_TEST}<span>测试</span>`;
+      testBtn.style.display = 'none';
+
+      const syncBtn = () => {
+        updateCount();
+        const n = [...ctrl.querySelectorAll('.cfg-url-item .cfg-url-input')]
+          .filter(t => t.value.trim() !== '').length;
+        testBtn.style.display = n > 0 ? '' : 'none';
       };
+      ctrl?.addEventListener('input', syncBtn);
+      new MutationObserver(syncBtn).observe(ctrl, { childList: true, subtree: false });
+      syncBtn();
 
-      updateCount();
-      ctrl?.addEventListener('input', updateCount);
-      new MutationObserver(updateCount).observe(ctrl, { childList: true, subtree: false });
+      testBtn.addEventListener('click', async () => {
+        const recipients = [...ctrl.querySelectorAll('.cfg-url-item .cfg-url-input')]
+          .map(t => t.value.trim()).filter(Boolean);
+        if (!recipients.length) return;
 
-      // ── 将 label-text 和 badge 包进同一容器，共同占据左侧 ──
-      const labelText = labelRow.querySelector('.cfg-label-text');
-      if (labelText) {
-        const group = el('span', { class: 'cfg-label-group' });
-        labelText.replaceWith(group);
-        group.append(labelText, countBadge);
-      }
+        testBtn.disabled = true;
+        testBtn.innerHTML = `${_SVG_SPIN}<span>发送中…</span>`;
+
+        const result = await window.sfetch('/api/notify/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipients }),
+        });
+
+        testBtn.disabled = false;
+        testBtn.innerHTML = `${_SVG_NOTIFY_TEST}<span>测试</span>`;
+
+        if (!result?.ok) {
+          window.showToast?.(result?.payload?.error ?? '发送失败', 'warn', 3000);
+          return;
+        }
+        const data = result.payload;
+        const results = data?.results ?? [];
+        const failed = results.filter(r => !r.ok);
+        if (data?.ok) {
+          window.showToast?.(`✓ 全部 ${results.length} 个渠道发送成功`, 'success', 3000);
+        } else {
+          window.showToast?.(
+            `⚠️ ${results.length - failed.length}/${results.length} 成功\n` +
+            failed.map(r => `${r.name}: ${r.error}`).join('\n'),
+            'warn', 5000
+          );
+        }
+      });
+
+      btnGroup.appendChild(testBtn);
     }
+
+    if (toggle) btnGroup.appendChild(toggle);
+    labelRow.appendChild(btnGroup);
   }
 
   // chips：将重置按钮插入 label 行右侧
