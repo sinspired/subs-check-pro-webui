@@ -1090,7 +1090,10 @@ function _attachValidator(row, fieldDef) {
 }
 
 function getRecipientIcon(text) {
-  const lower = (text ?? '').toLowerCase().trim();
+  // 去掉可能存在的前缀 "数字:alerts="
+  const cleaned = text.replace(/^\d+:alerts=/i, "");
+  const lower = (cleaned ?? '').toLowerCase().trim();
+
   if (lower.startsWith('tgram')) return Icons.telegram;
   if (lower.startsWith('twitter') || lower.startsWith('x://')) return Icons.x;
   if (lower.startsWith('whatsapp')) return Icons.whatsapp;
