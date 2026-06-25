@@ -3555,6 +3555,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     initConfigForm()
     switchEditorMode('form')
     initLogsCollapseBtn();
+    window.sfetch = sfetch;
     window.showToast = showToast
     window.saveConfigWithValidation = saveConfigWithValidation
     window.loadConfigValidated = loadConfigValidated

@@ -1812,6 +1812,109 @@ function renderHintBlock(fieldDef) {
   return wrap;
 }
 
+// _mkProxyTestBtn 代理检测按钮
+function _mkProxyTestBtn(getProxyVal) {
+  const wrap = el('div', { class: 'cfg-proxy-test-wrap' });
+
+  const btn = el('button', {
+    type: 'button',
+    class: 'cfg-proxy-test-btn',
+    title: '检测代理是否可用',
+  });
+  btn.innerHTML = `${_SVG_PROXY_TEST}<span>检测</span>`;
+
+  const badge = el('span', { class: 'cfg-proxy-test-badge' });
+  badge.style.display = 'none';
+
+  wrap.append(btn, badge);
+
+  // 可见性同步：direct 时隐藏整个按钮
+  // 等 DOM 构建完成后再绑定（labelRow 先于 ctrl 构建）
+  requestAnimationFrame(() => {
+    const row = wrap.closest('.cfg-field');
+    const inp = row?.querySelector(
+      `textarea[data-key="system-proxy"], input[data-key="system-proxy"]`
+    );
+    if (!inp) return;
+
+    const syncVisibility = () => {
+      const isDirect = inp.value.trim().toLowerCase() === 'direct';
+      wrap.style.display = isDirect ? 'none' : '';
+    };
+    inp.addEventListener('input', syncVisibility);
+    syncVisibility(); // 初始同步
+  });
+
+  // 状态渲染
+  function setState(state, msg = '') {
+    btn.disabled = state === 'loading';
+    btn.classList.remove('state-ok', 'state-error', 'state-warn');
+    badge.style.display = msg ? '' : 'none';
+    badge.className = 'cfg-proxy-test-badge';
+
+    switch (state) {
+      case 'loading':
+        btn.innerHTML = `${_SVG_SPIN}<span>检测中…</span>`;
+        break;
+      case 'ok':
+        btn.innerHTML = `${_SVG_PROXY_TEST}<span>检测</span>`;
+        btn.classList.add('state-ok');
+        badge.classList.add('badge-ok');
+        badge.textContent = msg;
+        break;
+      case 'warn':
+        btn.innerHTML = `${_SVG_PROXY_TEST}<span>检测</span>`;
+        btn.classList.add('state-warn');
+        badge.classList.add('badge-warn');
+        badge.textContent = msg;
+        break;
+      case 'error':
+        btn.innerHTML = `${_SVG_PROXY_TEST}<span>检测</span>`;
+        btn.classList.add('state-error');
+        badge.classList.add('badge-error');
+        badge.textContent = msg;
+        break;
+      default:
+        btn.innerHTML = `${_SVG_PROXY_TEST}<span>检测</span>`;
+        badge.style.display = 'none';
+    }
+  }
+
+  // 点击处理
+  btn.addEventListener('click', async () => {
+    const proxyVal = getProxyVal(); // 空值 = 自动检测，具体地址 = 直接检测
+    setState('loading');
+
+    const result = await window.sfetch('/api/proxy/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proxy: proxyVal }),
+    });
+
+    if (!result?.ok) {
+      const msg = result?.payload?.error ?? result?.error ?? `接口错误 HTTP ${result?.status}`;
+      setState('error', String(msg).slice(0, 50));
+      return;
+    }
+
+    const data = result.payload;
+    if (data?.ok) {
+      // 空值（自动）时：在徽章里显示实际检测的代理地址
+      const label = (proxyVal === '' && data.proxy_used)
+        ? `✓ ${data.proxy_used}  ${data.latency_ms} ms`
+        : `✓ ${data.latency_ms} ms`;
+      badge.title = data.proxy_used ?? '';
+      setState('ok', label);
+    } else {
+      const short = (data?.error ?? '未知错误').slice(0, 50);
+      badge.title = data?.error ?? '';
+      setState('error', `✗ ${short}`);
+    }
+  });
+
+  return wrap;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    字段行构建
 ═══════════════════════════════════════════════════════════════ */
@@ -1836,6 +1939,17 @@ function mkField(fieldDef, value) {
     // url-list 需要在 label 右侧放折行按钮，先占位，ctrl 构建后再填入
     const labelRow = el('div', { class: 'cfg-label-row' });
     labelRow.appendChild(el('span', { class: 'cfg-label-text', textContent: fieldDef.label }));
+
+    // system-proxy 专属：代理检测按钮
+    if (fieldDef.key === 'system-proxy') {
+      const testBtn = _mkProxyTestBtn(() => {
+        // 读取当前输入框的值（textarea）
+        const inp = row.querySelector(`textarea[data-key="system-proxy"], input[data-key="system-proxy"]`);
+        return inp?.value?.trim() ?? '';
+      });
+      labelRow.appendChild(testBtn);
+    }
+
     row.appendChild(labelRow);
   }
 

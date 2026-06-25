@@ -24,6 +24,22 @@ const _SVG_CLOCK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const _SVG_MODE_FORM = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="flex-shrink:0"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg>`;
 const _SVG_MODE_YAML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="flex-shrink:0"><polyline points="7 8 3 12 7 16"/><line x1="13" y1="6" x2="11" y2="18"/><polyline points="17 8 21 12 17 16"/></svg>`;
 
+// 探测图标
+const _SVG_PROXY_TEST = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M1.5 8.5a13 13 0 0 1 21 0"/>
+  <path d="M5 12a9 9 0 0 1 14 0"/>
+  <path d="M8.5 15.5a5 5 0 0 1 7 0"/>
+  <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/>
+</svg>`;
+
+// 旋转图标
+const _SVG_SPIN = `<svg class="cfg-spin" viewBox="0 0 24 24" width="11" height="11"
+  fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+  <path d="M12 2a10 10 0 0 1 10 10" opacity="0.25"/>
+  <path d="M12 2a10 10 0 0 1 10 10"/>
+</svg>`;
+
 // --- 通知渠道图标定义 ---
 const Icons = {
   telegram: '<svg viewBox="0 0 22 22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.48-1.02-2.42-1.63-1.09-.72-.38-1.11.24-1.74.14-.15 2.57-2.35 2.62-2.54.01-.02.01-.05 0-.07-.01-.02-.04-.03-.06-.03-.02 0-.2.12-.56.36L8.4 12.4c-.4.27-.78.41-1.15.4-.41-.01-1.2-.23-1.79-.42-.72-.24-.96-.37-.92-.78.02-.21.32-.43.89-.66 3.5-1.52 5.83-2.53 6.99-3.01 3.33-1.39 4.02-1.66 4.47-1.66.1 0 .32.02.47.14.12.1.16.23.17.33 0 .1 0 .23-.01.36z"/></svg>',
