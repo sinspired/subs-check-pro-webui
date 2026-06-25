@@ -2355,3 +2355,36 @@ textarea.cfg-expandable-input:focus {
   animation: cfg-spin 0.8s linear infinite;
   transform-origin: center;
 }
+
+/* label-text + 数量徽章的左侧分组容器 */
+.cfg-label-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+/* ── url-list 数量徽章 ── */
+.cfg-url-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 99px;
+  font-size: 9.5px;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--fg) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fg) 30%, transparent);
+  opacity: 0.55;
+  user-select: none;
+  transition: opacity 0.15s;
+}
+
+.cfg-field:hover .cfg-url-count {
+  opacity: 0.8;
+}

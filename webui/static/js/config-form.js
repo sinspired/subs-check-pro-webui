@@ -1970,10 +1970,36 @@ function mkField(fieldDef, value) {
 
   // url-list：将折行按钮插入 label 行右侧
   if (fieldDef.type === 'url-list') {
-    // 加空值防御，避免 ctrl 被包裹或重构后静默失效
     const toggle = ctrl?._wrapToggle;
     if (toggle) {
       row.querySelector('.cfg-label-row')?.appendChild(toggle);
+    }
+
+    // ── 数量徽章 ──────────────────────────────────────────────
+    const labelRow = row.querySelector('.cfg-label-row');
+    if (labelRow) {
+      const countBadge = el('span', { class: 'cfg-url-count' });
+
+      const updateCount = () => {
+        const n = ctrl
+          ? [...ctrl.querySelectorAll('.cfg-url-item .cfg-url-input')]
+            .filter(t => t.value.trim() !== '').length
+          : 0;
+        countBadge.textContent = n;
+        countBadge.style.display = n > 0 ? '' : 'none';
+      };
+
+      updateCount();
+      ctrl?.addEventListener('input', updateCount);
+      new MutationObserver(updateCount).observe(ctrl, { childList: true, subtree: false });
+
+      // ── 将 label-text 和 badge 包进同一容器，共同占据左侧 ──
+      const labelText = labelRow.querySelector('.cfg-label-text');
+      if (labelText) {
+        const group = el('span', { class: 'cfg-label-group' });
+        labelText.replaceWith(group);
+        group.append(labelText, countBadge);
+      }
     }
   }
 
