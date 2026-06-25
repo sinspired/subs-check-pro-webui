@@ -138,7 +138,7 @@ const SCHEMA = [
           {
             key: 'threshold', label: '节点乱序', type: 'select', numericOptions: true,
             selectWidth: '500px',
-            hint: '按网段智能乱序',
+            hint: '按网段智能乱序，数值越小顺序越乱',
             options: [
               { value: '1.00', label: '1.00 — /32' },
               { value: '0.75', label: '0.75 — /24' },
