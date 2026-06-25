@@ -9,7 +9,7 @@
 
 # ✨ 现代 WebUI 管理界面
 
-![login](https://github.com/sinspired/subs-check-pro/raw/main/./doc/images/login-white.png)
+![login](https://github.com/sinspired/subs-check-pro/raw/main/./doc/images/login.png)
 ![WebUI](https://github.com/sinspired/subs-check-pro/raw/main/./doc/images/WebUI.png)
 
 # 🖥️ Wails v3 现代化桌面客户端
