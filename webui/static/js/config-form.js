@@ -232,7 +232,7 @@ const SCHEMA = [
           { key: 'rename-node', label: '重命名节点', type: 'toggle', hint: '根据节点 IP 归属地自动重命名' },
           {
             key: 'enhanced-tag', label: '增强位置标签', type: 'toggle', hint: '添加 KR¹-US⁰，SG² 类角标',
-            links: [{ label: '标签说明', href: 'https://github.com/sinspired/subs-check-pro/blob/main/config/config.yaml.example#L248-L254', icon: 'github' }],
+            links: [{ label: '标签说明', href: 'https://github.com/sinspired/subs-check-pro/blob/main/config/config.yaml.example#L260-L266', icon: 'github' }],
           },
           { key: 'isp-check', label: 'ISP 类型检测', type: 'toggle', hint: '检测 isp 类型，比如: [原生|住宅]、[广播|机房]' },
           { key: 'drop-bad-cf-nodes', label: '丢弃 CF 不可达', type: 'toggle', hint: '可能误杀，谨慎开启' },
