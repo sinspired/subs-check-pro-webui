@@ -571,7 +571,7 @@ const placeholderMatcher = new MatchDecorator({
       '(?<=^[ \\t]*threshold:\\s*["\']?)(1.00|0.75|0.50|0.25|1|0.5)(?=["\']?)',
 
       // 列表项：- tgram / dingtalk / mailto
-      '(?<=^[ \\t]*-\\s*["\']?)(bark|ntfy|tgram|x|twitter|line|slack|qq|discord|whatsapp|dingtalk|wecom|feishu|mailto)(?=["\']?\\b)',
+      '(?<=^[ \\t]*-\\s*["\']?)(bark|ntfy|tgram|x|twitter|line|slack|qq|discord|whatsapp|dingtalk|wecom|wechat|feishu|mailto)(?=["\']?\\b)',
 
       // // 注释内的占位符 {xxx},避免小白误解
       // '(?<=#.*?)(\{[A-Za-z0-9_-]+\})(?=.*$)',

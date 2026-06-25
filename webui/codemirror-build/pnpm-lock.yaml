@@ -12,8 +12,8 @@ importers:
         specifier: ^6.20.3
         version: 6.20.3
       '@codemirror/commands':
-        specifier: ^6.10.3
-        version: 6.10.3
+        specifier: ^6.10.4
+        version: 6.10.4
       '@codemirror/gutter':
         specifier: ^0.19.9
         version: 0.19.9
@@ -24,17 +24,17 @@ importers:
         specifier: ^6.9.7
         version: 6.9.7
       '@codemirror/search':
+        specifier: ^6.7.1
+        version: 6.7.1
+      '@codemirror/state':
         specifier: ^6.7.0
         version: 6.7.0
-      '@codemirror/state':
-        specifier: ^6.6.0
-        version: 6.6.0
       '@codemirror/theme-one-dark':
         specifier: ^6.1.3
         version: 6.1.3
       '@codemirror/view':
-        specifier: ^6.43.1
-        version: 6.43.1
+        specifier: ^6.43.2
+        version: 6.43.2
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -51,8 +51,8 @@ packages:
   '@codemirror/autocomplete@6.20.3':
     resolution: {integrity: sha512-tlosUqb+3BbxCxZdu4tKeRghPFC+QM7q4X5YhKV2eCmPG+1r2F3f4AaSz5sCrFqUtX4Jh20VFTKecl16MgiV9g==}
 
-  '@codemirror/commands@6.10.3':
-    resolution: {integrity: sha512-JFRiqhKu+bvSkDLI+rUhJwSxQxYb759W5GBezE8Uc8mHLqC9aV/9aTC7yJSqCtB3F00pylrLCwnyS91Ap5ej4Q==}
+  '@codemirror/commands@6.10.4':
+    resolution: {integrity: sha512-Ryk9y9T0FFVF0cUGhAknveAyUOl/A1qReTFi+qPKtOh2Z9F4AUBz3XOrYD4ZEgZirdugVzHvd/2/Wcwy5OliTg==}
 
   '@codemirror/gutter@0.19.9':
     resolution: {integrity: sha512-PFrtmilahin1g6uL27aG5tM/rqR9DZzZYZsIrCXA5Uc2OFTFqx4owuhoU9hqfYxHp5ovfvBwQ+txFzqS4vog6Q==}
@@ -71,8 +71,8 @@ packages:
     resolution: {integrity: sha512-V8YUuOvK+ew87Xem+71nKcqu1SXd5QROMRLMS/ljT5/3MCxtgrRie1Cvild0G/Z2f1fpWxzX78V0U4jjXBorBQ==}
     deprecated: As of 0.20.0, this package has been merged into @codemirror/state
 
-  '@codemirror/search@6.7.0':
-    resolution: {integrity: sha512-ZvGm99wc/s2cITtMT15LFdn8aH/aS+V+DqyGq/N5ZlV5vWtH+nILvC2nw0zX7ByNoHHDZ2IxxdW38O0tc5nVHg==}
+  '@codemirror/search@6.7.1':
+    resolution: {integrity: sha512-uMe5UO6PamJtSHrXhhHOzSX3ReWtiJrva6GnPMwSOrZtiExb5X5eExhr2OUZQVvdxPsKpY3Ro2mFbQadpPWmHA==}
 
   '@codemirror/state@0.19.0':
     resolution: {integrity: sha512-yS4oUzaYggUCsDA5cVqMGFNe2CjA2x1YQp68A8/Nnczxr5PctIPuzSTUfBQCi/IKNRouJxMr+gDPweEErJi7fw==}
@@ -80,8 +80,8 @@ packages:
   '@codemirror/state@0.19.3':
     resolution: {integrity: sha512-mMCOQWB4Kua/XPYRsY95IwX+uDcoD+n4G0FTDi0jNJHYoyWTkPpHjT6zt6mfl4kpqwqBJ8/WQBuztvpstblvvQ==}
 
-  '@codemirror/state@6.6.0':
-    resolution: {integrity: sha512-4nbvra5R5EtiCzr9BTHiTLc+MLXK2QGiAVYMyi8PkQd3SR+6ixar/Q/01Fa21TBIDOZXgeWV4WppsQolSreAPQ==}
+  '@codemirror/state@6.7.0':
+    resolution: {integrity: sha512-Zbl9NyscLMZkfXPQnNAIIAFftidrA1UbcJEIMp24C0Bukc2I5T8wJS0wsXYsnDOqCFJUeJ1BITGNs5CqPDSmSg==}
 
   '@codemirror/text@0.19.6':
     resolution: {integrity: sha512-T9jnREMIygx+TPC1bOuepz18maGq/92q2a+n4qTqObKwvNMg+8cMTslb8yxeEDEq7S3kpgGWxgO1UWbQRij0dA==}
@@ -93,8 +93,8 @@ packages:
   '@codemirror/view@0.19.23':
     resolution: {integrity: sha512-CE6wjyo6gczS9+/PVgJuFA7+Z4IYQoqwZWeDU1epFb+oN83BGyDZqna9ICnkz0geVlKqCUcbGk6PES4Eyt8/oA==}
 
-  '@codemirror/view@6.43.1':
-    resolution: {integrity: sha512-+BIjw/AG3tDQ4pJgTLPYdAW25eDE66YsvM4LKyVPgGzVgZ4a9Wj1SRX8kPVKgBDdPt8oHtZ15F0qx7p0oOHdHw==}
+  '@codemirror/view@6.43.2':
+    resolution: {integrity: sha512-8kU6WNRYBKV9Sw3cxNz+uSvUvx3tt+1qgupGFPubnbLFDHOgh5qQdIGmXcD7bkA/PROK6LDKVhKMpcY7H++Amg==}
 
   '@esbuild/aix-ppc64@0.28.1':
     resolution: {integrity: sha512-Svl7tq8k/08+p6CXPpRjQ1fKX+1odH/BQbb48fV6fj3CWHhsoIOoY87w1oHXm0qEpkIK3ZfVgp0hed3XBXzXMQ==}
@@ -294,15 +294,15 @@ snapshots:
   '@codemirror/autocomplete@6.20.3':
     dependencies:
       '@codemirror/language': 6.12.3
-      '@codemirror/state': 6.6.0
-      '@codemirror/view': 6.43.1
+      '@codemirror/state': 6.7.0
+      '@codemirror/view': 6.43.2
       '@lezer/common': 1.5.2
 
-  '@codemirror/commands@6.10.3':
+  '@codemirror/commands@6.10.4':
     dependencies:
       '@codemirror/language': 6.12.3
-      '@codemirror/state': 6.6.0
-      '@codemirror/view': 6.43.1
+      '@codemirror/state': 6.7.0
+      '@codemirror/view': 6.43.2
       '@lezer/common': 1.5.2
 
   '@codemirror/gutter@0.19.9':
@@ -315,7 +315,7 @@ snapshots:
     dependencies:
       '@codemirror/autocomplete': 6.20.3
       '@codemirror/language': 6.12.3
-      '@codemirror/state': 6.6.0
+      '@codemirror/state': 6.7.0
       '@lezer/common': 1.5.2
       '@lezer/highlight': 1.2.3
       '@lezer/lr': 1.4.10
@@ -323,8 +323,8 @@ snapshots:
 
   '@codemirror/language@6.12.3':
     dependencies:
-      '@codemirror/state': 6.6.0
-      '@codemirror/view': 6.43.1
+      '@codemirror/state': 6.7.0
+      '@codemirror/view': 6.43.2
       '@lezer/common': 1.5.2
       '@lezer/highlight': 1.2.3
       '@lezer/lr': 1.4.10
@@ -332,18 +332,18 @@ snapshots:
 
   '@codemirror/lint@6.9.7':
     dependencies:
-      '@codemirror/state': 6.6.0
-      '@codemirror/view': 6.43.1
+      '@codemirror/state': 6.7.0
+      '@codemirror/view': 6.43.2
       crelt: 1.0.6
 
   '@codemirror/rangeset@0.19.9':
     dependencies:
       '@codemirror/state': 0.19.0
 
-  '@codemirror/search@6.7.0':
+  '@codemirror/search@6.7.1':
     dependencies:
-      '@codemirror/state': 6.6.0
-      '@codemirror/view': 6.43.1
+      '@codemirror/state': 6.7.0
+      '@codemirror/view': 6.43.2
       crelt: 1.0.6
 
   '@codemirror/state@0.19.0':
@@ -354,7 +354,7 @@ snapshots:
     dependencies:
       '@codemirror/text': 0.19.6
 
-  '@codemirror/state@6.6.0':
+  '@codemirror/state@6.7.0':
     dependencies:
       '@marijn/find-cluster-break': 1.0.2
 
@@ -363,8 +363,8 @@ snapshots:
   '@codemirror/theme-one-dark@6.1.3':
     dependencies:
       '@codemirror/language': 6.12.3
-      '@codemirror/state': 6.6.0
-      '@codemirror/view': 6.43.1
+      '@codemirror/state': 6.7.0
+      '@codemirror/view': 6.43.2
       '@lezer/highlight': 1.2.3
 
   '@codemirror/view@0.19.23':
@@ -375,9 +375,9 @@ snapshots:
       style-mod: 4.1.3
       w3c-keyname: 2.2.8
 
-  '@codemirror/view@6.43.1':
+  '@codemirror/view@6.43.2':
     dependencies:
-      '@codemirror/state': 6.6.0
+      '@codemirror/state': 6.7.0
       crelt: 1.0.6
       style-mod: 4.1.3
       w3c-keyname: 2.2.8
@@ -481,12 +481,12 @@ snapshots:
   codemirror@6.0.2:
     dependencies:
       '@codemirror/autocomplete': 6.20.3
-      '@codemirror/commands': 6.10.3
+      '@codemirror/commands': 6.10.4
       '@codemirror/language': 6.12.3
       '@codemirror/lint': 6.9.7
-      '@codemirror/search': 6.7.0
-      '@codemirror/state': 6.6.0
-      '@codemirror/view': 6.43.1
+      '@codemirror/search': 6.7.1
+      '@codemirror/state': 6.7.0
+      '@codemirror/view': 6.43.2
 
   crelt@1.0.6: {}
 

@@ -1098,7 +1098,7 @@ function getRecipientIcon(text) {
   if (lower.startsWith('discord')) return Icons.discord;
   if (lower.startsWith('bark')) return Icons.bark;
   if (lower.startsWith('dingtalk')) return Icons.dingtalk;
-  if (lower.startsWith('wecombot')) return Icons.wecombot;
+  if (lower.startsWith('wecombot') || lower.startsWith('wechat')) return Icons.wecombot;
   if (lower.startsWith('qq')) return Icons.qq;
   if (lower.startsWith('feishu')) return Icons.feishu;
   if (lower.startsWith('ntfy')) return Icons.ntfy;
