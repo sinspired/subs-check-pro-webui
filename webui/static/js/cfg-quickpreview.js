@@ -13,22 +13,6 @@ const PREVIEW_GROUPS = [
     items: [
       { key: 'github-proxy', label: 'GitHub 代理', fmt: v => v || null, warnIfEmpty: '未配置，国内拉取 GitHub 订阅易超时' },
       { key: 'github-token', label: 'GitHub 密钥', fmt: v => v.trim().length >= 20 || null, warnIfEmpty: '未配置，拉取 GitHub 链接易触发速率限制' },
-      { key: 'recipient-url', label: '通知渠道', fmt: v => Array.isArray(v) ? v.filter(Boolean).length + ' 个' : (v ? '已配置' : null), warnIfEmpty: '未配置，检测结果无法推送' },
-      { key: 'media-check', label: '流媒体检测', fmt: v => v !== false ? '开启' : '关闭' },
-      { key: 'keep-success-proxies', label: '保留成功节点', fmt: v => v !== false ? '开启' : '关闭', warnIfFalse: '关闭后上游更新可能清空可用节点' },
-      { key: 'speed-test-url', label: '测速地址', fmt: v => v || null, warnIfEmpty: '未配置，测速功能关闭' },
-    ],
-  },
-  {
-    title: '并发 & 速度',
-    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
-    items: [
-      { key: 'alive-concurrent', label: '测活并发', fmt: v => v > 0 ? String(v) : '自动' },
-      { key: 'speed-concurrent', label: '测速并发', fmt: v => v > 0 ? String(v) : '自动' },
-      { key: 'min-speed', label: '最低测速', fmt: v => v > 0 ? v + ' KB/s' : '未设置', warnIfZero: '未设置，极慢节点均会保留' },
-      { key: 'download-timeout', label: '测速超时', fmt: v => v > 0 ? v + ' s' : '未设置', warnIfZero: '未设置，测速可能阻塞' },
-      { key: 'check-interval', label: '检测间隔', fmt: (v, cfg) => cfg['cron-expression'] ? ('cron: ' + cfg['cron-expression']) : (v > 0 ? v + ' 分钟' : '未设置') },
-      
       // 解析批次与去重释放逻辑
       {
         key: 'subs-parse-batch',
@@ -66,7 +50,36 @@ const PREVIEW_GROUPS = [
           if (n <= 500000) return { level: 'ok', msg: `阈值 ${n}，每获取到该数量节点释放一次内存` };
           return { level: 'warn', msg: `阈值 ${n} 较高，释放间隔变长，请关注内存占用` };
         }
-      }
+      },
+      {
+        key: 'memory-limit-mb',
+        label: '内存上限',
+        fmt: v => (v > 0 ? `${v} MB` : null),
+        optional: true,
+        warnIfEmpty: '未设置，程序按系统内存 ×75% 自动决定；内存充裕时建议显式设为 2048 MB 以上',
+      },
+      {
+        key: 'gc-percent',
+        label: 'GC 阈值',
+        fmt: v => (v > 0 ? String(v) : null),
+        optional: true,
+      },
+      { key: 'recipient-url', label: '通知渠道', fmt: v => Array.isArray(v) ? v.filter(Boolean).length + ' 个' : (v ? '已配置' : null), warnIfEmpty: '未配置，检测结果无法推送' },
+
+    ],
+  },
+  {
+    title: '并发 & 速度',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+    items: [
+      { key: 'alive-concurrent', label: '测活并发', fmt: v => v > 0 ? String(v) : '自动' },
+      { key: 'speed-concurrent', label: '测速并发', fmt: v => v > 0 ? String(v) : '自动' },
+      { key: 'min-speed', label: '最低测速', fmt: v => v > 0 ? v + ' KB/s' : '未设置', warnIfZero: '未设置，极慢节点均会保留' },
+      { key: 'download-timeout', label: '测速超时', fmt: v => v > 0 ? v + ' s' : '未设置', warnIfZero: '未设置，测速可能阻塞' },
+      { key: 'check-interval', label: '检测间隔', fmt: (v, cfg) => cfg['cron-expression'] ? ('cron: ' + cfg['cron-expression']) : (v > 0 ? v + ' 分钟' : '未设置') },
+      { key: 'media-check', label: '流媒体检测', fmt: v => v !== false ? '开启' : '关闭' },
+      { key: 'keep-success-proxies', label: '保留成功节点', fmt: v => v !== false ? '开启' : '关闭', warnIfFalse: '关闭后上游更新可能清空可用节点' },
+      { key: 'speed-test-url', label: '测速地址', fmt: v => v || null, warnIfEmpty: '未配置，测速功能关闭' },
     ],
   },
   {
@@ -134,7 +147,7 @@ function _renderCard(group, cfg) {
           if (result.level === 'warn') statusIcon = ICON_WARN;
           else if (result.level === 'ok') statusIcon = ICON_OK; // 修复原本只有 warn/info 状态的问题
           else statusIcon = ICON_INFO;
-          
+
           statusCls = result.level;
           tooltip = result.msg;
         }

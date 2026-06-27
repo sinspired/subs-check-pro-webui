@@ -100,22 +100,39 @@ const SCHEMA = [
             hint: '拉取订阅的并发数；并作为自动并发的计算基准'
           },
           {
-            key: 'subs-parse-batch',
-            label: '解析基准',
-            type: 'number', min: 0, max: 100000, placeholder: '5000',
-            hint: '解析订阅的基准批次大小，达到该批次会进入一次去重队列'
-          },
-          {
-            key: 'subs-dedupe-batch',
-            label: '去重基准',
-            type: 'number', min: 0, max: 500000, placeholder: '100000',
-            hint: '获取到该数量的节点就进行一次去重，释放内存'
-          },
-          {
             key: 'github-token', label: ' GitHub 密钥', type: 'password', fullWidth: true, placeholder: 'GITHUB_TOKEN', hint: '用来提高订阅拉取成功率，提升 GitHub 速率限制',
             links: [
               { label: '查看文档', href: 'https://docs.github.com/zh/actions/concepts/security/github_token', icon: 'github' },
               { label: '创建密钥', href: 'https://github.com/settings/personal-access-tokens', icon: 'github' }],
+          },
+        ],
+      },
+      {
+        title: '内存管理',
+        fields: [
+          {
+            key: 'subs-parse-batch',
+            label: '解析批次',
+            type: 'number', min: 0, max: 100000, placeholder: '3000',
+            hint: '解析到该数量节点后进入一次去重队列，小内存设备建议 500–3000'
+          },
+          {
+            key: 'subs-dedupe-batch',
+            label: '去重阈值',
+            type: 'number', min: 0, max: 500000, placeholder: '30000',
+            hint: '获取到该数量的节点就进行一次去重，释放内存'
+          },
+          {
+            key: 'memory-limit-mb',
+            label: '内存上限 (MB)',
+            type: 'number', min: 0, max: 102400, placeholder: '0',
+            hint: '运行时软内存上限；0 = 自动',
+          },
+          {
+            key: 'gc-percent',
+            label: 'GC 阈值',
+            type: 'number', min: 0, max: 1000, placeholder: '70',
+            hint: '值越小，内存回收越频繁，CPU 占用越高；0 = 100',
           },
         ],
       },
@@ -680,6 +697,27 @@ const FIELD_VALIDATORS = {
   'media-check-timeout': v => { if (Number(v) === 0) return { level: 'warn', msg: '未设置，默认为 10s' }; if (Number(v) < 5) return { level: 'warn', msg: '媒体解锁超时太小，可能无法获取结果' }; if (Number(v) > 15) return { level: 'warn', msg: '媒体解锁检测超时太高，建议 5-15 秒' }; return null; },
 
   'gc-threshold': v => { const n = Number(v); if (n === 0) return { level: 'info', msg: `默认阈值 20000` }; if (n > 0 && n < 10000) return { level: 'warn', msg: `阈值 ${n}太低，将导致频繁内存回收，增加 CPU 压力` }; if (n >= 10000 && n <= 100000) return { level: 'info', msg: `阈值 ${n} 适合中等数量订阅池` }; if (n > 100000) return { level: 'warn', msg: `阈值 ${n} 较高，请关注运行时内存占用` }; return null; },
+
+  'memory-limit-mb': v => {
+    const n = Number(v);
+    if (!n || n <= 0) return { level: 'info', msg: '0 = 自动：Docker 取 cgroup 限制 ×75%，物理机取系统内存 ×75%' };
+    if (n < 256) return { level: 'warn', msg: `${n} MB 过小，极易触发 OOM，建议至少 512 MB` };
+    if (n <= 512) return { level: 'info', msg: `${n} MB 偏小，适合 OpenWrt / 低内存 VPS；内存允许的话建议调至 1024–2048 MB` };
+    if (n <= 1024) return { level: 'info', msg: `${n} MB，如设备内存 ≥ 4 GB，建议调至 2048–4096 MB 以减少 GC 压力` };
+    if (n <= 4096) return { level: 'ok', msg: `软内存上限 ${n} MB，适合大多数家庭服务器和 VPS` };
+    if (n <= 32768) return { level: 'ok', msg: `软内存上限 ${n} MB，适合大型订阅池或高并发场景` };
+    return { level: 'info', msg: `软内存上限 ${n} MB，请确认系统物理内存充足` };
+  },
+
+  'gc-percent': v => {
+    const n = Number(v);
+    if (!n || n <= 0) return { level: 'info', msg: '0 = 使用 Go 默认值 100；内存充裕时可设为 100–200 以减少 GC 开销' };
+    if (n < 30) return { level: 'warn', msg: `${n} 过小，GC 极其频繁，CPU 开销明显增加` };
+    if (n <= 70) return { level: 'info', msg: `${n}：GC 较积极，适合低内存设备；内存充裕的话建议调至 100–150` };
+    if (n <= 100) return { level: 'ok', msg: `${n}：接近 Go 默认值，内存与 CPU 开销平衡` };
+    if (n <= 200) return { level: 'ok', msg: `${n}：GC 频率适度降低，内存充裕时的推荐值` };
+    return { level: 'warn', msg: `${n} 偏高，堆膨胀空间过大，内存峰值可能明显偏高` };
+  },
 
   // 基础网络与路径校验
   'system-proxy': v => {
