@@ -492,7 +492,7 @@ const SCHEMA = [
       {
         title: '覆写规则 (Sub-Store)',
         fields: [
-          { key: 'mihomo-overwrite-url', label: 'Mihomo 覆写 URL', type: 'text', fullWidth: true, placeholder: 'http://127.0.0.1:8199/Sinspired_Rules_CDN.yaml', hint: '用于生成带指定规则的 mihomo/clash.meta 订阅链接', },
+          { key: 'mihomo-overwrite-url', label: 'Mihomo 覆写 URL', type: 'text', fullWidth: true, placeholder: 'http://127.0.0.1:8199/Sinspired_Rules_CDN.yaml', hint: '用于生成带指定规则的 mihomo/clash.meta 订阅链接', links: [{ label: '内置文件服务', href: '/files', icon: 'files' }], },
         ],
       },
       {
