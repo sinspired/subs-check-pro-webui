@@ -409,6 +409,7 @@ const SCHEMA = [
             key: 'node-loc',
             label: '地理位置',
             type: 'url-list',
+            placeholder: 'US',
             hint: '根据节点归属地进行筛选，留空=全部；支持两位代码（CN、US）',
           }
         ]
@@ -1720,7 +1721,7 @@ function mkUrlList(field, values) {
     const inp = el('textarea', {
       class: 'cfg-input cfg-url-input',
       rows: '1',
-      placeholder: 'https://',
+      placeholder: field.placeholder ?? 'https://', // 优先使用 SCHEMA 定义的 placeholder，没有则回退 https://
       spellcheck: 'false',
       autocomplete: 'off',
       autocorrect: 'off',
