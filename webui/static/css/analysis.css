@@ -1445,11 +1445,6 @@ h1 svg {
 }
 
 @media (max-width: 540px) {
-  .proto-donut-wrap {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .proto-donut-svg {
     display: none;
   }
@@ -2614,7 +2609,7 @@ code {
 
 /* ── ≥721px：显示侧边栏品牌块和底部操作，隐藏 topbar ── */
 @media (min-width: 721px) {
-  .sidebar-brand{
+  .sidebar-brand {
     display: flex;
   }
 
