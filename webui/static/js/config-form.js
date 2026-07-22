@@ -45,7 +45,7 @@ function _editorW() { return (window.innerWidth - SIDEBAR_W - LAYOUT_GAPS) / 2; 
 function _canShowSplitBtn() { return _editorW() >= MIN_PANEL_W_SHOW * 2; }
 function _canSplit() { return _editorW() >= MIN_PANEL_W_AUTO * 2; }
 
-/* ═══════════════════════════ 迷你协议字典 (用于配置项 Hover) ═══════════════════════════ */
+/* ═══════════════════════════ 迷你字典 (用于配置项 Hover) ═══════════════════════════ */
 const MINI_PROTO_INFO = {
   vless: { name: 'VLESS', desc: '当前跨境代理的首选协议，配合 REALITY 与 Vision 隐蔽性极高。', level: '极低', color: 'var(--success)' },
   vmess: { name: 'VMess', desc: '经典协议，生态成熟，但原版易被探测，需依赖外层伪装。', level: '中高', color: 'var(--warning)' },
@@ -71,6 +71,18 @@ const MINI_PROTO_INFO = {
   trusttunnel: { name: 'TrustTunnel', desc: '小众高性能隧道协议，支持底层复用。', level: '未知', color: 'var(--muted)' }
 };
 
+const MINI_PLATFORM_INFO = {
+  iprisk: { name: 'IPRisk', desc: '检测节点 IP 的欺诈风险度与纯净度，标记高危节点。', tag: 'IP 分析', color: 'var(--unlock-iprisk, #f97316)' },
+  openai: { name: 'OpenAI (ChatGPT)', desc: '检测节点是否原生解锁 ChatGPT 网页版及 API 服务。', tag: 'AI 服务', color: 'var(--unlock-openai, #10a37f)' },
+  gemini: { name: 'Google Gemini', desc: '检测节点是否支持 Google Gemini / Workspace AI 服务。', tag: 'AI 服务', color: 'var(--unlock-gemini, #47be0c)' },
+  copilot: { name: 'Microsoft Copilot', desc: '检测节点是否解锁微软 Copilot / New Bing 服务。', tag: 'AI 服务', color: 'var(--unlock-copilot, #a84ddf)' },
+  youtube: { name: 'YouTube', desc: '检测 YouTube 播放连接，以及 Premium 会员的区域归属地。', tag: '流媒体', color: 'var(--unlock-youtube, #ff0000)' },
+  tiktok: { name: 'TikTok', desc: '检测国际版 TikTok 的可访问性，并提取其对应的归属区域。', tag: '短视频', color: 'var(--unlock-tiktok, #00b881)' },
+  netflix: { name: 'Netflix', desc: '检测奈飞全剧集（包含非自制版权剧）的区域解锁情况。', tag: '流媒体', color: 'var(--unlock-netflix, #e50914)' },
+  disney: { name: 'Disney+', desc: '检测 Disney+ (迪士尼+) 流媒体平台的访问与区域解锁状态。', tag: '流媒体', color: 'var(--unlock-disney, #113ccf)' },
+  x: { name: 'X (Twitter)', desc: '检测 X 平台的连通性，适用于特定免流或限制较多的区域。', tag: '社交媒体', color: '#1d9bf0' }
+};
+
 function getMiniProtoInfo(name) {
   const key = name.toLowerCase().replace(/[^a-z0-9\-]/g, '');
   if (key === 'hy2' || key === 'hysteria2') return MINI_PROTO_INFO['hysteria2'];
@@ -78,35 +90,50 @@ function getMiniProtoInfo(name) {
   if (key === 'wg') return MINI_PROTO_INFO['wireguard'];
   if (key === 'gost') return MINI_PROTO_INFO['gost-relay'];
   return MINI_PROTO_INFO[key] || {
-    name: name.toUpperCase(),
-    desc: 'Mihomo 社区支持的常规代理扩展协议。',
-    level: '未知',
-    color: 'var(--muted)'
+    name: name.toUpperCase(), desc: 'Mihomo 社区支持的常规代理扩展协议。', level: '未知', color: 'var(--muted)'
   };
 }
 
-function initMiniProtoTooltip() {
-  let tooltip = document.getElementById('miniProtoTooltip');
+function getMiniPlatformInfo(name) {
+  const key = name.toLowerCase().trim();
+  return MINI_PLATFORM_INFO[key] || {
+    name: name.toUpperCase(), desc: '常规流媒体或平台解锁检测。', tag: '平台检测', color: 'var(--muted)'
+  };
+}
+
+function initMiniHoverTooltip() {
+  let tooltip = document.getElementById('miniHoverTooltip');
   if (!tooltip) {
-    tooltip = el('div', { id: 'miniProtoTooltip' });
+    tooltip = el('div', { id: 'miniHoverTooltip' });
     document.body.appendChild(tooltip);
   }
 
-  // 使用全局事件代理监听悬浮
+  // 通用事件监听
   document.body.addEventListener('mouseover', (e) => {
-    const chip = e.target.closest('.cfg-chip[data-proto-mini]');
-    if (!chip) return;
+    const protoChip = e.target.closest('.cfg-chip[data-proto-mini]');
+    const platformChip = e.target.closest('.cfg-chip[data-platform-mini]');
 
-    const protoName = chip.dataset.protoMini;
-    const info = getMiniProtoInfo(protoName);
+    if (!protoChip && !platformChip) return;
 
-    tooltip.style.setProperty('--gfw-color', info.color);
+    let title, tagLabel, tagVal, desc, color;
+
+    if (protoChip) {
+      const info = getMiniProtoInfo(protoChip.dataset.protoMini);
+      title = info.name; tagLabel = '封锁概率'; tagVal = info.level;
+      desc = info.desc; color = info.color;
+    } else {
+      const info = getMiniPlatformInfo(platformChip.dataset.platformMini);
+      title = info.name; tagLabel = '分类'; tagVal = info.tag;
+      desc = info.desc; color = info.color;
+    }
+
+    tooltip.style.setProperty('--badge-color', color);
     tooltip.innerHTML = `
           <div class="mtt-header">
-              <div class="mtt-title">${info.name}</div>
-              <div class="mtt-gfw">封锁概率: ${info.level}</div>
+              <div class="mtt-title">${title}</div>
+              <div class="mtt-badge">${tagLabel}: ${tagVal}</div>
           </div>
-          <div class="mtt-desc">${info.desc}</div>
+          <div class="mtt-desc">${desc}</div>
       `;
     tooltip.classList.add('visible');
   });
@@ -126,7 +153,7 @@ function initMiniProtoTooltip() {
   });
 
   document.body.addEventListener('mouseout', (e) => {
-    if (!e.target.closest('.cfg-chip[data-proto-mini]')) return;
+    if (!e.target.closest('.cfg-chip[data-proto-mini]') && !e.target.closest('.cfg-chip[data-platform-mini]')) return;
     tooltip.classList.remove('visible');
   });
 }
@@ -1472,9 +1499,11 @@ function mkChips(field, values) {
   for (const opt of field.options) {
     const chip = el('label', { class: `cfg-chip${active.has(opt) ? ' active' : ''}` });
 
-    // 给 node-type 的选项加上数据属性，供 Hover 捕获
+    // 给不同字段分别加上专属的 hover 数据源标识
     if (field.key === 'node-type') {
       chip.dataset.protoMini = opt;
+    } else if (field.key === 'platforms') {
+      chip.dataset.platformMini = opt;
     }
 
     const cb = el('input', { type: 'checkbox', value: opt });
@@ -2821,8 +2850,8 @@ export function initConfigForm() {
   autoInit();
   updateSplitBtnVisibility();
 
-  // 初始化协议卡片提示
-  initMiniProtoTooltip();
+  // 初始化胶囊 hover mini 提示
+  initMiniHoverTooltip();
 }
 
 
