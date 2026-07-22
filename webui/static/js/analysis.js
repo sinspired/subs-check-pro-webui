@@ -133,7 +133,7 @@ function loadScript(src) {
 
 class GeoFlightMap {
     constructor(container, entries, origin, visibilityFn = null) {
-        this._visibilityFn = visibilityFn;   // ← 新增
+        this._visibilityFn = visibilityFn;
         this.container = container;
         this.origin = origin;
         this.entries = entries.filter(([c]) => GEO_COUNTRY_COORDS[c]);
@@ -1145,6 +1145,199 @@ const PROTO_COLORS = {
 };
 function getProtoColor(name) { return PROTO_COLORS[name.toLowerCase().replace(/[^a-z0-9]/g, '')] || '#94a3b8'; }
 
+/* ── Mihomo 全协议图鉴 & 深度分析字典 ── */
+const PROTO_INFO = {
+    vless: {
+        name: 'VLESS',
+        desc: '当前跨境代理的首选协议。配合 REALITY 实现免域名/免证书伪装，配合 Vision 可消除 TLS-in-TLS 特征。',
+        pro: '极低延迟、抗审查能力极强、无需真实域名',
+        con: '服务端配置稍显复杂',
+        gfw: { level: '极低', color: 'var(--success)' },
+        exp: '目前最稳健的主力协议，开发者与社区推荐组合：VLESS + REALITY + Vision。'
+    },
+    vmess: {
+        name: 'VMess',
+        desc: 'V2Ray 经典协议。具备极其丰富的传输层组合（WS, gRPC, HTTP2 等），但核心特征已较老旧。',
+        pro: '生态极其成熟、客户端兼容性极佳',
+        con: '协议头部开销大、原版易被主动探测',
+        gfw: { level: '中高', color: 'var(--warning)' },
+        exp: '裸协议特征明显，当下严重依赖 WS+TLS 等外层伪装，属于“能用但不推荐首选”的过渡期协议。'
+    },
+    trojan: {
+        name: 'Trojan',
+        desc: '将流量完全伪装成常规的 HTTPS 网页流量，使其融入正常的网络背景中。',
+        pro: '伪装逻辑简单有效、服务端性能极好',
+        con: '强依赖真实域名和证书，存在 TLS-in-TLS 嗅探风险',
+        gfw: { level: '中等', color: 'var(--warning)' },
+        exp: '建站伪装与代理穿透二合一的经典选择，但近年对未备案 HTTPS 流量的主动探测让其偶尔出现断流。'
+    },
+    ss: {
+        name: 'Shadowsocks (SS)',
+        desc: '轻量级代理的经典标准。原版已被精准识别，但 Mihomo 支持强大的新型插件（Shadow-TLS, RestLS, JLS）。',
+        pro: '加密解密极快、系统资源占用近乎为零',
+        con: '无插件裸协议极易被主动探测并阻断',
+        gfw: { level: '极高(原版) / 极低(带插件)', color: 'var(--danger)' },
+        exp: '搭配 Shadow-TLS 或 RestLS 后焕发第二春，不仅隐蔽性极佳，且性能远超 V2Ray 系，极客玩家最爱。'
+    },
+    ssr: {
+        name: 'ShadowsocksR (SSR)',
+        desc: '早期为了绕过网络审查而在 SS 基础上添加混淆的分支协议。',
+        pro: '老旧设备与服务端仍有存量支持',
+        con: '混淆特征已被机器学习完全掌握，基本停更',
+        gfw: { level: '极高', color: 'var(--danger)' },
+        exp: '时代的眼泪。仅在极其宽松的网络环境下才能维持连接，随时可能被封禁 IP。'
+    },
+    hysteria2: {
+        name: 'Hysteria 2 (Hy2)',
+        desc: '弱网拯救者。基于 QUIC 协议，采用自定义拥塞控制算法，强行抢占带宽。',
+        pro: '抗丢包极强、底层网络劣化时仍可保持高速',
+        con: '容易被部分运营商的 UDP QoS 降速或阻断',
+        gfw: { level: '中等', color: 'var(--warning)' },
+        exp: '晚高峰体验极佳，高画质流媒体秒开。但如果宽带运营商疯狂针对 UDP 流量，会导致断流。'
+    },
+    hysteria: {
+        name: 'Hysteria (v1)',
+        desc: '第一代基于 QUIC 的多路复用协议，伪装能力相对较弱。',
+        pro: '弱网提速效果明显',
+        con: '特征明显，易被针对性阻断',
+        gfw: { level: '高', color: 'var(--danger)' },
+        exp: '已逐渐被各路服务商和开发者淘汰，强烈建议服务端升级到 Hysteria 2。'
+    },
+    tuic: {
+        name: 'TUIC',
+        desc: '同样基于 QUIC 的网络协议，主打 0-RTT 极速握手，原生支持 UDP 转发。',
+        pro: '首包延迟极低、非常适合游戏与网页秒开',
+        con: '同样受限于国内运营商对 UDP 流量的严厉管控',
+        gfw: { level: '中等', color: 'var(--warning)' },
+        exp: '在良好网络下体验比 Hy2 更顺滑，没有那么“暴力”，但同理看重当地运营商的 UDP 策略。'
+    },
+    masque: {
+        name: 'Masque',
+        desc: '基于 IETF 标准的 HTTP/3 代理协议，未来趋势。流量特征完全等同于正常现代网页。',
+        pro: '标准协议、深度伪装、多路复用',
+        con: '目前生态起步中，服务端部署较少',
+        gfw: { level: '低', color: 'var(--success)' },
+        exp: 'Mihomo 率先支持的潜力新星。完全遵循标准规范，审查系统很难将其与正常浏览分离，被寄予厚望。'
+    },
+    shadowquic: {
+        name: 'ShadowQUIC',
+        desc: '结合了 Shadowsocks 思想与 QUIC 传输层的代理协议。',
+        pro: '兼具加密轻量与 QUIC 低延迟',
+        con: '生态非常小众',
+        gfw: { level: '中等', color: 'var(--warning)' },
+        exp: '极客尝鲜向协议，实际体验与其他 QUIC 类代理类似，依赖底层 UDP 网络质量。'
+    },
+    wireguard: {
+        name: 'WireGuard',
+        desc: '现代 VPN 协议标准。完全没有针对网络审查的混淆设计，明文特征明显。',
+        pro: '内核级集成、组网神器、超高吞吐',
+        con: '非隐蔽协议，跨境连接一秒封锁',
+        gfw: { level: '致命', color: 'var(--danger)' },
+        exp: '绝对不要用于跨境代理直连！主要配合 WARP 提取节点解锁流媒体，或在国内进行内网穿透。'
+    },
+    tailscale: {
+        name: 'Tailscale',
+        desc: '基于 WireGuard 的零信任 Mesh VPN 网络。',
+        pro: '跨设备异地组网神兵利器',
+        con: '流量未做强混淆，不具备抗审查能力',
+        gfw: { level: '致命', color: 'var(--danger)' },
+        exp: '主要用于内网设备互联互通（例如随时连回家中软路由），跨境大流量极易被阻断。'
+    },
+    openvpn: {
+        name: 'OpenVPN',
+        desc: '传统的企业级 VPN 协议，依赖复杂的证书校验。',
+        pro: '极其成熟、企业及路由设备原生支持',
+        con: '握手特征太明显，已被审查系统彻底识别',
+        gfw: { level: '必封', color: 'var(--danger)' },
+        exp: '仅适合无网络审查的常规异地组网，极易被特征识别干预，千万别用来跨境互联。'
+    },
+    snell: {
+        name: 'Snell',
+        desc: 'Surge 团队开发的闭源协议，Mihomo 通过逆向兼容实现支持。',
+        pro: '配置极简、非常适合私有小圈子使用',
+        con: '闭源黑盒、无针对深层审查的重型混淆',
+        gfw: { level: '较高', color: 'var(--danger)' },
+        exp: '在国内互联或深港 IPLC 专线等环境体验极佳，但不适合直接跨国公网裸连。'
+    },
+    gostrelay: {
+        name: 'GOST Relay',
+        desc: '用于构建多级代理链路的隧道转发协议。',
+        pro: '灵活的链式转发与内网穿透',
+        con: '非直接抗审查代理协议',
+        gfw: { level: '中高', color: 'var(--warning)' },
+        exp: '适合高级玩家折腾中转机（国内入口 -> 海外落地机）的隧道搭建，不建议直接用于跨境穿透。'
+    },
+    mieru: {
+        name: 'Mieru',
+        desc: '专注于抗主动探测的现代代理协议，设计思路上避免了传统代理的连接特征。',
+        pro: '强混淆，极难被深度包检测嗅探',
+        con: '客户端生态极小',
+        gfw: { level: '较低', color: 'var(--success)' },
+        exp: '主打低调隐蔽，适合高危敏感时期作为备用的保底连接通道。'
+    },
+    sudoku: {
+        name: 'Sudoku',
+        desc: '结合 HTTPMask 的新型防封锁协议，支持创新的纯下行流量伪装。',
+        pro: '首创非对称流量特征，隐蔽性极强',
+        con: '配置复杂，有一定性能损耗',
+        gfw: { level: '低', color: 'var(--success)' },
+        exp: '硬核防封利器，可彻底避开传统的对称双向流量特征检测。'
+    },
+    anytls: {
+        name: 'AnyTLS',
+        desc: '专注于任意 TLS 版本层伪装的小众隧道协议。',
+        pro: '灵活适配各种 TLS 指纹',
+        con: '局限在小众极客圈子',
+        gfw: { level: '较低', color: 'var(--success)' },
+        exp: '适合有独立服务器并喜欢折腾真实建站伪装的高阶玩家。'
+    },
+    ssh: {
+        name: 'SSH',
+        desc: '老牌系统远程终端与端口转发协议。',
+        pro: '服务器原生标配、零安装成本',
+        con: '明文握手，容易被机器识别干预',
+        gfw: { level: '必封', color: 'var(--danger)' },
+        exp: '仅作为临时内网维护手段，大流量跨境会立刻引发连接重置甚至 IP 被封禁。'
+    },
+    http: {
+        name: 'HTTP / HTTPS',
+        desc: '最古老的标准代理协议。',
+        pro: '所有软件均原生支持，兼容性无敌',
+        con: '无任何隐蔽抗审查能力（HTTP 为明文）',
+        gfw: { level: '必封', color: 'var(--danger)' },
+        exp: '仅限局域网内作为前置代理，或落地机的链式内网分发，不可用于穿越公网审查。'
+    },
+    socks5: {
+        name: 'Socks5',
+        desc: '网络层标准代理，支持 TCP/UDP。',
+        pro: '通用性极强，基本所有应用都支持',
+        con: '不加密、无混淆',
+        gfw: { level: '必封', color: 'var(--danger)' },
+        exp: '用于软路由内网局域网分发，绝对不可暴露在公网或用于跨境连接。'
+    }
+};
+
+function getProtoInfoDetailed(name) {
+    const key = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (key === 'hy2' || key === 'hysteria2') return PROTO_INFO['hysteria2'];
+    if (key === 'hysteria' || key === 'hy') return PROTO_INFO['hysteria'];
+    if (key === 'wg') return PROTO_INFO['wireguard'];
+    if (key === 'gost' || key === 'gostrelay') return PROTO_INFO['gostrelay'];
+    if (key === 'trusttunnel') return {
+        name: 'TrustTunnel',
+        desc: '小众高性能隧道协议',
+        pro: '支持底层复用与健康检查', con: '生态极小',
+        gfw: { level: '未知', color: 'var(--muted)' }, exp: '小众隧道方案，不建议作为主要的跨境代理手段。'
+    };
+    return PROTO_INFO[key] || {
+        name: name.toUpperCase(),
+        desc: '小众或新型网络代理协议，提供基础的数据中转功能。',
+        pro: '灵活多样', con: '生态较小、特征未知',
+        gfw: { level: '未知', color: 'var(--muted)' },
+        exp: 'Mihomo 社区支持的扩展协议，建议参考官方文档进行配置与调优。'
+    };
+}
+
 function buildDonutSVG(entries, total, size) {
     size = size || 110;
     const r = size * 0.38, cx = size / 2, cy = size / 2;
@@ -1191,7 +1384,7 @@ function renderProto(ga) {
     const donutList = entries.map(([k, v]) => {
         const pct = Math.round(v / total * 100);
         const color = getProtoColor(k);
-        return `<div class="proto-donut-row">
+        return `<div class="proto-donut-row" data-proto="${k}">
             <span class="proto-donut-dot" style="background:${color}"></span>
             <span class="proto-donut-name" style="color:${color}">${k.toUpperCase()}</span>
             <div class="proto-donut-bar-wrap"><div class="proto-donut-bar" style="width:${pct}%;background:${color}"></div></div>
@@ -1218,7 +1411,7 @@ function renderProto(ga) {
     const cards = entries.map(([k, v]) => {
         const pct = Math.round(v / total * 100);
         const color = getProtoColor(k);
-        return `<div class="proto-card" style="--proto-color:${color}">
+        return `<div class="proto-card" data-proto="${k}" style="--proto-color:${color}">
             <div class="proto-card-header">
                 <span class="proto-card-name" style="color:${color}">${k}</span>
                 <span class="proto-card-pct">${pct}%</span>
@@ -1236,6 +1429,92 @@ function renderProto(ga) {
         <div class="proto-summary-bar" style="margin-bottom:14px">${stackBar}</div>
         <div class="section-title">协议卡片</div>
         <div class="proto-grid">${cards}</div>`;
+
+    initProtoTooltip();
+}
+
+function initProtoTooltip() {
+    let tooltip = document.getElementById('protoTooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'protoTooltip';
+        document.body.appendChild(tooltip);
+    }
+
+    const container = document.getElementById('protoContent');
+    if (!container) return;
+
+    // Pro (优势) 与 Con (劣势) 的 SVG 图标
+    const svgPro = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+    const svgCon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+    const svgExp = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`;
+
+    container.addEventListener('mouseover', (e) => {
+        const target = e.target.closest('.proto-card') || e.target.closest('.proto-donut-row');
+        if (!target) return;
+
+        const protoName = target.dataset.proto;
+        if (!protoName) return;
+
+        const info = getProtoInfoDetailed(protoName);
+        const pColor = getProtoColor(protoName);
+
+        tooltip.style.setProperty('--gfw-color', info.gfw.color);
+        tooltip.innerHTML = `
+            <div class="tt-header">
+                <div class="tt-title">
+                    <span class="tt-dot" style="background: ${pColor}"></span>
+                    ${info.name}
+                </div>
+                <div class="tt-gfw">封锁概率: ${info.gfw.level}</div>
+            </div>
+            <div class="tt-desc">${info.desc}</div>
+            <div class="tt-features">
+                <div class="tt-feat pro">
+                    ${svgPro}
+                    <span>${info.pro}</span>
+                </div>
+                <div class="tt-feat con">
+                    ${svgCon}
+                    <span>${info.con}</span>
+                </div>
+            </div>
+            <div class="tt-exp">
+                <div class="tt-exp-title">${svgExp}综合体验</div>
+                <div class="tt-exp-text">${info.exp}</div>
+            </div>
+        `;
+
+        tooltip.classList.add('visible');
+    });
+
+    container.addEventListener('mousemove', (e) => {
+        if (!tooltip.classList.contains('visible')) return;
+
+        const x = e.clientX;
+        const y = e.clientY;
+        const tooltipRect = tooltip.getBoundingClientRect();
+
+        let left = x + 15;
+        let top = y + 15;
+
+        // 边缘防溢出检测
+        if (left + tooltipRect.width > window.innerWidth) {
+            left = x - tooltipRect.width - 15;
+        }
+        if (top + tooltipRect.height > window.innerHeight) {
+            top = y - tooltipRect.height - 15;
+        }
+
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+    });
+
+    container.addEventListener('mouseout', (e) => {
+        const target = e.target.closest('.proto-card') || e.target.closest('.proto-donut-row');
+        if (!target) return;
+        tooltip.classList.remove('visible');
+    });
 }
 
 function renderSubs(subs, subsBad, cfg) {
