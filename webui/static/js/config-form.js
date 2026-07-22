@@ -45,6 +45,92 @@ function _editorW() { return (window.innerWidth - SIDEBAR_W - LAYOUT_GAPS) / 2; 
 function _canShowSplitBtn() { return _editorW() >= MIN_PANEL_W_SHOW * 2; }
 function _canSplit() { return _editorW() >= MIN_PANEL_W_AUTO * 2; }
 
+/* ═══════════════════════════ 迷你协议字典 (用于配置项 Hover) ═══════════════════════════ */
+const MINI_PROTO_INFO = {
+  vless: { name: 'VLESS', desc: '当前跨境代理的首选协议，配合 REALITY 与 Vision 隐蔽性极高。', level: '极低', color: 'var(--success)' },
+  vmess: { name: 'VMess', desc: '经典协议，生态成熟，但原版易被探测，需依赖外层伪装。', level: '中高', color: 'var(--warning)' },
+  trojan: { name: 'Trojan', desc: '将流量完全伪装成常规 HTTPS 网页流量，融入正常背景。', level: '中等', color: 'var(--warning)' },
+  ss: { name: 'Shadowsocks', desc: '轻量级代理标准，裸协议易被封，搭配新型插件隐蔽性极佳。', level: '极高 / 极低', color: 'var(--danger)' },
+  ssr: { name: 'ShadowsocksR', desc: '早期添加混淆的分支协议，特征已被审查系统完全掌握。', level: '极高', color: 'var(--danger)' },
+  hysteria2: { name: 'Hysteria 2', desc: '基于 QUIC，抗丢包极强，弱网提速明显，但易被 UDP QoS。', level: '中等', color: 'var(--warning)' },
+  hysteria: { name: 'Hysteria (v1)', desc: '第一代多路复用协议，伪装弱，建议服务端升级 v2。', level: '高', color: 'var(--danger)' },
+  tuic: { name: 'TUIC', desc: '基于 QUIC，主打 0-RTT 极速握手，非常依赖底层 UDP 质量。', level: '中等', color: 'var(--warning)' },
+  masque: { name: 'Masque', desc: '基于 HTTP/3 标准的代理协议，深度无缝伪装，潜力新星。', level: '低', color: 'var(--success)' },
+  shadowquic: { name: 'ShadowQUIC', desc: '结合 SS 思想与 QUIC 传输层的代理协议，生态较小众。', level: '中等', color: 'var(--warning)' },
+  wireguard: { name: 'WireGuard', desc: '现代 VPN 标准，明文特征明显，绝对不能用于跨境直连。', level: '致命', color: 'var(--danger)' },
+  tailscale: { name: 'Tailscale', desc: '零信任 Mesh VPN，用于内网互联，跨境大流量极易被阻断。', level: '致命', color: 'var(--danger)' },
+  openvpn: { name: 'OpenVPN', desc: '传统企业 VPN，握手特征太明显，已被审查系统彻底识别。', level: '必封', color: 'var(--danger)' },
+  snell: { name: 'Snell', desc: 'Surge 团队闭源协议，极简高效，适合 IPLC 专线等私有网络使用。', level: '较高', color: 'var(--danger)' },
+  'gost-relay': { name: 'GOST Relay', desc: '用于构建多级代理链路的隧道转发协议，非直连翻墙首选。', level: '中高', color: 'var(--warning)' },
+  mieru: { name: 'Mieru', desc: '专注于抗主动探测的现代代理协议，强混淆防深度包嗅探。', level: '较低', color: 'var(--success)' },
+  sudoku: { name: 'Sudoku', desc: '结合 HTTPMask 的新型防封协议，支持非对称的纯下行伪装。', level: '低', color: 'var(--success)' },
+  anytls: { name: 'AnyTLS', desc: '专注于任意 TLS 版本层伪装的小众隧道协议，适配各种指纹。', level: '较低', color: 'var(--success)' },
+  ssh: { name: 'SSH', desc: '老牌系统远程终端与转发协议，明文握手极易被识别封锁。', level: '必封', color: 'var(--danger)' },
+  http: { name: 'HTTP / HTTPS', desc: '最古老的标准代理协议，无隐蔽抗审查能力，仅限局域网分发。', level: '必封', color: 'var(--danger)' },
+  socks5: { name: 'Socks5', desc: '网络层标准代理，不加密无混淆，绝对不可暴露在公网用于跨境。', level: '必封', color: 'var(--danger)' },
+  trusttunnel: { name: 'TrustTunnel', desc: '小众高性能隧道协议，支持底层复用。', level: '未知', color: 'var(--muted)' }
+};
+
+function getMiniProtoInfo(name) {
+  const key = name.toLowerCase().replace(/[^a-z0-9\-]/g, '');
+  if (key === 'hy2' || key === 'hysteria2') return MINI_PROTO_INFO['hysteria2'];
+  if (key === 'hy') return MINI_PROTO_INFO['hysteria'];
+  if (key === 'wg') return MINI_PROTO_INFO['wireguard'];
+  if (key === 'gost') return MINI_PROTO_INFO['gost-relay'];
+  return MINI_PROTO_INFO[key] || {
+    name: name.toUpperCase(),
+    desc: 'Mihomo 社区支持的常规代理扩展协议。',
+    level: '未知',
+    color: 'var(--muted)'
+  };
+}
+
+function initMiniProtoTooltip() {
+  let tooltip = document.getElementById('miniProtoTooltip');
+  if (!tooltip) {
+    tooltip = el('div', { id: 'miniProtoTooltip' });
+    document.body.appendChild(tooltip);
+  }
+
+  // 使用全局事件代理监听悬浮
+  document.body.addEventListener('mouseover', (e) => {
+    const chip = e.target.closest('.cfg-chip[data-proto-mini]');
+    if (!chip) return;
+
+    const protoName = chip.dataset.protoMini;
+    const info = getMiniProtoInfo(protoName);
+
+    tooltip.style.setProperty('--gfw-color', info.color);
+    tooltip.innerHTML = `
+          <div class="mtt-header">
+              <div class="mtt-title">${info.name}</div>
+              <div class="mtt-gfw">封锁概率: ${info.level}</div>
+          </div>
+          <div class="mtt-desc">${info.desc}</div>
+      `;
+    tooltip.classList.add('visible');
+  });
+
+  document.body.addEventListener('mousemove', (e) => {
+    if (!tooltip.classList.contains('visible')) return;
+    const x = e.clientX, y = e.clientY;
+    const rect = tooltip.getBoundingClientRect();
+
+    let left = x + 12;
+    let top = y + 12;
+    if (left + rect.width > window.innerWidth) left = x - rect.width - 12;
+    if (top + rect.height > window.innerHeight) top = y - rect.height - 12;
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  });
+
+  document.body.addEventListener('mouseout', (e) => {
+    if (!e.target.closest('.cfg-chip[data-proto-mini]')) return;
+    tooltip.classList.remove('visible');
+  });
+}
+
 const SCHEMA = [
   /* ── 1. 任务 ──────────────────── */
   {
@@ -1385,6 +1471,12 @@ function mkChips(field, values) {
   const wrap = el('div', { class: 'cfg-chips', 'data-key': field.key });
   for (const opt of field.options) {
     const chip = el('label', { class: `cfg-chip${active.has(opt) ? ' active' : ''}` });
+
+    // 给 node-type 的选项加上数据属性，供 Hover 捕获
+    if (field.key === 'node-type') {
+      chip.dataset.protoMini = opt;
+    }
+
     const cb = el('input', { type: 'checkbox', value: opt });
     cb.checked = active.has(opt);
     cb.addEventListener('change', () => chip.classList.toggle('active', cb.checked));
@@ -2728,6 +2820,9 @@ export function initConfigForm() {
   _updateModeToggle('form'); /* 默认表单模式 */
   autoInit();
   updateSplitBtnVisibility();
+
+  // 初始化协议卡片提示
+  initMiniProtoTooltip();
 }
 
 

@@ -2404,3 +2404,63 @@ textarea.cfg-expandable-input:focus {
   height: 11px;
   flex-shrink: 0;
 }
+
+/* ════════════════════════════════════════════════════════════
+   迷你协议提示 Tooltip (用于协议筛选 Chips)
+════════════════════════════════════════════════════════════ */
+#miniProtoTooltip {
+  position: fixed;
+  top: 0; left: 0;
+  width: 240px; /* 极简小卡片尺寸 */
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--card-shadow, #000) 12%, transparent),
+              0 0 0 1px color-mix(in srgb, var(--bg) 40%, transparent) inset;
+  padding: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.96) translateY(4px);
+  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100000;
+  color: var(--fg);
+  font-family: inherit;
+}
+
+#miniProtoTooltip.visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.mtt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.mtt-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.mtt-gfw {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--gfw-color) 10%, transparent);
+  color: var(--gfw-color);
+  border: 1px solid color-mix(in srgb, var(--gfw-color) 20%, transparent);
+}
+
+.mtt-desc {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  opacity: 0.95;
+}
