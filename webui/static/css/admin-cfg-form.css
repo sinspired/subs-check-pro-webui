@@ -1346,6 +1346,7 @@
 }
 
 .cfg-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1358,6 +1359,8 @@
   font-weight: 500;
   cursor: pointer;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none; /* 长按不弹系统的取词/选中菜单 */
   transition:
     border-color 0.15s,
     background 0.15s,
@@ -1378,6 +1381,39 @@
   border-color: var(--accent);
   color: var(--accent);
   font-weight: 600;
+}
+
+/* 说明入口图标：仅触摸设备显示，落在胶囊右侧圆角的圆心上，
+   桌面端沿用整胶囊 hover，不占位、不参与布局。颜色跟随强调色系，
+   呼应胶囊选中态本身的 accent 配色 */
+.cfg-chip-info {
+  display: none;
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  width: 13px;
+  height: 13px;
+  color: color-mix(in srgb, var(--accent) 75%, var(--muted));
+  opacity: 0.6;
+}
+
+.cfg-chip-info svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  stroke-width: 1.5;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .cfg-chip-info {
+    display: inline-flex;
+  }
+
+  /* 图标脱离文档流，右侧腾出空间避免和文字重叠 */
+  .cfg-chip:has(.cfg-chip-info) {
+    padding-right: 26px;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -2465,4 +2501,13 @@ textarea.cfg-expandable-input:focus {
   line-height: 1.5;
   color: var(--muted);
   opacity: 0.95;
+}
+
+@media (max-width: 768px) {
+  #miniHoverTooltip {
+    width: 85vw !important;
+    max-width: 320px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3); /* 增加阴影深度，突出悬浮感 */
+    padding: 20px; /* 稍微加大内边距 */
+  }
 }

@@ -1449,13 +1449,11 @@ function initProtoTooltip() {
     const svgCon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
     const svgExp = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`;
 
-    container.addEventListener('mouseover', (e) => {
-        const target = e.target.closest('.proto-card') || e.target.closest('.proto-donut-row');
-        if (!target) return;
+    // 触摸设备判定：没有真正 hover 能力，或主输入是粗指针(手指)
+    const isTouchDevice = window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    let openCard = null; // 触摸端记录当前是哪张卡片打开了提示，用于再次点击时关闭
 
-        const protoName = target.dataset.proto;
-        if (!protoName) return;
-
+    const renderTooltip = (protoName) => {
         const info = getProtoInfoDetailed(protoName);
         const pColor = getProtoColor(protoName);
 
@@ -1484,11 +1482,23 @@ function initProtoTooltip() {
                 <div class="tt-exp-text">${info.exp}</div>
             </div>
         `;
+    };
 
+    // 桌面端：hover 预览，跟随鼠标定位
+    container.addEventListener('mouseover', (e) => {
+        if (isTouchDevice) return;
+        const target = e.target.closest('.proto-card') || e.target.closest('.proto-donut-row');
+        if (!target) return;
+
+        const protoName = target.dataset.proto;
+        if (!protoName) return;
+
+        renderTooltip(protoName);
         tooltip.classList.add('visible');
     });
 
     container.addEventListener('mousemove', (e) => {
+        if (isTouchDevice) return;
         if (!tooltip.classList.contains('visible')) return;
 
         const x = e.clientX;
@@ -1511,10 +1521,39 @@ function initProtoTooltip() {
     });
 
     container.addEventListener('mouseout', (e) => {
+        if (isTouchDevice) return;
         const target = e.target.closest('.proto-card') || e.target.closest('.proto-donut-row');
         if (!target) return;
         tooltip.classList.remove('visible');
     });
+
+    // 触摸端：卡片本身没有选中语义，直接 tap 切换显示/隐藏；
+    // 再次点同一张卡关闭，点别的卡切换内容，点空白处关闭
+    container.addEventListener('click', (e) => {
+        if (!isTouchDevice) return;
+        const target = e.target.closest('.proto-card') || e.target.closest('.proto-donut-row');
+        if (!target) return;
+
+        const protoName = target.dataset.proto;
+        if (!protoName) return;
+
+        if (openCard === target && tooltip.classList.contains('visible')) {
+            tooltip.classList.remove('visible');
+            openCard = null;
+            return;
+        }
+
+        renderTooltip(protoName);
+        tooltip.classList.add('visible');
+        openCard = target;
+    });
+
+    document.addEventListener('touchstart', (e) => {
+        if (tooltip.classList.contains('visible') && !e.target.closest('.proto-card') && !e.target.closest('#protoTooltip')) {
+            tooltip.classList.remove('visible');
+            openCard = null;
+        }
+    }, { passive: true });
 }
 
 function renderSubs(subs, subsBad, cfg) {

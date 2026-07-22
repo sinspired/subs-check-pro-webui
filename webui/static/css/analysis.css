@@ -2780,3 +2780,17 @@ code {
     color: var(--fg);
     opacity: 0.9;
 }
+
+@media (max-width: 720px) {
+    #protoTooltip {
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) scale(1) !important;
+        width: 90vw !important;
+        max-width: 340px;
+        max-height: 80vh; /* 防止内容过长超出屏幕 */
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        border: 1px solid var(--accent); /* 小屏加强边界感 */
+    }
+}

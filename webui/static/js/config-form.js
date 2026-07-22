@@ -101,45 +101,110 @@ function getMiniPlatformInfo(name) {
   };
 }
 
+// 触摸设备判定：没有真正 hover 能力，或主输入是粗指针(手指)
+const _isTouchDevice = window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches;
+
+let _miniTooltipEl = null;
+let _miniTooltipOpenChip = null; // 触摸端记录当前是哪个胶囊打开了说明，用于再次点击时关闭
+
+// 长按呼出相关状态
+let _chipLongPressTimer = null;
+let _chipLongPressStart = { x: 0, y: 0 };
+let _chipLongPressFiredAt = 0;
+const CHIP_LONG_PRESS_MS = 500;
+const CHIP_LONG_PRESS_MOVE_TOLERANCE = 10;
+
+function _getMiniTooltipContent(chip) {
+  const protoChip = chip.matches('[data-proto-mini]') ? chip : null;
+  const platformChip = !protoChip && chip.matches('[data-platform-mini]') ? chip : null;
+  if (!protoChip && !platformChip) return null;
+
+  if (protoChip) {
+    const info = getMiniProtoInfo(protoChip.dataset.protoMini);
+    return { title: info.name, tagLabel: '封锁概率', tagVal: info.level, desc: info.desc, color: info.color };
+  }
+  const info = getMiniPlatformInfo(platformChip.dataset.platformMini);
+  return { title: info.name, tagLabel: '分类', tagVal: info.tag, desc: info.desc, color: info.color };
+}
+
+function _renderMiniTooltip(tooltip, content) {
+  tooltip.style.setProperty('--badge-color', content.color);
+  tooltip.innerHTML = `
+        <div class="mtt-header">
+            <div class="mtt-title">${content.title}</div>
+            <div class="mtt-badge">${content.tagLabel}: ${content.tagVal}</div>
+        </div>
+        <div class="mtt-desc">${content.desc}</div>
+    `;
+}
+
+function _positionMiniTooltipAboveChip(chip, tooltip) {
+  const gap = 8;
+  const margin = 8;
+  const chipRect = chip.getBoundingClientRect();
+  const rect = tooltip.getBoundingClientRect();
+
+  let left = chipRect.left + chipRect.width / 2 - rect.width / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - rect.width - margin));
+
+  // 优先放在胶囊上方，贴着胶囊上边框留个小间距；上面空间不够再放下方
+  let top = chipRect.top - gap - rect.height;
+  if (top < margin) {
+    top = chipRect.bottom + gap;
+  }
+  // 兜底夹紧：上下都放不下时（胶囊贴着屏幕边缘），至少保证卡片完整可见
+  top = Math.max(margin, Math.min(top, window.innerHeight - rect.height - margin));
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+// 供触摸端 info 图标调用：再次点同一个胶囊的图标则关闭，否则切换内容并展开
+function toggleMiniTooltipFor(chip) {
+  if (!_miniTooltipEl) return;
+  const content = _getMiniTooltipContent(chip);
+  if (!content) return;
+
+  if (_miniTooltipOpenChip === chip && _miniTooltipEl.classList.contains('visible')) {
+    _miniTooltipEl.classList.remove('visible');
+    _miniTooltipOpenChip = null;
+    return;
+  }
+
+  _renderMiniTooltip(_miniTooltipEl, content);
+  _positionMiniTooltipAboveChip(chip, _miniTooltipEl);
+  _miniTooltipEl.classList.add('visible');
+  _miniTooltipOpenChip = chip;
+}
+
 function initMiniHoverTooltip() {
   let tooltip = document.getElementById('miniHoverTooltip');
   if (!tooltip) {
     tooltip = el('div', { id: 'miniHoverTooltip' });
     document.body.appendChild(tooltip);
   }
+  _miniTooltipEl = tooltip;
 
-  // 通用事件监听
+  // 桌面端：整个胶囊 hover 即可预览，触摸端没有真正的 hover，
+  // 这里直接跳过，避免触摸模拟出的 mouseover 把提示卡死在屏幕上
   document.body.addEventListener('mouseover', (e) => {
+    if (_isTouchDevice) return;
     const protoChip = e.target.closest('.cfg-chip[data-proto-mini]');
     const platformChip = e.target.closest('.cfg-chip[data-platform-mini]');
+    const chip = protoChip || platformChip;
+    if (!chip) return;
 
-    if (!protoChip && !platformChip) return;
-
-    let title, tagLabel, tagVal, desc, color;
-
-    if (protoChip) {
-      const info = getMiniProtoInfo(protoChip.dataset.protoMini);
-      title = info.name; tagLabel = '封锁概率'; tagVal = info.level;
-      desc = info.desc; color = info.color;
-    } else {
-      const info = getMiniPlatformInfo(platformChip.dataset.platformMini);
-      title = info.name; tagLabel = '分类'; tagVal = info.tag;
-      desc = info.desc; color = info.color;
-    }
-
-    tooltip.style.setProperty('--badge-color', color);
-    tooltip.innerHTML = `
-          <div class="mtt-header">
-              <div class="mtt-title">${title}</div>
-              <div class="mtt-badge">${tagLabel}: ${tagVal}</div>
-          </div>
-          <div class="mtt-desc">${desc}</div>
-      `;
+    const content = _getMiniTooltipContent(chip);
+    if (!content) return;
+    _renderMiniTooltip(tooltip, content);
     tooltip.classList.add('visible');
   });
 
   document.body.addEventListener('mousemove', (e) => {
+    if (_isTouchDevice) return;
     if (!tooltip.classList.contains('visible')) return;
+
+    const margin = 8;
     const x = e.clientX, y = e.clientY;
     const rect = tooltip.getBoundingClientRect();
 
@@ -148,14 +213,76 @@ function initMiniHoverTooltip() {
     if (left + rect.width > window.innerWidth) left = x - rect.width - 12;
     if (top + rect.height > window.innerHeight) top = y - rect.height - 12;
 
+    // 翻转之后再统一夹紧一次：窄屏下卡片本身可能比"翻转后剩下的空间"还宽，
+    // 单纯翻转仍会出屏，这里保证无论如何都完整落在视口内
+    left = Math.max(margin, Math.min(left, window.innerWidth - rect.width - margin));
+    top = Math.max(margin, Math.min(top, window.innerHeight - rect.height - margin));
+
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
   });
 
   document.body.addEventListener('mouseout', (e) => {
+    if (_isTouchDevice) return;
     if (!e.target.closest('.cfg-chip[data-proto-mini]') && !e.target.closest('.cfg-chip[data-platform-mini]')) return;
     tooltip.classList.remove('visible');
   });
+
+  // 触摸端：点胶囊以外的地方关闭说明（点 info 图标本身走 toggleMiniTooltipFor，不会被这里误关）
+  document.addEventListener('touchstart', (e) => {
+    if (tooltip.classList.contains('visible') && !e.target.closest('.cfg-chip') && !e.target.closest('#miniHoverTooltip')) {
+      tooltip.classList.remove('visible');
+      _miniTooltipOpenChip = null;
+    }
+  }, { passive: true });
+
+  // 触摸端：整个胶囊长按也能呼出说明，不必非要点那个小图标；
+  // 短按（正常 tap）不受影响，依旧是选中/取消选中
+  if (_isTouchDevice) {
+    document.body.addEventListener('touchstart', (e) => {
+      const chip = e.target.closest('.cfg-chip[data-proto-mini], .cfg-chip[data-platform-mini]');
+      if (!chip || e.target.closest('.cfg-chip-info')) return; // 图标已有自己的点击逻辑
+
+      const t = e.touches[0];
+      _chipLongPressStart = { x: t.clientX, y: t.clientY };
+      clearTimeout(_chipLongPressTimer);
+      _chipLongPressTimer = setTimeout(() => {
+        _chipLongPressTimer = null;
+        _chipLongPressFiredAt = Date.now();
+        toggleMiniTooltipFor(chip);
+      }, CHIP_LONG_PRESS_MS);
+    }, { passive: true });
+
+    document.body.addEventListener('touchmove', (e) => {
+      if (!_chipLongPressTimer) return;
+      const t = e.touches[0];
+      if (Math.abs(t.clientX - _chipLongPressStart.x) > CHIP_LONG_PRESS_MOVE_TOLERANCE ||
+          Math.abs(t.clientY - _chipLongPressStart.y) > CHIP_LONG_PRESS_MOVE_TOLERANCE) {
+        clearTimeout(_chipLongPressTimer);
+        _chipLongPressTimer = null;
+      }
+    }, { passive: true });
+
+    document.body.addEventListener('touchend', () => {
+      clearTimeout(_chipLongPressTimer);
+      _chipLongPressTimer = null;
+    }, { passive: true });
+
+    document.body.addEventListener('touchcancel', () => {
+      clearTimeout(_chipLongPressTimer);
+      _chipLongPressTimer = null;
+    }, { passive: true });
+
+    // 长按已经弹出说明，紧接着这次 touchend 触发的 click（label 默认的选中/取消选中）要拦掉，
+    // 不然长按松手还是会顺带切一次选中状态
+    document.body.addEventListener('click', (e) => {
+      if (Date.now() - _chipLongPressFiredAt > 600) return;
+      const chip = e.target.closest('.cfg-chip[data-proto-mini], .cfg-chip[data-platform-mini]');
+      if (!chip) return;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  }
 }
 
 const SCHEMA = [
@@ -1501,6 +1628,7 @@ function mkChips(field, values) {
     const chip = el('label', { class: `cfg-chip${active.has(opt) ? ' active' : ''}` });
 
     // 给不同字段分别加上专属的 hover 数据源标识
+    const isMiniInfoChip = field.key === 'node-type' || field.key === 'platforms';
     if (field.key === 'node-type') {
       chip.dataset.protoMini = opt;
     } else if (field.key === 'platforms') {
@@ -1511,6 +1639,19 @@ function mkChips(field, values) {
     cb.checked = active.has(opt);
     cb.addEventListener('change', () => chip.classList.toggle('active', cb.checked));
     chip.append(cb, document.createTextNode(opt));
+
+    // 触摸端专用的说明入口：桌面端靠整个胶囊 hover，触摸端没有 hover，
+    // 用这个小图标承担"查看说明"，避免和"点击选中/取消选中"冲突
+    if (isMiniInfoChip) {
+      const infoBtn = el('span', { class: 'cfg-chip-info', 'aria-hidden': 'true', innerHTML: _ICON.info });
+      infoBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleMiniTooltipFor(chip);
+      });
+      chip.appendChild(infoBtn);
+    }
+
     wrap.appendChild(chip);
   }
 
