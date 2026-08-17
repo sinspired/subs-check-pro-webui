@@ -257,7 +257,7 @@ function initMiniHoverTooltip() {
       if (!_chipLongPressTimer) return;
       const t = e.touches[0];
       if (Math.abs(t.clientX - _chipLongPressStart.x) > CHIP_LONG_PRESS_MOVE_TOLERANCE ||
-          Math.abs(t.clientY - _chipLongPressStart.y) > CHIP_LONG_PRESS_MOVE_TOLERANCE) {
+        Math.abs(t.clientY - _chipLongPressStart.y) > CHIP_LONG_PRESS_MOVE_TOLERANCE) {
         clearTimeout(_chipLongPressTimer);
         _chipLongPressTimer = null;
       }
@@ -491,7 +491,6 @@ const SCHEMA = [
             key: 'enhanced-tag', label: '增强位置标签', type: 'toggle', hint: '添加 KR¹-US⁰，SG² 类角标',
             links: [{ label: '标签说明', href: 'https://github.com/sinspired/subs-check-pro/blob/main/config/config.yaml.example#L260-L266', icon: 'github' }],
           },
-          { key: 'isp-check', label: 'ISP 类型检测', type: 'toggle', hint: '检测 isp 类型，比如: [原生|住宅]、[广播|机房]' },
           { key: 'drop-bad-cf-nodes', label: '丢弃 CF 不可达', type: 'toggle', hint: '可能误杀，谨慎开启' },
           { key: 'ipv6', label: '启用 IPv6', type: 'toggle', hint: '建议关闭' },
         ],
@@ -540,6 +539,30 @@ const SCHEMA = [
             hint: '根据节点归属地进行筛选，留空=全部；支持两位代码（CN、US）',
           }
         ]
+      },
+      {
+        title: 'ISP 检测',
+        fields: [
+          { key: 'isp-check', label: 'ISP 类型检测', type: 'toggle', hint: '比如: [原生|住宅]、[广播|机房]等' },
+          { key: 'isp-timeout', label: 'ISP 检测超时 (秒)', type: 'number', min: 1, max: 15, placeholder: '5', hint: '最高 15s' },
+          {
+            key: 'isp-check-api-key-ipapi', label: 'ipapi.is API', type: 'password', fullWidth: true, placeholder: 'IPAPI_TOKEN', hint: '免费额度：注册后每天 1000 次',
+            links: [
+              { label: '申请免费 API Key', href: 'https://ipapi.is/app/', icon: 'apikey' }],
+          },
+          {
+            key: 'isp-check-api-key-proxycheck', label: 'proxycheck.io API', type: 'password', fullWidth: true, placeholder: 'PROXYCHECK_TOKEN', hint: '免费额度：每天 1000 次（另有约 5 倍的突发令牌可用）',
+            links: [{ label: '申请免费 API Key', href: 'https://proxycheck.io/dashboard/', icon: 'apikey' }],
+          },
+          {
+            key: 'isp-check-api-key-iplocate', label: 'iplocate.io API', type: 'password', fullWidth: true, placeholder: 'IPLOCATE_TOKEN', hint: '免费额度：每天 1000 次，免费版与付费版字段完全一致',
+            links: [{ label: '申请免费 API Key', href: 'https://www.iplocate.io/account', icon: 'apikey' }],
+          },
+          {
+            key: 'isp-check-api-key-ipdata', label: 'ipdata.co API', type: 'password', fullWidth: true, placeholder: 'IPDATA_TOKEN', hint: '免费额度：每天 1500 次（或每月 45000 次）',
+            links: [{ label: '申请免费 API Key', href: 'https://dashboard.ipdata.co/', icon: 'apikey' }],
+          },
+        ],
       },
     ],
   },
@@ -900,6 +923,31 @@ const FIELD_VALIDATORS = {
 
   // ── 时间与数值限制 ──
   'timeout': v => { const n = Number(v); if (n < 3000) return { level: 'warn', msg: `超时 ${n}ms 超时过短易误杀正常节点` }; if (n > 15000) return { level: 'info', msg: `超时 ${n}ms 较长，检测耗时会明显增加` }; return null; },
+
+  'isp-timeout': v => {
+    const n = Number(v);
+    if (n <= 0) return { level: 'warn', msg: '超时时间必须大于 0' };
+    if (n > 15) return { level: 'warn', msg: 'ISP 检测超时不会超过 15s' };
+    return null;
+  },
+
+  'isp-check': v => {
+    if (!v) return null; // 关闭时不显示任何额外提示
+
+    // 检查所有 API Key 字段是否至少有一个有值
+    const keys = [
+      'isp-check-api-key-ipapi',
+      'isp-check-api-key-proxycheck',
+      'isp-check-api-key-iplocate',
+      'isp-check-api-key-ipdata'
+    ];
+    const hasKey = keys.some(k => !!String(_getLiveVal(k, '')).trim());
+
+    if (!hasKey) {
+      return { level: 'warn', msg: '请提供至少一个 API Key，否则 ISP 检测不会生效' };
+    }
+    return { level: 'ok', msg: '已提供 API Key，ISP 检测就绪' };
+  },
 
   'check-interval': v => {
     const n = Number(v);
@@ -2580,6 +2628,53 @@ function _bindCronInterval(panel) {
   requestAnimationFrame(update);
 }
 
+/* ═══════════════════════════ ISP 检测联动 ═══════════════════════
+ * 当 isp-check 为 false 时，隐藏其余相关字段以节省空间
+ * 开启时，若未填写任何 API Key，则给出警告提示；输入后动态刷新提示
+ * ─────────────────────────────────────────────────────────────────── */
+function _bindIspCheck(panel) {
+  const toggleRow = panel.querySelector('.cfg-field[data-key="isp-check"]');
+  if (!toggleRow) return;
+
+  const cb = toggleRow.querySelector('input[type="checkbox"][data-key="isp-check"]');
+  if (!cb) return;
+
+  const apiKeys = [
+    'isp-check-api-key-ipapi',
+    'isp-check-api-key-proxycheck',
+    'isp-check-api-key-iplocate',
+    'isp-check-api-key-ipdata'
+  ];
+  // 需要被联动隐藏/显示的全部目标
+  const allTargets = ['isp-timeout', ...apiKeys];
+
+  function update() {
+    const active = cb.checked;
+    allTargets.forEach(key => {
+      const row = panel.querySelector(`.cfg-field[data-key="${key}"]`);
+      if (!row) return;
+      row.style.display = active ? '' : 'none';
+    });
+    
+    // 主动触发一次开关的 input 事件，用以执行 FIELD_VALIDATORS 刷新提示
+    cb.dispatchEvent(new Event('input'));
+  }
+
+  cb.addEventListener('change', update);
+
+  // 监听所有 API Key 输入框，任何一个被编辑，都去重新校验一遍开关状态
+  apiKeys.forEach(key => {
+    const input = panel.querySelector(`input[data-key="${key}"]`);
+    if (input) {
+      input.addEventListener('input', () => {
+        if (cb.checked) cb.dispatchEvent(new Event('input'));
+      });
+    }
+  });
+
+  requestAnimationFrame(update); // 初始化时执行一次同步状态
+}
+
 /* ═══════════════════════════ 面板构建 ═══════════════════════════ */
 function buildPanel(tabId) {
   const panel = document.getElementById(`panel-${tabId}`); if (!panel) return;
@@ -2613,6 +2708,11 @@ function buildPanel(tabId) {
   /* 任务：Cron ↔ 检测间隔联动 */
   if (tabId === 'schedule') {
     _bindCronInterval(panel);
+  }
+
+  /* 检测：ISP 状态联动 */
+  if (tabId === 'detection') {
+    _bindIspCheck(panel);
   }
 
   _built.add(tabId);
