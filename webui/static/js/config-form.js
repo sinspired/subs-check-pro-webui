@@ -456,7 +456,7 @@ const SCHEMA = [
           {
             key: 'speed-test-url', label: '测速地址', type: 'text', fullWidth: true,
             placeholder: 'random',
-            hint: 'random = 随机测速；留空关闭测速；Speedtest/CF 链接易被屏蔽，建议使用自建地址',
+            hint: "random = 内置测速池随机轮询；留空关闭测速；支持自定义测速 URL",
           },
           { key: 'min-speed', label: '最低速度 (KB/s)', type: 'number', min: 0, placeholder: '128', hint: '低于此值的节点将被丢弃，0 = 不过滤' },
           { key: 'download-timeout', label: '下载超时 (s)', type: 'number', min: 0, max: 30, placeholder: '10', hint: '测速单节点超时，建议 10s' },
@@ -489,7 +489,7 @@ const SCHEMA = [
           { key: 'rename-node', label: '重命名节点', type: 'toggle', hint: '根据节点 IP 归属地自动重命名' },
           {
             key: 'enhanced-tag', label: '增强位置标签', type: 'toggle', hint: '添加 KR¹-US⁰，SG² 类角标',
-            links: [{ label: '标签说明', href: 'https://github.com/sinspired/subs-check-pro/blob/main/config/config.yaml.example#L260-L266', icon: 'github' }],
+            links: [{ label: '标签说明', href: 'https://github.com/sinspired/subs-check-pro/blob/main/config/config.yaml.example#L285-L291', icon: 'github' }],
           },
           { key: 'drop-bad-cf-nodes', label: '丢弃 CF 不可达', type: 'toggle', hint: '可能误杀，谨慎开启' },
           { key: 'ipv6', label: '启用 IPv6', type: 'toggle', hint: '建议关闭' },
@@ -643,7 +643,7 @@ const SCHEMA = [
       {
         title: '覆写规则 (Sub-Store)',
         fields: [
-          { key: 'mihomo-overwrite-url', label: 'Mihomo 覆写 URL', type: 'text', fullWidth: true, placeholder: 'http://127.0.0.1:8199/Sinspired_Rules_CDN.yaml', hint: '用于生成带指定规则的 mihomo/clash.meta 订阅链接', links: [{ label: '内置文件服务', href: '/files', icon: 'files' }], },
+          { key: 'mihomo-overwrite-url', label: 'Mihomo 覆写 URL', type: 'text', fullWidth: true, placeholder: 'http://127.0.0.1:8199/Sinspired_Rules_CDN.yaml', hint: '用于生成带指定规则的 mihomo/clash.meta 订阅链接，包含分组、分流等；自定义规则使用内置文件服务', links: [{ label: '内置文件服务', href: '/files', icon: 'files' }], },
         ],
       },
       {
@@ -718,7 +718,7 @@ const SCHEMA = [
             key: 'apprise-api-server', label: 'Apprise API 地址', type: 'text', fullWidth: true,
             placeholder: 'https://apprise.example.com/notify',
             hint: '填写搭建的apprise API server 地址，配置后可向 100+ 渠道发送通知',
-            links: [{ label: '部署通知服务', href: 'https://github.com/sinspired/apprise_vercel', icon: 'github' }],
+            links: [{ label: '部署通知服务', href: 'https://github.com/sinspired/apprise_vercel', icon: 'github' }, { label: '申请免费域名', href: 'https://dashboard.digitalplat.org/signup?ref=HZcosTVlmQ', icon: 'link' }],
           },
           {
             key: 'recipient-url', label: '通知渠道', type: 'url-list',
@@ -922,11 +922,38 @@ const FIELD_VALIDATORS = {
   },
 
   // ── 时间与数值限制 ──
-  'timeout': v => { const n = Number(v); if (n < 3000) return { level: 'warn', msg: `超时 ${n}ms 超时过短易误杀正常节点` }; if (n > 15000) return { level: 'info', msg: `超时 ${n}ms 较长，检测耗时会明显增加` }; return null; },
+  'timeout': v => {
+    const n = Number(v);
+
+    if (n <= 3000) {
+      return {
+        level: 'warn',
+        msg: `超时 ${n}ms 过短，可能导致无可用节点，请确保带宽足够优质`
+      };
+    }
+
+    if (n < 5000) {
+      return {
+        level: 'info',
+        msg: `${n}ms 超时，如可用节点急剧减少，请调大该值`
+      };
+    }
+
+    if (n > 15000) {
+      return {
+        level: 'info',
+        msg: `超时 ${n}ms 较长，检测耗时会明显增加`
+      };
+    }
+
+    return null;
+  },
+
 
   'isp-timeout': v => {
     const n = Number(v);
-    if (n <= 0) return { level: 'warn', msg: '超时时间必须大于 0' };
+    if (n < 0) return { level: 'warn', msg: '超时时间必须大于 0' };
+    if (n === 0) return { level: 'warn', msg: '超时时间默认为 5 秒' };
     if (n > 15) return { level: 'warn', msg: 'ISP 检测超时不会超过 15s' };
     return null;
   },
@@ -1140,7 +1167,7 @@ const VALUE_TRANSFORM = {
  * ─────────────────────────────────────────────────────────────────── */
 const SPECIAL_INPUT_VALUES = {
   'speed-test-url': [
-    { value: 'random', label: '随机测速', hint: '从内置地址列表随机选择测速目标' },
+    { value: 'random', label: '内置测速池', hint: '多个下载地址随机轮询，减轻单点压力' },
     { value: '', label: '关闭测速', hint: '留空，不进行下载测速' },
   ],
   'system-proxy': [
@@ -1159,18 +1186,18 @@ const SPECIAL_INPUT_VALUES = {
 
 /* ═══════════════════════════ Cron 段元数据 ═══════════════════════════ */
 const _CRON_SEGMENTS = [
-  { label: '分钟', title: '分钟 (0–59)' },
-  { label: '小时', title: '小时 (0–23)' },
-  { label: '日期', title: '日期 (1–31)' },
-  { label: '月份', title: '月份 (1–12)' },
-  { label: '星期', title: '星期 (0–7，0=周日)' },
+  { label: '分钟', title: '分钟 (0-59)' },
+  { label: '小时', title: '小时 (0-23)' },
+  { label: '日', title: '日 (1-31)' },
+  { label: '月份', title: '月份 (1-12)' },
+  { label: '星期', title: '星期 (0-7，0=周日)' },
 ];
 
 /* ── Cron 字段元数据（复用于校验提示） ── */
 const _CRON_FIELD_RANGES = [
   { name: '分钟', min: 0, max: 59 },
   { name: '小时', min: 0, max: 23 },
-  { name: '日期', min: 1, max: 31 },
+  { name: '日', min: 1, max: 31 },
   { name: '月份', min: 1, max: 12 },
   { name: '星期', min: 0, max: 7 },
 ];
@@ -2655,7 +2682,7 @@ function _bindIspCheck(panel) {
       if (!row) return;
       row.style.display = active ? '' : 'none';
     });
-    
+
     // 主动触发一次开关的 input 事件，用以执行 FIELD_VALIDATORS 刷新提示
     cb.dispatchEvent(new Event('input'));
   }
