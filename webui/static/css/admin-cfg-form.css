@@ -476,7 +476,8 @@
   user-select: none;
   /* font-size: 12px;
   font-weight: 600;
-  font-family: inherit; */
+  font-family: inherit;
+  opacity: 0.7; */
 }
 
 .cfg-label-col {
@@ -501,7 +502,8 @@
   user-select: none;
   /* font-size: 12px;
   font-weight: 600;
-  font-family: inherit; */
+  font-family: inherit;
+  opacity: 0.7; */
 }
 
 /* hint 在 label 列内的样式 */

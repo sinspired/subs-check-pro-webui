@@ -687,16 +687,17 @@ main {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* ✅ 子项默认拉伸 */
+  /* 子项默认拉伸 */
 }
 
 .sidebar-icon {
   width: 14px;
   height: 14px;
   stroke-width: 1;
-  color: var(--muted);
+  margin-top: 1px;
+  color: var(--fg);
   flex-shrink: 0;
-  opacity: 0.5;
+  opacity: 1.0;
 }
 
 #sub-store.sidebar-icon {
@@ -709,7 +710,7 @@ main {
   padding: 10px 20px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 500;
   transition:
     background-color 0.12s ease,
     transform 0.08s ease;
@@ -719,7 +720,7 @@ main {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   justify-content: center;
   /* 内容居中 */
   text-align: center;
@@ -733,8 +734,10 @@ main {
 
 
 .list-item span {
-  color: var(--muted);
-  opacity: 1;
+  letter-spacing: 0.04em;
+  color: var(--fg);
+  opacity: 1.0;
+  line-height: 1.2;
 }
 
 .list-item:hover {
@@ -745,11 +748,14 @@ main {
 }
 
 .list-item:hover span {
-  opacity: 1;
+  opacity: 1.0;
+  color: var(--accent);
 }
 
 .list-item:hover .sidebar-icon {
   opacity: 1;
+  color: var(--accent);
+  stroke-width: 2;
 }
 
 /* 检查更新 - 有新版本时图标高亮 + 脉冲小点
