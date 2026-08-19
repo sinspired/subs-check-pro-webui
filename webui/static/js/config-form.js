@@ -358,7 +358,10 @@ const SCHEMA = [
             key: 'github-proxy', label: 'GitHub 代理', type: 'text', fullWidth: true,
             placeholder: 'https://ghfast.top/',
             hint: '加速 GitHub Release 下载；建议配置',
-            links: [{ label: '自建 CF 代理', href: 'https://github.com/sinspired/CF-Proxy', icon: 'github' }],
+            links: [
+              { label: '自建 CF 代理', href: 'https://github.com/sinspired/CF-Proxy', icon: 'github' },
+              { label: '申请免费域名', href: 'https://dashboard.digitalplat.org/signup?ref=HZcosTVlmQ', icon: 'link' }
+            ],
           },
           { key: 'ghproxy-group', label: 'GitHub 代理列表', type: 'url-list', hint: '程序自动筛选可用代理，优先级低于 github-proxy' },
         ],
@@ -821,7 +824,9 @@ const SCHEMA = [
             key: 'apprise-api-server', label: 'Apprise API 地址', type: 'text', fullWidth: true,
             placeholder: 'https://apprise.example.com/notify',
             hint: '填写搭建的apprise API server 地址，配置后可向 100+ 渠道发送通知',
-            links: [{ label: '部署通知服务', href: 'https://github.com/sinspired/apprise_vercel', icon: 'github' }, { label: '申请免费域名', href: 'https://dashboard.digitalplat.org/signup?ref=HZcosTVlmQ', icon: 'link' }],
+            links: [
+              { label: '部署通知服务', href: 'https://github.com/sinspired/apprise_vercel', icon: 'github' },
+              { label: '申请免费域名', href: 'https://dashboard.digitalplat.org/signup?ref=HZcosTVlmQ', icon: 'link' }],
           },
           {
             key: 'recipient-url', label: '通知渠道', type: 'url-list',
