@@ -889,7 +889,7 @@ main {
   left: 0;
   min-width: 160px;
   max-width: 250px;
-  padding: 26px 16px 18px 16px;
+  padding: 16px 16px 18px 16px;
   min-height: 0;
   background: var(--glass-bg);
   /* 半透明背景 */
@@ -917,6 +917,30 @@ main {
   color: var(--muted);
   font-size: 12px;
 }
+
+.project-desc {
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  
+}
+
+.project-desc a {
+  color: var(--fg);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.project-desc a:hover {
+  text-decoration: none; /* 去掉默认下划线 */
+  border-bottom: 1px solid var(--accent); /* 自定义下划线颜色 */
+  padding-bottom: 1px; /* 增加下划线与文字的间距 */
+}
+
 
 .project-icons {
   display: flex;
