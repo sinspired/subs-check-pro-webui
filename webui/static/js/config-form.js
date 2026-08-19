@@ -83,6 +83,37 @@ const MINI_PLATFORM_INFO = {
   x: { name: 'X (Twitter)', desc: '检测 X 平台的连通性，适用于特定免流或限制较多的区域。', tag: '社交媒体', color: '#1d9bf0' }
 };
 
+const MINI_GENERIC_INFO = {
+  'enhanced-tag': {
+    title: '位置标签',
+    tagLabel: '配置',
+    tagVal: 'enhanced-tag',
+    color: 'var(--accent, #3b82f6)',
+    desc: `
+<div class="mtt-tag-list">
+  <div class="mtt-tag-title">CF 节点</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-danger">HK⁻¹</span>无法访问 CF 自身</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-success">HK¹⁺</span>出口与 CDN 位置一致</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-info">HK¹-US⁰</span>出口与 CDN 位置不同</div>
+</div>
+
+<div class="mtt-tag-list">
+  <div class="mtt-tag-title">VPS 节点</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-purple">HK²</span>VPS 节点，使用 ² 角标</div>
+</div>
+
+<div class="mtt-tag-list">
+  <div class="mtt-tag-title">其他</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-orange">YT-CN</span>媒体解锁位置</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-muted">HKˣ</span>未获取到位置</div>
+</div>
+<div class="mtt-tag-note">
+  * 前两位字母是实际浏览网站识别的位置，<span class="mtt-badge-muted" style="min-width:auto;padding:0 4px;">-US⁰</span> 为使用 <span class="mtt-badge-muted" style="min-width:auto;padding:0 4px;">CF CDN</span> 服务的网站识别的位置 (如 GPT, Claude, X 等)。
+</div>
+</div>`
+  }
+};
+
 function getMiniProtoInfo(name) {
   const key = name.toLowerCase().replace(/[^a-z0-9\-]/g, '');
   if (key === 'hy2' || key === 'hysteria2') return MINI_PROTO_INFO['hysteria2'];
@@ -114,17 +145,26 @@ let _chipLongPressFiredAt = 0;
 const CHIP_LONG_PRESS_MS = 500;
 const CHIP_LONG_PRESS_MOVE_TOLERANCE = 10;
 
-function _getMiniTooltipContent(chip) {
-  const protoChip = chip.matches('[data-proto-mini]') ? chip : null;
-  const platformChip = !protoChip && chip.matches('[data-platform-mini]') ? chip : null;
-  if (!protoChip && !platformChip) return null;
+function _getMiniTooltipContent(el) {
+  const protoChip = el.matches('[data-proto-mini]') ? el : null;
+  const platformChip = !protoChip && el.matches('[data-platform-mini]') ? el : null;
+  const genInfo = !protoChip && !platformChip && el.matches('[data-info-mini]') ? el : null;
+
+  if (!protoChip && !platformChip && !genInfo) return null;
 
   if (protoChip) {
     const info = getMiniProtoInfo(protoChip.dataset.protoMini);
     return { title: info.name, tagLabel: '封锁概率', tagVal: info.level, desc: info.desc, color: info.color };
   }
-  const info = getMiniPlatformInfo(platformChip.dataset.platformMini);
-  return { title: info.name, tagLabel: '分类', tagVal: info.tag, desc: info.desc, color: info.color };
+  if (platformChip) {
+    const info = getMiniPlatformInfo(platformChip.dataset.platformMini);
+    return { title: info.name, tagLabel: '分类', tagVal: info.tag, desc: info.desc, color: info.color };
+  }
+  if (genInfo) {
+    const info = MINI_GENERIC_INFO[genInfo.dataset.infoMini];
+    if (!info) return null;
+    return { title: info.title, tagLabel: info.tagLabel, tagVal: info.tagVal, desc: info.desc, color: info.color };
+  }
 }
 
 function _renderMiniTooltip(tooltip, content) {
@@ -160,21 +200,21 @@ function _positionMiniTooltipAboveChip(chip, tooltip) {
 }
 
 // 供触摸端 info 图标调用：再次点同一个胶囊的图标则关闭，否则切换内容并展开
-function toggleMiniTooltipFor(chip) {
+function toggleMiniTooltipFor(el) {
   if (!_miniTooltipEl) return;
-  const content = _getMiniTooltipContent(chip);
+  const content = _getMiniTooltipContent(el);
   if (!content) return;
 
-  if (_miniTooltipOpenChip === chip && _miniTooltipEl.classList.contains('visible')) {
+  if (_miniTooltipOpenChip === el && _miniTooltipEl.classList.contains('visible')) {
     _miniTooltipEl.classList.remove('visible');
     _miniTooltipOpenChip = null;
     return;
   }
 
   _renderMiniTooltip(_miniTooltipEl, content);
-  _positionMiniTooltipAboveChip(chip, _miniTooltipEl);
+  _positionMiniTooltipAboveChip(el, _miniTooltipEl);
   _miniTooltipEl.classList.add('visible');
-  _miniTooltipOpenChip = chip;
+  _miniTooltipOpenChip = el;
 }
 
 function initMiniHoverTooltip() {
@@ -185,16 +225,16 @@ function initMiniHoverTooltip() {
   }
   _miniTooltipEl = tooltip;
 
+  const MINI_TARGET_SELECTOR = '.cfg-chip[data-proto-mini], .cfg-chip[data-platform-mini], [data-info-mini]';
+
   // 桌面端：整个胶囊 hover 即可预览，触摸端没有真正的 hover，
   // 这里直接跳过，避免触摸模拟出的 mouseover 把提示卡死在屏幕上
   document.body.addEventListener('mouseover', (e) => {
     if (_isTouchDevice) return;
-    const protoChip = e.target.closest('.cfg-chip[data-proto-mini]');
-    const platformChip = e.target.closest('.cfg-chip[data-platform-mini]');
-    const chip = protoChip || platformChip;
-    if (!chip) return;
+    const target = e.target.closest(MINI_TARGET_SELECTOR);
+    if (!target) return;
 
-    const content = _getMiniTooltipContent(chip);
+    const content = _getMiniTooltipContent(target);
     if (!content) return;
     _renderMiniTooltip(tooltip, content);
     tooltip.classList.add('visible');
@@ -224,13 +264,13 @@ function initMiniHoverTooltip() {
 
   document.body.addEventListener('mouseout', (e) => {
     if (_isTouchDevice) return;
-    if (!e.target.closest('.cfg-chip[data-proto-mini]') && !e.target.closest('.cfg-chip[data-platform-mini]')) return;
+    if (!e.target.closest(MINI_TARGET_SELECTOR)) return;
     tooltip.classList.remove('visible');
   });
 
   // 触摸端：点胶囊以外的地方关闭说明（点 info 图标本身走 toggleMiniTooltipFor，不会被这里误关）
   document.addEventListener('touchstart', (e) => {
-    if (tooltip.classList.contains('visible') && !e.target.closest('.cfg-chip') && !e.target.closest('#miniHoverTooltip')) {
+    if (tooltip.classList.contains('visible') && !e.target.closest('.cfg-chip') && !e.target.closest('[data-info-mini]') && !e.target.closest('#miniHoverTooltip')) {
       tooltip.classList.remove('visible');
       _miniTooltipOpenChip = null;
     }
@@ -489,7 +529,7 @@ const SCHEMA = [
           { key: 'rename-node', label: '重命名节点', type: 'toggle', hint: '根据节点 IP 归属地自动重命名' },
           {
             key: 'enhanced-tag', label: '增强位置标签', type: 'toggle', hint: '添加 KR¹-US⁰，SG² 类角标',
-            links: [{ label: '标签说明', href: 'https://github.com/sinspired/subs-check-pro/blob/main/config/config.yaml.example#L285-L291', icon: 'github' }],
+            links: [{ label: '标签说明', miniInfo: 'enhanced-tag', icon: 'docs' }],
           },
           { key: 'drop-bad-cf-nodes', label: '丢弃 CF 不可达', type: 'toggle', hint: '可能误杀，谨慎开启' },
           { key: 'ipv6', label: '启用 IPv6', type: 'toggle', hint: '建议关闭' },
@@ -1464,15 +1504,36 @@ function getRecipientIcon(text) {
   return Icons.link;
 }
 
+// mkLinks — 生成一组外部链接按钮
 function mkLinks(links) {
   const wrap = el('div', { class: 'cfg-links' });
   for (const lk of links) {
-    const a = el('a', {
-      class: `cfg-link${lk.icon === 'github' ? ' cfg-link-github' : ''}`,
-      href: lk.href, target: '_blank', rel: 'noopener noreferrer', title: lk.href,
-    });
-    a.innerHTML = (LINK_ICONS[lk.icon] ?? LINK_ICONS.link) + lk.label;
-    wrap.appendChild(a);
+    if (lk.miniInfo) {
+      // 携带 miniInfo 的链接：变为卡片触发器
+      // 注意这里使用 data-infoMini，生成 DOM 时会自动变成 data-info-mini
+      const a = el('a', {
+        class: `cfg-link cfg-link-mini`,
+        href: 'javascript:void(0);',
+        'data-infoMini': lk.miniInfo, 
+      });
+      a.innerHTML = (LINK_ICONS[lk.icon] ?? LINK_ICONS.link) + lk.label;
+      
+      // 触摸端点击触发
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleMiniTooltipFor(a);
+      });
+      wrap.appendChild(a);
+    } else {
+      // 普通外链
+      const a = el('a', {
+        class: `cfg-link${lk.icon === 'github' ? ' cfg-link-github' : ''}`,
+        href: lk.href, target: '_blank', rel: 'noopener noreferrer', title: lk.href,
+      });
+      a.innerHTML = (LINK_ICONS[lk.icon] ?? LINK_ICONS.link) + lk.label;
+      wrap.appendChild(a);
+    }
   }
   return wrap;
 }

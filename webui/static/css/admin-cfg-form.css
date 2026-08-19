@@ -2522,3 +2522,117 @@ textarea.cfg-expandable-input:focus {
     /* 稍微加大内边距 */
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   Tooltip 内部增强标签徽章
+════════════════════════════════════════════════════════════ */
+.mtt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px; 
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent); /* 加一条柔和的分割线 */
+}
+
+.mtt-tag-list {
+  line-height: 1.5;
+  font-size: 0.95em;
+  margin-top: 2px;
+}
+
+.mtt-tag-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  color: color-mix(in srgb, var(--fg) 90%, transparent);
+}
+
+/* 徽章基础样式 */
+.mtt-tag-item span[class^="mtt-badge-"],
+.mtt-tag-note span[class^="mtt-badge-"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  height: 16px;
+  padding: 1px 6px 0px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono, "SF Mono", "Fira Code", monospace);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+/* 红色：错误/不可达 */
+.mtt-badge-danger {
+  color: var(--danger, #ef4444);
+  background: color-mix(in srgb, var(--danger, #ef4444) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger, #ef4444) 35%, transparent);
+}
+
+/* 绿色：完美/一致 */
+.mtt-badge-success {
+  color: var(--success, #22c55e);
+  background: color-mix(in srgb, var(--success, #22c55e) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success, #22c55e) 35%, transparent);
+}
+
+/* 蓝色：信息/不一致 */
+.mtt-badge-info {
+  color: var(--accent, #3b82f6);
+  background: color-mix(in srgb, var(--accent, #3b82f6) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, #3b82f6) 35%, transparent);
+}
+
+/* 紫色：直连/常规 */
+.mtt-badge-purple {
+  color: var(--cron-1, #8b5cf6);
+  background: color-mix(in srgb, var(--cron-1, #8b5cf6) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cron-1, #8b5cf6) 35%, transparent);
+}
+
+/* 橙色：媒体解锁 */
+.mtt-badge-orange {
+  color: var(--warning, #f59e0b);
+  background: color-mix(in srgb, var(--warning, #f59e0b) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning, #f59e0b) 35%, transparent);
+}
+
+.mtt-tag-title {
+  font-size: 0.7em;          /* 比正文小一点 */
+  font-weight: 600;           /* 半粗 */
+  color: var(--muted, #6b7280); /* 灰色，不抢眼 */
+  margin-left: 2px;          /* 和徽章拉开一点距离 */
+  margin-bottom: 4px;         /* 和列表项拉开一点距离 */
+  text-transform: uppercase;  /* 可选：全部大写，更像标签 */
+  letter-spacing: 0.02em;     /* 稍微加点字间距 */
+}
+
+/* 灰色：未知 */
+.mtt-badge-muted {
+  color: var(--muted, #9ca3af);
+  background: color-mix(in srgb, var(--muted, #9ca3af) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--muted, #9ca3af) 35%, transparent);
+}
+
+/* 列表项 */
+.mtt-tag-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px; 
+  color: color-mix(in srgb, var(--fg) 90%, transparent);
+}
+
+/* 注释区 */
+.mtt-tag-note {
+  margin-top: 4px;
+  padding-top: 8px;
+  font-size: 0.8em;
+  color: var(--muted);
+  border-top: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
+  line-height: 1.5;
+}
