@@ -687,24 +687,6 @@ const SCHEMA = [
         ],
       },
       {
-        title: '订阅操作 (Sub-Store)',
-        fields: [
-          {
-            key: 'sub-process.resolve-domain', label: 'DNS 解析', type: 'toggle',
-            hint: '解析节点域名为 IP；固定使用 Ali DNS / IPv6 / 缓存启用',
-          },
-          {
-            key: 'sub-process.node-split', label: '节点裂变', type: 'toggle',
-            hint: '将 DNS 解析到的多个 IP 展开为独立节点；自动开启 DNS 解析',
-          },
-          {
-            key: 'sub-process.sub-info', label: '注入流量信息节点', type: 'toggle',
-            hint: '在订阅开头注入虚拟节点，用于在客户端展示剩余流量、更新时间等信息',
-            links: [{ label: '脚本示例', href: 'https://raw.githubusercontent.com/sinspired/sub-store-scripts/refs/heads/main/surge/modules/sub-store-scripts/sub-info/node.js', icon: 'jsFile' }],
-          },
-        ],
-      },
-      {
         title: '订阅筛选 (Sub-Store)',
         fields: [
           {
@@ -741,6 +723,87 @@ const SCHEMA = [
               '.*GPT⁺.*',
               '.*\\bYT\\b(?!-CN).*',
             ],
+          },
+        ],
+      },
+      {
+        title: '订阅操作 (Sub-Store)',
+        fields: [
+          {
+            key: 'sub-process.sub-info', label: '注入流量信息节点', type: 'toggle',
+            hint: '在订阅开头注入虚拟节点，用于在客户端展示剩余流量、更新时间等信息',
+            links: [{ label: '脚本示例', href: 'https://raw.githubusercontent.com/sinspired/sub-store-scripts/refs/heads/main/surge/modules/sub-store-scripts/sub-info/node.js', icon: 'jsFile' }],
+          },
+          {
+            key: 'sub-process.node-split', label: '节点裂变', type: 'toggle',
+            hint: '将 DNS 解析到的多个 IP 展开为独立节点；自动开启 DNS 解析',
+          },
+        ],
+      },
+      {
+        title: 'DNS 解析 (Sub-Store)',
+        fields: [
+          {
+            key: 'sub-process.resolve-domain.enable',
+            label: '启用 DNS 解析',
+            type: 'toggle',
+            hint: '解析节点域名为 IP；打开节点裂变 时自动开启',
+          },
+          {
+            key: 'sub-process.resolve-domain.provider',
+            label: 'DNS 服务商',
+            type: 'select',
+            options: [
+              { label: 'Ali', value: 'Ali' },
+              { label: 'Cloudflare', value: 'Cloudflare' },
+              { label: 'Google', value: 'Google' },
+            ],
+          },
+          {
+            key: 'sub-process.resolve-domain.edns',
+            label: 'EDNS 设置',
+            type: 'text',
+            placeholder: '例如 223.6.6.6',
+            hint: 'EDNS(Google, Ali, Tencent, 自定义 DNS 会携带此参数, 可能会影响解析结果)',
+          },
+          {
+            key: 'sub-process.resolve-domain.concurrency',
+            label: 'DNS 请求并发数',
+            type: 'number',
+            min: 1,
+            max: 100,
+          },
+          {
+            key: 'sub-process.resolve-domain.timeout',
+            label: 'DNS 超时 (毫秒)',
+            type: 'number',
+            min: 3000,
+            max: 30000,
+          },
+          {
+            key: 'sub-process.resolve-domain.type',
+            label: '解析类型',
+            type: 'select',
+            options: [
+              { label: 'IPv4', value: 'IPv4' },
+              { label: 'IPv6', value: 'IPv6' },
+            ],
+          },
+          {
+            key: 'sub-process.resolve-domain.cache',
+            label: '缓存策略',
+            type: 'select',
+            options: [
+              { label: '启用', value: 'enabled' },
+              { label: '禁用', value: 'disabled' },
+            ],
+          },
+          {
+            key: 'sub-process.resolve-domain.cache-ttl',
+            label: '缓存时长 (秒)',
+            type: 'number',
+            min: 0,
+            hint: '默认 3600 秒（ 1 小时）',
           },
         ],
       },
@@ -1170,6 +1233,15 @@ const FIELD_VALIDATORS = {
     if (!r || r.level !== 'ok') return r;
     return _checkPortConflict(v, 'listen-port', '主监听') || r;
   },
+  'sub-process.node-split': v => {
+    if (v) {
+      const dnsEnable = _getLiveVal('sub-process.resolve-domain.enable', 'false');
+      if (dnsEnable !== 'true') {
+        return { level: 'warn', msg: '节点裂变依赖「启用 DNS 解析」，请修改相应设置' };
+      }
+    }
+    return null;
+  },
 };
 
 
@@ -1514,10 +1586,10 @@ function mkLinks(links) {
       const a = el('a', {
         class: `cfg-link cfg-link-mini`,
         href: 'javascript:void(0);',
-        'data-infoMini': lk.miniInfo, 
+        'data-infoMini': lk.miniInfo,
       });
       a.innerHTML = (LINK_ICONS[lk.icon] ?? LINK_ICONS.link) + lk.label;
-      
+
       // 触摸端点击触发
       a.addEventListener('click', (e) => {
         e.preventDefault();
@@ -2763,6 +2835,77 @@ function _bindIspCheck(panel) {
   requestAnimationFrame(update); // 初始化时执行一次同步状态
 }
 
+/* ═══════════════════════════ DNS 解析联动 ═══════════════════════
+ * 1. 当 sub-process.resolve-domain.enable 为 false 时，隐藏其余相关字段
+ * 2. 开启节点裂变时，自动开启 DNS 解析并记录状态；关闭裂变时恢复原状
+ * 3. 当由于某些原因 DNS 未开启而裂变开启时，在节点裂变处触发警告提示
+ * ─────────────────────────────────────────────────────────────────── */
+function _bindDnsResolve(panel) {
+  const toggleRow = panel.querySelector('.cfg-field[data-key="sub-process.resolve-domain.enable"]');
+  if (!toggleRow) return;
+
+  const cb = toggleRow.querySelector('input[type="checkbox"][data-key="sub-process.resolve-domain.enable"]');
+  if (!cb) return;
+
+  const targetKeys = [
+    'sub-process.resolve-domain.provider',
+    'sub-process.resolve-domain.type',
+    'sub-process.resolve-domain.cache',
+    'sub-process.resolve-domain.cache-ttl',
+    'sub-process.resolve-domain.edns',
+    'sub-process.resolve-domain.concurrency',
+    'sub-process.resolve-domain.timeout'
+  ];
+
+  function update() {
+    const active = cb.checked;
+    targetKeys.forEach(key => {
+      const row = panel.querySelector(`.cfg-field[data-key="${key}"]`);
+      if (row) row.style.display = active ? '' : 'none';
+    });
+
+    // 联动触发 node-split 的实时校验更新
+    const nodeSplitCb = panel.querySelector('input[type="checkbox"][data-key="sub-process.node-split"]');
+    if (nodeSplitCb) {
+      nodeSplitCb.dispatchEvent(new Event('input'));
+    }
+  }
+
+  // 监听 DNS 解析开关手动变化
+  cb.addEventListener('change', (e) => {
+    // 只有用户的真实点击操作（isTrusted），才意味着用户接管了控制，此时清除临时标记
+    // 否则（如代码自动触发）保留标记，以便将来取消时能恢复状态
+    if (e.isTrusted) {
+      delete cb.dataset.autoEnabledBySplit;
+    }
+    update();
+  });
+
+  // 监听节点裂变开关的变化
+  const splitCb = panel.querySelector('input[type="checkbox"][data-key="sub-process.node-split"]');
+  if (splitCb) {
+    splitCb.addEventListener('change', () => {
+      if (splitCb.checked) {
+        // 开启裂变：若 DNS 未开，则自动开启，并打上标记
+        if (!cb.checked) {
+          cb.dataset.autoEnabledBySplit = 'true';
+          cb.checked = true;
+          cb.dispatchEvent(new Event('change')); // 触发 UI 更新
+        }
+      } else {
+        // 关闭裂变：若 DNS 刚才被裂变自动开启，则将其恢复为关闭状态
+        if (cb.dataset.autoEnabledBySplit === 'true') {
+          cb.checked = false;
+          delete cb.dataset.autoEnabledBySplit;
+          cb.dispatchEvent(new Event('change')); // 触发 UI 更新
+        }
+      }
+    });
+  }
+
+  requestAnimationFrame(update); // 初始化时同步一次显示状态
+}
+
 /* ═══════════════════════════ 面板构建 ═══════════════════════════ */
 function buildPanel(tabId) {
   const panel = document.getElementById(`panel-${tabId}`); if (!panel) return;
@@ -2791,6 +2934,9 @@ function buildPanel(tabId) {
       sel.addEventListener('change', () => sync(sel.value));
       sync(sel.value);
     }
+
+    /* DNS 解析及节点裂变联动 */
+    _bindDnsResolve(panel);
   }
 
   /* 任务：Cron ↔ 检测间隔联动 */
@@ -3212,6 +3358,13 @@ export function collectConfigForm() {
   for (const { tab } of SCHEMA) {
     if (_built.has(tab)) Object.assign(result, collectPanel(tab));
   }
+
+  // 表单数据被收集（用于保存）时，清除自动联动的临时标记
+  // 这样即使用户保存后系统没有重绘 DOM，临时联动关系也会被彻底解除
+  document.querySelectorAll('[data-auto-enabled-by-split]').forEach(el => {
+    delete el.dataset.autoEnabledBySplit;
+  });
+
   return _unflattenCfg(result);
 }
 
