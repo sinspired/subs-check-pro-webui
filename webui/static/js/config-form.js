@@ -752,15 +752,15 @@ const SCHEMA = [
         fields: [
           {
             key: 'sub-process.sub-info', label: '注入流量信息节点', type: 'toggle',
-            hint: '在订阅开头注入虚拟节点，用于在客户端展示剩余流量、更新时间等信息',
+            hint: '在订阅开头注入剩余流量、更新时间虚拟节点',
             links: [
-              { label: '脚本', href: 'https://raw.githubusercontent.com/sinspired/sub-store-scripts/refs/heads/main/surge/modules/sub-store-scripts/sub-info/node.js', icon: 'jsFile' },
+              { label: '脚本示例', href: 'https://raw.githubusercontent.com/sinspired/sub-store-scripts/refs/heads/main/surge/modules/sub-store-scripts/sub-info/node.js', icon: 'jsFile' },
               { label: '流量信息', miniInfo: 'traffic-info', icon: 'docs' }
             ],
           },
           {
             key: 'sub-process.node-split', label: '节点裂变', type: 'toggle',
-            hint: '将 DNS 解析到的多个 IP 展开为独立节点；自动开启 DNS 解析',
+            hint: '通过 DNS 解析，每个IP 裂变为一个节点',
           },
         ],
       },
@@ -771,7 +771,7 @@ const SCHEMA = [
             key: 'sub-process.resolve-domain.enable',
             label: '启用 DNS 解析',
             type: 'toggle',
-            hint: '解析节点域名为 IP；打开节点裂变 时自动开启',
+            hint: '解析节点域名为 IP',
           },
           {
             key: 'sub-process.resolve-domain.provider',
