@@ -2469,7 +2469,7 @@ function mkField(fieldDef, value) {
   const displayValue = xf ? xf.load(value) : value;
 
   const isFull = ['url-list', 'chips', 'cron'].includes(fieldDef.type) || !!fieldDef.fullWidth;
-  const row = el('div', { class: `cfg-field${isFull ? ' full-width' : ''}`, 'data-key': fieldDef.key });
+  const row = el('div', { class: `cfg-field${isFull ? ' full-width' : ''}${fieldDef.type === 'toggle' ? ' cfg-field--toggle' : ''}`, 'data-key': fieldDef.key });
 
   // ── 提前声明，if/else 两个分支都能访问 ──
   let labelRow = null;

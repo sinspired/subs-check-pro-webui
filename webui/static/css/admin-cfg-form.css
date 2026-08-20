@@ -351,6 +351,10 @@
     grid-template-columns: 1fr 0.8fr;
   }
 
+  .cfg-panels-wrap.split-mode .cfg-field.cfg-field--toggle {
+    grid-template-columns: 1fr auto;
+  }
+
   /* full-width 字段不受双栏列宽影响，始终单列铺满 */
   .cfg-panels-wrap.split-mode .cfg-field.full-width {
     grid-template-columns: 1fr;
@@ -451,6 +455,11 @@
 
 .cfg-field.split-active {
   grid-template-columns: 1fr 0.2fr;
+}
+
+/* toggle类字段由于控件极窄，右侧只需按内容自适应，将剩余空间全部给左侧文本区 */
+.cfg-field.cfg-field--toggle {
+  grid-template-columns: 1fr auto;
 }
 
 .cfg-field:last-child {
