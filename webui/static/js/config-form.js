@@ -127,9 +127,37 @@ const MINI_GENERIC_INFO = {
 </div>
 
 <div class="mtt-tag-note">
-  * 流量信息按订阅实时更新，请在 订阅管理 内详细设置。
+      * 流量信息按订阅实时更新，请在 订阅管理 内详细设置。
+    </div>
+`},
+  'notify-title': {
+    title: '通知',
+    tagLabel: '配置',
+    tagVal: 'notify-title',
+    color: 'var(--accent, #3b82f6)',
+    desc: () => {
+      // 从 DOM 读取用户输入
+      const inp = document.querySelector('input[data-key="notify-title"], textarea[data-key="notify-title"]');
+      let val = inp ? inp.value.trim() : '';
+      if (!val) val = '🔔 节点状态更新';
+
+      // 简单防 XSS 注入
+      val = val.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      return `
+<div class="mtt-tag-list traffic-card">
+  <div class="mtt-traffic-inline" style="display: block; line-height: 1.6; padding: 2px 0;">
+    <div style="font-weight: 700; color: color-mix(in srgb, var(--fg) 90%, transparent); margin-bottom: 2px;">${val}</div>
+    <div style="color: color-mix(in srgb, var(--fg) 85%, transparent);">✅ 可用节点：520</div>
+    <div style="color: color-mix(in srgb, var(--fg) 85%, transparent);">📊 消耗流量：13.14 GB</div>
+    <div style="color: color-mix(in srgb, var(--fg) 85%, transparent);">🕒 2099-05-20 13:14:99</div>
+  </div>
 </div>
-`}
+<div class="mtt-tag-note">
+  * 此为模拟通知预览，实际数值由检测结果动态决定。
+</div>`;
+    }
+  }
 };
 
 function getMiniProtoInfo(name) {
@@ -181,7 +209,10 @@ function _getMiniTooltipContent(el) {
   if (genInfo) {
     const info = MINI_GENERIC_INFO[genInfo.dataset.infoMini];
     if (!info) return null;
-    return { title: info.title, tagLabel: info.tagLabel, tagVal: info.tagVal, desc: info.desc, color: info.color };
+
+    // 若为函数则动态生成内容
+    const descContent = typeof info.desc === 'function' ? info.desc() : info.desc;
+    return { title: info.title, tagLabel: info.tagLabel, tagVal: info.tagVal, desc: descContent, color: info.color };
   }
 }
 
@@ -869,7 +900,10 @@ const SCHEMA = [
           },
           {
             key: 'notify-title', label: '通知标题', type: 'text', fullWidth: true, placeholder: '🔔 节点状态更新',
-            hint: '自定义检测完成后发送可用节点数量的通知标题'
+            hint: '自定义检测完成后发送可用节点数量的通知标题',
+            links: [
+              { label: '通知预览', miniInfo: 'notify-title', icon: 'docs' }
+            ],
           },
         ],
       },
