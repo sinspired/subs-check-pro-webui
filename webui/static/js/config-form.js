@@ -111,7 +111,25 @@ const MINI_GENERIC_INFO = {
   * 前两位字母是实际浏览网站识别的位置，<span class="mtt-badge-muted" style="min-width:auto;padding:0 4px;">-US⁰</span> 为使用 <span class="mtt-badge-muted" style="min-width:auto;padding:0 4px;">CF CDN</span> 服务的网站识别的位置 (如 GPT, Claude, X 等)。
 </div>
 </div>`
-  }
+  },
+  'traffic-info': {
+    title: '流量信息',
+    tagLabel: '配置',
+    tagVal: 'traffic-info',
+    color: 'var(--accent, #3b82f6)',
+    desc: `
+<div class="mtt-tag-list traffic-card">
+  <div class="mtt-tag-title">流量信息示例</div>
+
+  <div class="mtt-tag-item mtt-traffic-inline">
+    ♾️ 05-20 13:14 | 9.99 GB | 9 点重置 | [🏴‍☠️]
+  </div>
+</div>
+
+<div class="mtt-tag-note">
+  * 流量信息按订阅实时更新。
+</div>
+`}
 };
 
 function getMiniProtoInfo(name) {
@@ -735,7 +753,10 @@ const SCHEMA = [
           {
             key: 'sub-process.sub-info', label: '注入流量信息节点', type: 'toggle',
             hint: '在订阅开头注入虚拟节点，用于在客户端展示剩余流量、更新时间等信息',
-            links: [{ label: '脚本示例', href: 'https://raw.githubusercontent.com/sinspired/sub-store-scripts/refs/heads/main/surge/modules/sub-store-scripts/sub-info/node.js', icon: 'jsFile' }],
+            links: [
+              { label: '脚本', href: 'https://raw.githubusercontent.com/sinspired/sub-store-scripts/refs/heads/main/surge/modules/sub-store-scripts/sub-info/node.js', icon: 'jsFile' },
+              { label: '流量信息', miniInfo: 'traffic-info', icon: 'docs' }
+            ],
           },
           {
             key: 'sub-process.node-split', label: '节点裂变', type: 'toggle',

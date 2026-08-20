@@ -124,7 +124,6 @@
 }
 
 @keyframes splitPulse {
-
   0%,
   100% {
     transform: scaleX(1);
@@ -164,7 +163,6 @@
    小屏（≤540px）— 合并块
 ════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-
   /* 预览面板铺满全屏 */
   .cfg-preview-panel {
     position: fixed !important;
@@ -282,7 +280,8 @@
 .cfg-tab.active-right {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 6%, transparent);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: inset 0 0 0 1.5px
+    color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 @media (max-width: 1099px) {
@@ -303,7 +302,8 @@
   margin: 0 -12px -12px;
   padding: 0 6px 14px 14px;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--scroll-bg) 40%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--scroll-bg) 40%, transparent)
+    transparent;
   background: transparent;
   border-radius: 0 0 12px 12px;
   box-shadow: inset 0 0 12px var(--edit-shadow, rgba(0, 0, 0, 0.06));
@@ -621,7 +621,7 @@
   min-width: 0;
 }
 
-.cfg-field.full-width .cfg-ctrl>* {
+.cfg-field.full-width .cfg-ctrl > * {
   width: 100%;
   max-width: 100%;
 }
@@ -1061,14 +1061,16 @@
 /* 编辑模式：输入框红边 */
 .cfg-cron-input--error {
   border-color: var(--danger, #ef4444) !important;
-  box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--danger, #ef4444) 18%, transparent) !important;
+  box-shadow: 0 0 0 2.5px
+    color-mix(in srgb, var(--danger, #ef4444) 18%, transparent) !important;
   color: var(--danger, #ef4444);
 }
 
 /* 展示模式：display 层红边（失焦后渲染） */
 .cfg-cron-display--error {
   border-color: var(--danger, #ef4444);
-  box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--danger, #ef4444) 15%, transparent);
+  box-shadow: 0 0 0 2.5px
+    color-mix(in srgb, var(--danger, #ef4444) 15%, transparent);
 }
 
 .cfg-cron-display--error .cfg-cron-raw-text {
@@ -1306,15 +1308,15 @@
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cfg-toggle input:checked+.cfg-toggle-slider {
+.cfg-toggle input:checked + .cfg-toggle-slider {
   background: var(--accent);
 }
 
-.cfg-toggle input:checked+.cfg-toggle-slider::before {
+.cfg-toggle input:checked + .cfg-toggle-slider::before {
   transform: translateX(16px);
 }
 
-.cfg-toggle input:focus-visible+.cfg-toggle-slider {
+.cfg-toggle input:focus-visible + .cfg-toggle-slider {
   outline: 2px solid var(--accent-light);
   outline-offset: 2px;
 }
@@ -1415,8 +1417,7 @@
   stroke-width: 1.5;
 }
 
-@media (hover: none),
-(pointer: coarse) {
+@media (hover: none), (pointer: coarse) {
   .cfg-chip-info {
     display: inline-flex;
   }
@@ -1440,7 +1441,7 @@
 }
 
 /* 由于拖拽按钮,我们将列表整体左移并补偿宽度 */
-.cfg-field.full-width .cfg-ctrl>.cfg-url-list {
+.cfg-field.full-width .cfg-ctrl > .cfg-url-list {
   margin-left: -18px;
   width: calc(100% + 18px);
   max-width: calc(100% + 18px);
@@ -1502,7 +1503,7 @@
 }
 
 /* 有内容时图标颜色跟随主题色 */
-.cfg-url-input-wrap .cfg-url-input:not(:placeholder-shown)~.cfg-url-icon,
+.cfg-url-input-wrap .cfg-url-input:not(:placeholder-shown) ~ .cfg-url-icon,
 .cfg-url-input-wrap:focus-within .cfg-url-icon {
   color: var(--accent, #4a9eff);
 }
@@ -1603,7 +1604,8 @@
   word-break: break-all;
   /* 细滚动条 */
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--border) 80%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--border) 80%, transparent)
+    transparent;
 }
 
 .cfg-url-item .cfg-url-input::-webkit-scrollbar {
@@ -1752,7 +1754,8 @@ textarea.cfg-expandable-input {
   /* 默认保持单行不换行 */
   word-break: break-all;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--border) 80%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--border) 80%, transparent)
+    transparent;
   display: block;
   font-family: var(--font-mono, monospace);
   line-height: 1.5;
@@ -1920,7 +1923,8 @@ textarea.cfg-expandable-input:focus {
   background: color-mix(in srgb, var(--success, #22c55e) 14%, transparent);
   border-color: color-mix(in srgb, var(--success, #22c55e) 40%, transparent);
   transform: translateX(3px);
-  box-shadow: -3px 0 0 color-mix(in srgb, var(--success, #22c55e) 50%, transparent);
+  box-shadow: -3px 0 0
+    color-mix(in srgb, var(--success, #22c55e) 50%, transparent);
 }
 
 .cfg-cron-badge--active {
@@ -1941,7 +1945,8 @@ textarea.cfg-expandable-input:focus {
 
 .cfg-cron-badge--paused:hover {
   transform: translateX(3px);
-  box-shadow: -3px 0 0 color-mix(in srgb, var(--warning, #f59e0b) 50%, transparent);
+  box-shadow: -3px 0 0
+    color-mix(in srgb, var(--warning, #f59e0b) 50%, transparent);
 }
 
 .cfg-cron-badge svg {
@@ -2132,7 +2137,8 @@ textarea.cfg-expandable-input:focus {
   justify-content: space-between;
   padding: 4px 0;
   gap: 8px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border, rgba(0, 0, 0, 0.08)) 55%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border, rgba(0, 0, 0, 0.08)) 55%, transparent);
 }
 
 .pv-kv:last-child {
@@ -2324,7 +2330,10 @@ textarea.cfg-expandable-input:focus {
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .cfg-proxy-test-btn svg {
@@ -2465,13 +2474,16 @@ textarea.cfg-expandable-input:focus {
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--card-shadow, #000) 12%, transparent),
+  box-shadow:
+    0 8px 24px color-mix(in srgb, var(--card-shadow, #000) 12%, transparent),
     0 0 0 1px color-mix(in srgb, var(--bg) 40%, transparent) inset;
   padding: 12px;
   pointer-events: none;
   opacity: 0;
   transform: scale(0.96) translateY(4px);
-  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 100000;
   color: var(--fg);
   font-family: inherit;
@@ -2532,9 +2544,10 @@ textarea.cfg-expandable-input:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px; 
+  margin-bottom: 4px;
   padding-bottom: 8px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent); /* 加一条柔和的分割线 */
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  /* 加一条柔和的分割线 */
 }
 
 .mtt-tag-list {
@@ -2604,13 +2617,20 @@ textarea.cfg-expandable-input:focus {
 }
 
 .mtt-tag-title {
-  font-size: 0.7em;          /* 比正文小一点 */
-  font-weight: 600;           /* 半粗 */
-  color: var(--muted, #6b7280); /* 灰色，不抢眼 */
-  margin-left: 2px;          /* 和徽章拉开一点距离 */
-  margin-bottom: 4px;         /* 和列表项拉开一点距离 */
-  text-transform: uppercase;  /* 可选：全部大写，更像标签 */
-  letter-spacing: 0.02em;     /* 稍微加点字间距 */
+  font-size: 0.7em;
+  /* 比正文小一点 */
+  font-weight: 600;
+  /* 半粗 */
+  color: var(--muted, #6b7280);
+  /* 灰色，不抢眼 */
+  margin-left: 2px;
+  /* 和徽章拉开一点距离 */
+  margin-bottom: 4px;
+  /* 和列表项拉开一点距离 */
+  text-transform: uppercase;
+  /* 可选：全部大写，更像标签 */
+  letter-spacing: 0.02em;
+  /* 稍微加点字间距 */
 }
 
 /* 灰色：未知 */
@@ -2625,7 +2645,7 @@ textarea.cfg-expandable-input:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px; 
+  margin-bottom: 6px;
   color: color-mix(in srgb, var(--fg) 90%, transparent);
 }
 
@@ -2638,3 +2658,24 @@ textarea.cfg-expandable-input:focus {
   border-top: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
   line-height: 1.5;
 }
+
+/* 流量信息卡片 */
+/* 只在 tooltip 内含有流量卡片时，让 tooltip 宽度自适应内容 */
+#miniHoverTooltip:has(.traffic-card) {
+  width: max-content !important;
+  max-width: 500px; /* 防止太宽，可按需调整 */
+}
+
+
+.mtt-traffic-inline {
+  white-space: normal;          /* 允许换行 */
+  overflow-wrap: anywhere;      /* 必要时断词换行 */
+  word-break: break-word;       /* 防止长节点名撑爆 */
+  
+  font-family: var(--font-mono, "SF Mono", "Fira Code", monospace);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.002em !important;
+  line-height: 1.25;            /* 紧凑行高 */
+}
+
