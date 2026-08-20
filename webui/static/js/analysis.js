@@ -902,7 +902,7 @@ function renderOverview(r, ci, ga, subCount, geoCount, protoCount, cfg) {
         <div class="stat-panel">
             <div class="panel-title">线路质量</div>
             <div class="quality-row">
-                <div class="quality-item card-cf"><div class="quality-val">${cfRatio}</div><div class="quality-label">CF 中转 ¹⁺</div></div>
+                <div class="quality-item card-cf"><div class="quality-val">${cfRatio}</div><div class="quality-label">CF 中转 ¹⁺⁰</div></div>
                 <div class="quality-item card-vps"><div class="quality-val">${vpsRatioStr}</div><div class="quality-label">独立 VPS ²</div></div>
             </div>
             <div class="cf-breakdown">
