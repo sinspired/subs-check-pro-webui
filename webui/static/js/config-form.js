@@ -127,7 +127,7 @@ const MINI_GENERIC_INFO = {
 </div>
 
 <div class="mtt-tag-note">
-  * 流量信息按订阅实时更新。
+  * 流量信息按订阅实时更新，请在 订阅管理 内详细设置。
 </div>
 `}
 };
