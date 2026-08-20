@@ -1061,7 +1061,7 @@ const FIELD_VALIDATORS = {
   'isp-timeout': v => {
     const n = Number(v);
     if (n < 0) return { level: 'warn', msg: '超时时间必须大于 0' };
-    if (n === 0) return { level: 'warn', msg: '超时时间默认为 5 秒' };
+    if (n === 0) return { level: 'info', msg: '超时时间默认为 5 秒' };
     if (n > 15) return { level: 'warn', msg: 'ISP 检测超时不会超过 15s' };
     return null;
   },
