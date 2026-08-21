@@ -398,7 +398,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           if (
             prevLine.includes('手动触发检测') ||
             prevLine.includes('启动检测任务') ||
-            prevLine.includes('开始检测')
+            line.includes('开始检测') ||
+            line.includes('配置文件读取成功')
           ) {
             isValid = true
             break
@@ -446,7 +447,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       if (
         line.includes('手动触发检测') ||
         line.includes('启动检测任务') ||
-        line.includes('开始检测')
+        line.includes('开始检测') ||
+        line.includes('配置文件读取成功')
       ) {
         return null
       }
@@ -717,6 +719,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       const d = r.payload || {}
       const checking = !!d.checking
+      const fetching = !!d.fetching
 
       const forceClose = !!d.forceClose // 获取后端返回的 forceClose 状态
       const successlimited = !!d.successlimited // 获取数量限制标志
@@ -752,42 +755,31 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           }
         } else if (successlimited || processResults) {
           updateToggleUI('stopping')
+        } else if (fetching) {
+          updateToggleUI('preparing')
         } else if (processed === 0) {
           updateToggleUI('preparing')
         } else {
           updateToggleUI('checking')
         }
 
-        // ==================== 阶段 1: 准备阶段 (Progress = 0) ====================
+        // ==================== 阶段 1: 准备阶段 (Progress = 0 且非 fetching) ====================
         if (
           processed === 0 &&
           !forceClose &&
           !successlimited &&
           !processResults &&
-          !checking
+          !fetching
         ) {
           switchUIState('preparing')
-          updateToggleUI('preparing')
           showProgressUI(false) // 隐藏进度条，保留 History 面板
-
-          // 1. 更新状态栏 (只显示简略信息)
-          // if (els.statusEl) {
-          //   els.statusEl.innerHTML = `${STATUS_SPINNER}<span>正在解析订阅...</span>`
-          //   els.statusEl.className = 'muted status-label status-prepare'
-          // }
-
-          // 2. 解析日志数据
-          const stats = parseSubStats(lastLogLines)
-
-          // 3. 渲染到历史表格 (Local/Remote...)
-          renderPrepareToHistory(stats)
+          restoreHistoryTitle() // 确保清理掉可能残留的界面影响
         }
-        // ==================== 阶段 2: 检测阶段 (Progress > 0) ====================
+        // ==================== 阶段 2: 进度展示阶段 ====================
         else {
+          switchUIState('checking')
           showProgressUI(true) // 隐藏 History 面板，显示进度条
-
-          // 恢复标题 (为下次显示做准备)
-          restoreHistoryTitle()
+          restoreHistoryTitle() // 恢复原有的卡片视图
 
           // updateProgress 会接管 StatusEl 的倒计时显示
           updateProgress(
@@ -803,13 +795,31 @@ import { initQuickPreview } from './cfg-quickpreview.js';
             forceClose,
             successlimited,
             processResults,
-            d.eta ?? 0        // ← 新增，来自后端 ETASeconds
+            d.eta ?? 0
           )
 
-          hideLastCheckResult() // 确保 History 隐藏
+          hideLastCheckResult() // 确保检测时 History 隐藏
 
           // 确保内存变量同步，防止下次循环丢失
           if (realStartTime && !checkStartTime) checkStartTime = realStartTime
+        }
+
+        // 如果处于订阅拉取或准备阶段，将统计数值补充到日志顶部的任务状态栏
+        if (fetching || processed === 0) {
+          const stats = parseSubStats(lastLogLines)
+          if (stats) {
+            let parts = []
+            if (stats.local) parts.push(`本地: <span style="font-weight:600;color:var(--success)">${stats.local}</span>`)
+            if (stats.remote) parts.push(`远程: <span style="font-weight:600;color:var(--success)">${stats.remote}</span>`)
+            if (stats.history) parts.push(`历史: <span style="font-weight:600;color:var(--success)">${stats.history}</span>`)
+
+            if (parts.length > 0) {
+              if (els.statusEl) {
+                els.statusEl.innerHTML = `${checking_SPINNER}<span>正在${d.stepName || '获取'} 丨${parts.join(' | ')}</span>`
+                els.statusEl.className = 'muted status-label status-prepare'
+              }
+            }
+          }
         }
 
         if (!checkStartTime) checkStartTime = Date.now()
@@ -1005,13 +1015,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
     // --- 3. ETA 文字（后端值，替换原计算段） ---
     let etaText = ''
-    if (processResults) {
-      if (els.progressPercentTitle) els.progressPercentTitle.textContent = "保存中"
-      els.progressPercent.textContent = '...'
-      els.progressPercent.style.display = ''
-      etaText = '正在保存检测结果...'
-      if (els.statusEl) els.statusEl.className = 'muted status-label status-stopping'
-    } else if (forceClose) {
+    if (forceClose) {
       etaText = '等待检测完成...'
       if (els.statusEl) els.statusEl.className = 'muted status-label status-forcing'
     } else if (successlimited) {
@@ -1029,11 +1033,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         const runSec = state.startTime ? Math.floor((now - state.startTime) / 1000) : 0
         els.statusEl.title = runSec > 0 ? `已运行: ${runSec}s` : ''
 
-        if (processed === 0 && !processResults && !forceClose && !successlimited) {
-          if (els.progressPercentTitle) els.progressPercentTitle.textContent = "获取订阅"
-          els.statusEl.textContent = '正在获取订阅...'
-          els.statusEl.className = 'muted status-label status-prepare'
-        } else if (processResults) {
+        if (processResults) {
           els.statusEl.innerHTML = `${checking_SPINNER}<span>${etaText}</span>`
           els.statusEl.className = 'muted status-label status-process'
         } else if (forceClose || successlimited) {
@@ -1042,10 +1042,10 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           els.statusEl.innerHTML = `${checking_SPINNER}<span>已启动, 计算剩余时间...</span>`
           els.statusEl.className = 'muted status-label status-calculating'
         } else if (!etaText) {
-          if (els.progressPercentTitle) els.progressPercentTitle.textContent = "保存中"
-          els.progressPercent.textContent = '...'
+          if (els.progressPercentTitle) els.progressPercentTitle.textContent = stepName
+          els.progressPercent.textContent = ''
           els.progressPercent.style.display = ''
-          els.statusEl.innerHTML = `<span>正在保存检测结果...</span>`
+          els.statusEl.innerHTML = `<span>${stepName}...</span>`
           els.statusEl.className = 'muted status-label status-process'
         } else if (etaText) {
           els.statusEl.innerHTML = `${checking_SPINNER}<span>运行中, 预计剩余: ${etaText}</span>`
