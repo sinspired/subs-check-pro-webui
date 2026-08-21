@@ -732,6 +732,7 @@ const SCHEMA = [
           { key: 'node-prefix', label: '节点前缀', type: 'text', placeholder: 'Ubuntu-', hint: '依赖"检测 - 重命名节点"开关' },
         ],
       },
+      // TODO:添加手动更新按钮
       {
         title: '覆写规则 (Sub-Store)',
         fields: [
@@ -970,6 +971,7 @@ const SCHEMA = [
         ],
       },
       {
+        // TODO:添加手动更新按钮
         title: 'Singbox 规则',
         fields: [
           {
