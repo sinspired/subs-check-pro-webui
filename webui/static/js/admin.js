@@ -2502,25 +2502,25 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     }
   }
 
-
+  // 保存配置
   async function saveConfigWithValidation() {
     if (!sessionKey) return
     let formatted
+
     try {
       if (editorMode === 'form') {
         const doc = window.YAML.parseDocument(_rawConfigYaml || '')
         if (doc.errors?.length)
           return showToast('原始配置 YAML 解析错误：' + doc.errors[0].message, 'error', 5000)
+
         function setDocValue(doc, key, value) {
           if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
             // 嵌套对象：逐字段 set，保留同级注释
             for (const [subKey, subVal] of Object.entries(value)) {
               const node = doc.getIn([key]);
               if (node && typeof node === 'object') {
-                // 子节点已存在，递归设置
                 doc.setIn([key, subKey], subVal);
               } else {
-                // 整块不存在，直接 set 整个对象
                 doc.set(key, value);
                 break;
               }
@@ -2534,8 +2534,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           setDocValue(doc, k, v);
         }
         formatted = doc.toString({ lineWidth: 0 })
-        _rawConfigYaml = formatted
-
       } else {
         if (!codeMirrorView) return
         const raw = codeMirrorView.state.doc.toString()
@@ -2544,12 +2542,14 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           return showToast('YAML 语法错误：' + doc.errors[0].message, 'error', 5000)
         formatted = doc.toString({ lineWidth: 0 })
         setEditorContent(formatted)
-        _rawConfigYaml = formatted
 
         // YAML 保存后立即同步表单数据
         try { renderConfigForm(window.YAML.parse(formatted)) }
         catch (e) { console.warn('保存后同步表单失败:', e) }
       }
+
+      _rawConfigYaml = formatted
+
     } catch (e) {
       return showToast('校验失败：' + e.message, 'error')
     }
@@ -2559,12 +2559,40 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: formatted })
     })
+
     if (r.ok) {
-      showToast(r.payload?.message || '保存成功', 'success')
+      showToast(r.payload?.message || '配置已保存', 'success')
       _cachedSubStoreConfig = null
       cachedConfigPayload = null
+
+      if (r.payload?.substore_syncing) {
+        const timeout = r.payload.substore_need_ghproxy ? 18000 : 3000
+        showToast('已触发 sub-store 后台更新', 'info', timeout)
+        // 启动轮询，监听同步结束
+        pollSubStoreSyncStatus()
+      }
+
     } else {
       showToast('保存失败: ' + (r.payload?.error || '未知错误'), 'error')
+    }
+  }
+
+  // 轮询函数，用来在后台同步时监听状态
+  async function pollSubStoreSyncStatus() {
+    try {
+      const res = await sfetch('/api/status')
+      if (res.ok) {
+        // 如果同步还在进行中，隔 1 秒再查一次
+        if (res.payload.subStoreSyncing) {
+          setTimeout(pollSubStoreSyncStatus, 1000)
+        } else {
+          // 同步状态变为 false，说明同步结束，显示成功提示
+          showToast('sub-store 后台更新完成', 'success', 5000)
+        }
+      }
+    } catch (e) {
+      // 遇到网络波动，隔 2 秒重试
+      setTimeout(pollSubStoreSyncStatus, 2000)
     }
   }
 
