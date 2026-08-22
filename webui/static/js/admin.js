@@ -405,7 +405,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       setTimeout(() => overlay.remove(), 250);
     };
 
-    document.getElementById('cfWikiBtn').onclick = () => window.open('https://github.com/sinspired/subs-check-pro/wiki/Cloudflare-Tunnel', '_blank');
+    document.getElementById('cfWikiBtn').onclick = () => window.open('https://sinspired.github.io/subs-check-pro/docs/Cloudflare-Tunnel', '_blank');
     document.getElementById('cfGoBtn').onclick = () => window.open('https://one.dash.cloudflare.com/', '_blank');
 
     if (allowDismiss) {
