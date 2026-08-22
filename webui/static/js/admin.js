@@ -309,6 +309,147 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   /**
+     * 渲染 Cloudflare 路由映射建议弹窗
+     * @param {boolean} isLegacy 是否为旧版兼容模式
+     * @param {string} subStorePath Sub-Store路径
+     * @param {string} subStorePort Sub-Store端口
+     * @param {boolean} allowDismiss 是否允许显示"以后提醒/不再提醒"记忆按钮
+     */
+  function showCfTunnelRouteWarning(isLegacy, subStorePath = '', subStorePort = '8299', allowDismiss = false) {
+    if (document.getElementById('cfTunnelWarnOverlay')) return;
+
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+    const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+
+    let rootDomain = '你的域名.com';
+    if (!isIp && parts.length >= 2) {
+      rootDomain = parts.length > 2 ? parts.slice(1).join('.') : hostname;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'cfTunnelWarnOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.25s ease;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);';
+
+    const modal = document.createElement('div');
+    modal.className = 'card';
+    modal.style.cssText = 'width:92%;max-width:480px;padding:24px;position:relative;transform:translateY(15px);transition:transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);display:flex;flex-direction:column;gap:18px;box-shadow:var(--glass-shadow);border:1px solid var(--border);';
+
+    // 优化后的描述文案，加入 ICNY 超链接并明确旧版路由
+    const incyLink = '<a href="https://incy.cc/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">INCY</a>';
+    const desc = isLegacy
+      ? `原订阅管理子域名 <b style="color:var(--accent);">sub_store_for_subs_check</b> 包含下划线，不符合 RFC 规范，会导致 ${incyLink} 等代理软件无法拉取订阅。`
+      : `未设置订阅管理子域名，将无法在公网更新订阅链接和管理管理订阅。`;
+
+    // 根据 allowDismiss 决定底部操作区的渲染
+    const actionButtons = allowDismiss ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;">
+        <button id="cfNeverBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;opacity:0.6;">不再提醒</button>
+        <button id="cfLaterBtn" style="background:none;border:none;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;">以后提醒</button>
+      </div>
+    ` : `
+      <div style="text-align:center;">
+        <button id="cfCloseBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;">关闭提示</button>
+      </div>
+    `;
+
+    modal.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span style="font-size:16px;font-weight:800;letter-spacing:0.5px;">路由映射建议</span>
+      </div>
+      
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <p style="font-size:12px;color:var(--fg);opacity:0.55;line-height:1.6;margin:0;">
+          ${desc}
+        </p>
+
+        <p style="font-size:13px;color:var(--fg);opacity:0.85;line-height:1.6;margin:0;">
+          请在 Cloudflare Tunnel 添加以下 <b>HTTP</b> 映射：
+        </p>
+      </div>
+      
+      <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-family:var(--font-code);font-size:12px;">
+        <table style="width:100%;border-collapse:collapse;text-align:left;">
+          <thead style="background:color-mix(in srgb, var(--fg) 5%, transparent);color:var(--muted);">
+            <tr>
+              <th style="padding:8px 12px;font-weight:600;font-size:11px;">应用程序路由</th>
+              <th style="padding:8px 12px;font-weight:600;font-size:11px;">服务</th>
+            </tr>
+          </thead>
+          <tbody style="color:var(--fg);">
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:10px 12px;word-break:break-all;"><span style="color:var(--accent);font-weight:600;">scp-store</span>.${rootDomain}</td>
+              <td style="padding:10px 12px;color:var(--success);">localhost:${subStorePort}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;gap:10px;">
+           <button id="cfGoBtn" class="btn" style="flex:1.2;background:var(--accent);color:#fff;border:none;font-weight:600;height:38px;">前往 Cloudflare</button>
+           <button id="cfWikiBtn" class="btn" style="flex:1;height:38px;">查看文档</button>
+        </div>
+        ${actionButtons}
+      </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => { overlay.style.opacity = '1'; modal.style.transform = 'translateY(0)'; });
+
+    const closeOverlay = () => {
+      overlay.style.opacity = '0';
+      modal.style.transform = 'translateY(10px)';
+      setTimeout(() => overlay.remove(), 250);
+    };
+
+    document.getElementById('cfWikiBtn').onclick = () => window.open('https://github.com/sinspired/subs-check-pro/wiki/Cloudflare-Tunnel', '_blank');
+    document.getElementById('cfGoBtn').onclick = () => window.open('https://one.dash.cloudflare.com/', '_blank');
+
+    if (allowDismiss) {
+      document.getElementById('cfLaterBtn').onclick = () => {
+        localStorage.setItem('scp_cftunnel_warn_dismissed', Date.now().toString());
+        closeOverlay();
+      };
+      document.getElementById('cfNeverBtn').onclick = () => {
+        const msg = isLegacy
+          ? '确定不再提示？\n强烈建议您尽快完成 scp-store 映射，以确保分享链接的兼容性。'
+          : '确定不再主动提示？\n如果未配置专属映射，后续在使用分享和订阅功能时，依然会弹出此窗口。';
+        if (confirm(msg)) {
+          localStorage.setItem('scp_cftunnel_warn_forever', 'true');
+          closeOverlay();
+        }
+      };
+    } else {
+      document.getElementById('cfCloseBtn').onclick = closeOverlay;
+    }
+  }
+
+  /**
+     * 检查是否需要显示路由映射的预检弹窗
+     */
+  function checkAndShowRouteWarning(status, path, port) {
+    if (localStorage.getItem('scp_cftunnel_warn_forever') === 'true') return;
+    const dismissedAt = localStorage.getItem('scp_cftunnel_warn_dismissed');
+    if (dismissedAt && (Date.now() - parseInt(dismissedAt, 10) < 24 * 60 * 60 * 1000)) return;
+
+    // 从预检或兼容模式调用的弹窗，允许显示记忆按钮 (true)
+    showCfTunnelRouteWarning(status === 'legacy', path, port, true);
+  }
+
+  /**
+   * 检查是否需要显示兼容模式的弹窗
+   */
+  function checkAndShowLegacyWarning(path, port) {
+    if (localStorage.getItem('scp_cftunnel_warn_forever') === 'true') return;
+    const dismissedAt = localStorage.getItem('scp_cftunnel_warn_dismissed');
+    if (dismissedAt && (Date.now() - parseInt(dismissedAt, 10) < 24 * 60 * 60 * 1000)) return;
+    showCfTunnelRouteWarning(true, path, port);
+  }
+
+  /**
    * 转义 HTML 字符串
    * @param {string} s 原始字符串
    * @returns {string} 转义后的安全字符串
@@ -718,15 +859,20 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       }
 
       const d = r.payload || {}
+
+      // 将后端推流的数据存为全局变量，供秒开菜单使用
+      window.__scp_subStoreRunning = !!d.isSubStoreRunning;
+      window.__scp_subStorePort = d.subStorePort || '';
+      window.__scp_subStorePath = d.subStorePath || '';
+      window.__scp_singboxOld = d.singboxOld || '';
+      window.__scp_singboxLatest = d.singboxLatest || '';
+
       const checking = !!d.checking
       const fetching = !!d.fetching
 
       const forceClose = !!d.forceClose // 获取后端返回的 forceClose 状态
       const successlimited = !!d.successlimited // 获取数量限制标志
       const processResults = !!d.processResults // 正在处理结果阶段
-
-      // 将 Sub-Store 运行状态缓存为全局变量，供分享菜单读取
-      window.__scp_subStoreRunning = !!d.isSubStoreRunning;
 
       let realStartTime = null
       if (checking && lastLogLines && lastLogLines.length > 0) {
@@ -2170,123 +2316,84 @@ import { initQuickPreview } from './cfg-quickpreview.js';
    */
 
   /**
-   * 获取 sub-store 配置，主要包括 sub-store 路径和端口。
-   *
-   * @async
-   * @returns {Object} 配置对象
-   * @returns {string} returns.subStorePath sub-store 的路径
-   * @returns {string|number} returns.portStr sub-store 的端口号
-   *
-   * @throws {Error} 当配置读取失败时抛出异常
-   *
-   * @example
-   * const cfg = await fetchSubStoreConfig();
-   * console.log(cfg.subStorePath,cfg.subStorePathYaml, cfg.portStr);
-   */
-  async function fetchSubStoreConfig() {
-    const r = await sfetch(API.config)
-    if (!r.ok) throw new Error('读取配置失败')
-    const config = YAML.parse(r.payload?.content ?? '')
-    return {
-      subStorePath: r.payload?.sub_store_path ?? '',
-      subStorePathYaml: config['sub-store-path'],
-      portStr: config['sub-store-port']
-    }
-  }
+     * 构建 Sub-Store 访问 URL (直接读取内存，0延迟)
+     */
+  function buildSubStoreUrl() {
+    let path = window.__scp_subStorePath || '';
+    if (!path.startsWith('/')) path = '/' + path;
 
-  /**
-   * 构建 Sub-Store 访问 URL
-   * @param {Object} config 配置对象
-   * @returns {Object} 包含完整 URL 和 subStorePath
-   */
-  function buildSubStoreUrl(config) {
-    const { subStorePath, subStorePathYaml, portStr } = config
-    if (!subStorePath) throw new Error('配置中未找到 sub_store_path')
-    if (!subStorePathYaml || subStorePathYaml === '')
-      showToast('您未设置sub-store-path，当前使用随机值。请尽快设置！', 'warn')
-
-    let path = subStorePath
-    if (path && !path.startsWith('/') && path.length > 1) {
-      path = '/' + path
-    }
-
-    const cleanPort = (portStr ?? '').toString().trim().replace(/^:/, '')
-
+    const cleanPort = String(window.__scp_subStorePort).trim().replace(/^:/, '');
     // Wails GUI 优先
     // 在 Wails WebView 中 window.location 为 wails:// 或 http://wails.localhost，
     // 无法用于构造真实的后端地址。优先使用 Go 模板注入的 __WAILS_GUI.baseURL
     // （形如 http://127.0.0.1:8199），仅在普通浏览器环境下回退到 window.location。
     const wailsBase = window.__WAILS_GUI?.baseURL  // e.g. "http://127.0.0.1:8199"
-    let baseUrl
 
+    let baseUrl;
     if (wailsBase) {
       // 替换端口为 sub-store 端口（如果有）
       if (cleanPort) {
         try {
-          const u = new URL(wailsBase)
-          u.port = cleanPort
-          baseUrl = u.origin  // "http://127.0.0.1:8299"
-        } catch {
-          baseUrl = wailsBase.replace(/\/$/, '')
-        }
+          const u = new URL(wailsBase); u.port = cleanPort; baseUrl = u.origin;
+        } catch { baseUrl = wailsBase.replace(/\/$/, ''); }
       } else {
-        baseUrl = wailsBase.replace(/\/$/, '')
+        baseUrl = wailsBase.replace(/\/$/, '');
       }
     } else {
-      const currentPort = window.location.port
-      const shouldAddPort = currentPort && currentPort !== ''
-      const portToAdd = shouldAddPort && cleanPort ? ':' + cleanPort : ''
+      const status = getBaseUrl._routeStatus?.status || 'warn';
+      const targetHost = getBaseUrl._cachedHostname || window.location.hostname;
 
-      let hostname = window.location.hostname
-      if (!shouldAddPort) {
-        const parts = hostname.split('.')
-        // 防止 IP 地址访问时生成错误的域名 (如: sub_store.104.56.43.43)
-        const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname)
-
-        if (parts.length > 1 && !isIp) {
-          const root = parts.length === 2 ? hostname : parts.slice(1).join('.')
-          hostname = `scp-store.${root}`   // 新域名（符合 RFC）
-        }
-      }
-
-      baseUrl = window.location.protocol + '//' + hostname + portToAdd
+      // 局域网访问(local)：自动带上后台传来的 cleanPort 端口
+      // 公网访问(ok/legacy/warn)：CF Tunnel 代理，不加端口
+      const portToAdd = (status === 'local' && cleanPort) ? `:${cleanPort}` : '';
+      baseUrl = window.location.protocol + '//' + targetHost + portToAdd;
     }
 
-    const isFirstTime = lastSubStorePath === null
-    const isPathChanged = lastSubStorePath !== subStorePath
+    const isFirstTime = lastSubStorePath === null;
+    const isPathChanged = lastSubStorePath !== path;
 
     return {
       url: isFirstTime || isPathChanged ? `${baseUrl}?api=${path}` : baseUrl,
-      subStorePath
-    }
+      subStorePath: path
+    };
   }
 
   async function handleOpenSubStore(e) {
-    e.preventDefault()
-    if (!sessionKey) {
-      showLogin(true)
-      return
+    e.preventDefault();
+    if (!sessionKey) { showLogin(true); return; }
+
+    if (getBaseUrl._prefetchPromise) await getBaseUrl._prefetchPromise;
+    const info = getBaseUrl._routeStatus;
+
+    if (info && info.status === 'warn') {
+      showCfTunnelRouteWarning(false, info.path, info.port, false);
+      return;
     }
 
-    const isWails = !!window.__WAILS_GUI?.baseURL
+    if (info && info.status === 'legacy') {
+      showToast('建议尽快使用 scp-store 替换 sub_store_for_subs_check 子域名映射', 'info', 5000);
+      checkAndShowRouteWarning(info.status, info.path, info.port);
+    }
 
     // ── Wails GUI 路径：无弹窗拦截问题，先完成所有异步再触发原生窗口 ──────
-    if (isWails) {
-      fetch('/gui/open-sub-store').catch(err =>
-        showToast('打开订阅管理失败: ' + err.message, 'error')
-      )
-      return
+    if (window.__WAILS_GUI?.baseURL) {
+      fetch('/gui/open-sub-store').catch(err => showToast('打开订阅管理失败: ' + err.message, 'error'));
+      return;
     }
 
     // ── 普通浏览器路径：同步开窗（规避 iOS/Safari 弹窗拦截），异步填充内容 ──
-    const newWindow = window.open('', '_blank')
-    if (!newWindow) {
-      showToast('窗口弹出被拦截', 'warn')
-      return
+
+    // 秒读内存状态
+    if (window.__scp_subStoreRunning === false) {
+      showToast('Sub-Store 服务未运行', 'warn');
+      return;
     }
 
+    const newWindow = window.open('', '_blank');
+    if (!newWindow) { showToast('窗口弹出被拦截', 'warn'); return; }
+
     // 写入过渡 Loading 界面
-    newWindow.document.title = '正在连接 Sub-Store...'
+    newWindow.document.title = '正在连接 Sub-Store...';
     newWindow.document.body.style.cssText = 'margin:0'
     newWindow.document.body.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -2301,95 +2408,22 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       <h3 id="status-text" style="font-weight:600;margin:0 0 6px">正在跳转...</h3>
       <p style="color:#666;font-size:13px;margin:0">正在解析 sub-store 配置并构建连接，请稍候。</p>
     </div>
-  `
-
-    // 超时保护（10 秒）
-    let done = false
-    const timer = setTimeout(() => {
-      if (done) return
-      done = true
-      if (newWindow && !newWindow.closed) {
-        newWindow.document.body.innerHTML = `
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                    height:100vh;font-family:sans-serif;">
-          <h3 style="color:#ff4d4f">连接超时</h3>
-          <p style="color:#666;margin-bottom:20px">获取 sub-store 配置耗时过长，请关闭重试。</p>
-          <button onclick="window.close()"
-                  style="padding:8px 20px;cursor:pointer;background:#fff;border:1px solid #ccc;border-radius:4px">
-            关闭窗口
-          </button>
-        </div>
-      `
-      }
-    }, 10000)
-
-    const abort = (closeFn) => {
-      if (done) return false
-      done = true
-      clearTimeout(timer)
-      closeFn?.()
-      return true
-    }
+  `;
 
     try {
-      const r = await sfetch(API.status)
-      if (!r.ok) {
-        if (!abort(() => newWindow.close())) return
-        if (els.statusEl) {
-          els.statusEl.textContent = '获取状态失败'
-          els.statusEl.className = 'muted status-label status-error'
-        }
-        return
-      }
-
-      const d = r.payload || {}
-      if (!d.isSubStoreRunning) {
-        if (!abort(() => newWindow.close())) return
-        showToast('Sub-Store 服务未运行', 'warn')
-        return
-      }
-
-      if (!_cachedSubStoreConfig) {
-        // 更新过渡页文案
-        const statusEl = newWindow.document.getElementById('status-text')
-        if (statusEl) statusEl.textContent = '正在获取 sub-store 配置...'
-
-        _cachedSubStoreConfig = await fetchSubStoreConfig()
-      }
-
-      const result = buildSubStoreUrl(_cachedSubStoreConfig)
-      lastSubStorePath = result.subStorePath
-
-      if (!abort()) return   // 超时已触发，放弃跳转
-      newWindow.location.href = result.url
-
+      // 零网络请求，直接构造并跳转
+      const result = buildSubStoreUrl();
+      lastSubStorePath = result.subStorePath;
+      newWindow.location.href = result.url;
     } catch (err) {
-      console.error(err)
-      if (!abort()) return
-
-      if (newWindow && !newWindow.closed) {
-        newWindow.document.title = '错误'
-        newWindow.document.body.innerHTML = `
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                    height:100vh;font-family:sans-serif;padding:20px;text-align:center;">
-          <h3 style="color:#ff4d4f;margin-bottom:10px">发生错误</h3>
-          <p style="color:#333;background:#ffebeb;padding:10px;border-radius:5px;font-family:monospace">
-            ${err.message || '未知错误'}
-          </p>
-          <p style="color:#999;font-size:12px;margin-top:10px">请检查网络或后端日志</p>
-          <button onclick="window.close()"
-                  style="margin-top:20px;padding:8px 20px;cursor:pointer;border:1px solid #d9d9d9;
-                         background:#fff;border-radius:4px">关闭</button>
-        </div>
-      `
-      } else {
-        showToast(err.message || '打开失败', 'error')
-      }
+      newWindow.close();
+      showToast(err.message || '打开失败', 'error');
     }
   }
 
   /**
      * 获取分享链接的 Base URL
+     * 严格探测推荐路由 scp-store 或兼容路由 legacy
      * @param {string} path 路径
      * @param {string|number} port 端口号
      * @returns {Promise<string>} 可用的 Base URL
@@ -2398,98 +2432,85 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     // 在 Wails WebView 中 window.location 为 wails:// 或 http://wails.localhost，
     // 无法用于构造真实的后端地址。优先使用 Go 模板注入的 __WAILS_GUI.baseURL
     // （形如 http://127.0.0.1:8199），仅在普通浏览器环境下回退到 window.location。
-    const wailsBase = window.__WAILS_GUI?.baseURL
+    const wailsBase = window.__WAILS_GUI?.baseURL;
     if (wailsBase) {
-      const cleanPort = port ? String(port).trim().replace(/^:/, '') : ''
-      let base
+      const cleanPort = port ? String(port).trim().replace(/^:/, '') : '';
+      let base;
       if (cleanPort) {
         try {
-          const u = new URL(wailsBase)
-          u.port = cleanPort
-          base = u.origin  // "http://127.0.0.1:8299"
-        } catch {
-          base = wailsBase.replace(/\/$/, '')
-        }
+          const u = new URL(wailsBase); u.port = cleanPort; base = u.origin;
+        } catch { base = wailsBase.replace(/\/$/, ''); }
       } else {
-        base = wailsBase.replace(/\/$/, '')
+        base = wailsBase.replace(/\/$/, '');
       }
-      return `${base}${path}`
+      return `${base}${path}`;
     }
 
-    const protocol = window.location.protocol
-    const hostname = window.location.hostname
-    const baseUrlWithoutPort = `${protocol}//${hostname}`
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
 
-    const currentPort = window.location.port
-    const shouldAddPort = !!currentPort
-    const portToAdd = shouldAddPort && port ? `:${port}` : ''
+    // 局域网特征识别
+    const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+    const isLocalTLD = hostname.endsWith('.local') || hostname.endsWith('.lan');
 
-    // fallback 域名（旧的 sub_store_for_subs_check）
-    let legacy_hostname = hostname
-    let scp_hostname = hostname
-
-    if (!shouldAddPort) {
-      const parts = hostname.split('.')
-      const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname)
-      if (parts.length > 1 && !isIp) {
-        const root =
-          parts.length === 2 ? hostname : parts.slice(1).join('.')
-        scp_hostname = `scp-store.${root}`
-        legacy_hostname = `sub_store_for_subs_check.${root}`
-      }
+    // 1. 缓存短路：如果探测过，瞬间返回
+    if (getBaseUrl._routeStatus) {
+      const st = getBaseUrl._routeStatus.status;
+      const targetHost = getBaseUrl._cachedHostname;
+      // 局域网带端口，公网 CF 路由不带端口
+      if (st === 'local') return `${protocol}//${targetHost}${port ? ':' + port : ''}${path}`;
+      return `${protocol}//${targetHost}${path}`;
     }
 
-    // 缓存校验拦截
-    // 如果之前已经成功检测过可用的域名，直接复用该缓存结果，避免每次重复发网络请求
-    if (getBaseUrl._cachedHostname) {
-      return `${protocol}//${getBaseUrl._cachedHostname}${portToAdd}${path}`
+    // 2. 局域网/本地环境直通：绕过探测，直接返回本地 Host + 端口
+    if (isIp || isLocalhost || isLocalTLD || parts.length < 2) {
+      getBaseUrl._routeStatus = { status: 'local', path, port };
+      getBaseUrl._cachedHostname = hostname;
+      return `${protocol}//${hostname}${port ? ':' + port : ''}${path}`;
     }
 
-    const originalUrl = `${baseUrlWithoutPort}${portToAdd}${path}`
-    const scpUrl = `${protocol}//${scp_hostname}${portToAdd}${path}`
-    const legacyUrl = `${protocol}//${legacy_hostname}${portToAdd}${path}`
+    // 3. 公网环境探测：识别并探测专属路由
+    const baseDomain = parts.length > 2 ? parts.slice(1).join('.') : hostname;
+    const scpHost = `scp-store.${baseDomain}`;
+    const legacyHost = `sub_store_for_subs_check.${baseDomain}`;
+
+    const scpUrl = `${protocol}//${scpHost}${path}`;
+    const legacyUrl = `${protocol}//${legacyHost}${path}`;
 
     try {
-      // ① 先试原始域名
-      const resOriginal = await fetch(originalUrl, { method: 'HEAD' }).catch(
-        () => null
-      )
-      if (resOriginal && resOriginal.ok) {
-        getBaseUrl._cachedHostname = hostname // 写入缓存
-        return originalUrl
+      const probe = async (url) => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          const res = await fetch(url, { method: 'GET', signal: controller.signal });
+          clearTimeout(timeoutId);
+          return res.status < 500;
+        } catch (e) { return false; }
+      };
+
+      const [scpOk, legacyOk] = await Promise.all([probe(scpUrl), probe(legacyUrl)]);
+
+      if (scpOk) {
+        getBaseUrl._cachedHostname = scpHost;
+        getBaseUrl._routeStatus = { status: 'ok', path, port };
+        return scpUrl;
       }
 
-      // ② 原始域名不可用时，并发检测新旧域名
-      const [resScp, resLegacy] = await Promise.all([
-        fetch(scpUrl, { method: 'HEAD' }).catch(() => null),
-        fetch(legacyUrl, { method: 'HEAD' }).catch(() => null)
-      ])
-
-      if (resScp && resScp.ok) {
-        getBaseUrl._cachedHostname = scp_hostname // 写入缓存
-        return scpUrl
+      if (legacyOk) {
+        getBaseUrl._cachedHostname = legacyHost;
+        getBaseUrl._routeStatus = { status: 'legacy', path, port };
+        return legacyUrl;
       }
 
-      if (resLegacy && resLegacy.ok) {
-        showToast(
-          '当前子域不符合 RFC 规范，请尽快在 Cloudflare Tunnel 添加 scp-store 路由！',
-          'warn'
-        )
-        getBaseUrl._cachedHostname = legacy_hostname // 写入缓存
-        return legacyUrl
-      }
-
-      // ③ 三个都不可用时，最后退回原始 URL
-      showToast(
-        '请尽快在 Cloudflare Tunnel 添加 scp-store 路由！',
-        'warn'
-      )
-      getBaseUrl._cachedHostname = hostname // 写入缓存
-      return originalUrl
-    } catch {
-      // 网络异常时，保持原始 fallback 行为
-      getBaseUrl._cachedHostname = legacy_hostname // 写入缓存
-      return legacyUrl
+      getBaseUrl._cachedHostname = scpHost;
+      getBaseUrl._routeStatus = { status: 'warn', path, port };
+      return scpUrl;
+    } catch (e) {
+      getBaseUrl._cachedHostname = scpHost;
+      getBaseUrl._routeStatus = { status: 'warn', path, port };
+      return scpUrl;
     }
   }
 
@@ -3165,81 +3186,54 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         e.preventDefault()
         e.stopPropagation()
 
-        // ── Wails GUI：直接打开独立订阅链接窗口 ──────────────────
         if (window.__WAILS_GUI?.baseURL) {
           fetch('/gui/open-sub-links').catch(() => { })
           return
         }
 
-        const menu = document.getElementById('shareMenu')
-        const pm = document.getElementById('projectMenu')
+        if (getBaseUrl._prefetchPromise) await getBaseUrl._prefetchPromise;
+        const info = getBaseUrl._routeStatus;
 
-        // 1. 将收起菜单的判断置顶！避免任何等待，点击立刻收起
-        if (menu.classList.contains('active')) {
-          menu.classList.remove('active')
-          return
+        if (info && info.status === 'warn') {
+          showCfTunnelRouteWarning(false, info.path, info.port, false);
+          return;
         }
 
-        // 打开分享菜单时，先关闭项目菜单
-        pm?.classList.remove('active')
-
-        if (!sessionKey) {
-          showLogin(true)
-          return
+        if (info && info.status === 'legacy') {
+          // showToast('兼容模式：正在使用旧版下划线域名', 'info', 4000);
+          checkAndShowRouteWarning(info.status, info.path, info.port);
         }
 
-        // 2. 直接读取 loadStatus 后台轮询维护的全局状态，免去 await sfetch(API.status)
+        // 读内存状态
         if (window.__scp_subStoreRunning === false) {
           showToast('Sub-Store 服务未运行，无法分享订阅', 'warn')
           showToast('请修改配置或使用内置文件服务', 'info', 6000)
           return
         }
 
+        const menu = document.getElementById('shareMenu')
+        const pm = document.getElementById('projectMenu')
+
+        pm?.classList.remove('active')
+        if (menu.classList.contains('active')) {
+          menu.classList.remove('active')
+          return
+        }
+
+        if (!sessionKey) {
+          showLogin(true)
+          return
+        }
+
         try {
-          // 1. 检查配置缓存
-          if (!cachedConfigPayload) {
-            const r = await sfetch(API.config)
-            if (!r.ok) return showToast('读取配置失败', 'warn')
-            cachedConfigPayload = r.payload
-          }
+          // 零网络请求拉取参数
+          let path = window.__scp_subStorePath || '/api';
+          if (!path.startsWith('/')) path = '/' + path;
+          const port = String(window.__scp_subStorePort).trim().replace(/^:/, '');
 
-          // 2. 检查版本缓存
-          if (!cachedSingboxVersions) {
-            const v = await sfetch(API.singboxVersions)
-            if (!v.ok) return showToast('读取singbox版本', 'warn')
-            cachedSingboxVersions = v.payload
-          }
+          // 由于缓存了 _routeStatus，这里的 getBaseUrl 实际上也是瞬间完成的 0 网络延迟
+          const baseUrl = await getBaseUrl(path, port);
 
-          // 3. 数据准备
-          const p = cachedConfigPayload
-          const d = cachedSingboxVersions
-          const config = YAML.parse(p?.content ?? '')
-
-          let subStorePath = p?.sub_store_path ?? ''
-          const SubStorePathYaml = config['sub-store-path'] ?? ''
-          if (!subStorePath)
-            return showToast('请先设置 sub_store_path', 'error')
-          if (!SubStorePathYaml || SubStorePathYaml == '')
-            showToast(
-              '您未设置sub-store-path，当前使用随机值。请尽快设置！',
-              'warn'
-            )
-
-          const port = (config['sub-store-port'] ?? '')
-            .toString()
-            .trim()
-            .replace(/^:/, '')
-          let path = subStorePath.startsWith('/')
-            ? subStorePath
-            : `/${subStorePath}`
-
-          const latestSingboxName = `singbox-${d.latest}`
-          const oldSingboxName = `singbox-${d.old}`
-
-          // 4. 使用 getBaseUrl 获取正确地址
-          const baseUrl = await getBaseUrl(path, port)
-
-          // 5. 更新 DOM
           const setLink = (eid, suffix) => {
             const el = document.getElementById(eid)
             if (el) el.dataset.link = `${baseUrl}${suffix}`
@@ -3249,32 +3243,36 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           setLink('v2raySub-item', '/download/sub?target=V2Ray')
           setLink('mihomoSub-item', '/api/file/mihomo')
 
+          const oldSingboxName = `singbox-${window.__scp_singboxOld}`;
+          const latestSingboxName = `singbox-${window.__scp_singboxLatest}`;
+
           const oldItem = document.getElementById('singboxOldSub-item')
-          oldItem.textContent = `${oldSingboxName} 订阅`
-          oldItem.dataset.link = `${baseUrl}/api/file/${oldSingboxName}`
+          if (oldItem) {
+            oldItem.textContent = `${oldSingboxName} 订阅`
+            oldItem.dataset.link = `${baseUrl}/api/file/${oldSingboxName}`
+          }
 
           const newItem = document.getElementById('singboxLatestSub-item')
-          newItem.textContent = `${latestSingboxName} 订阅`
-          newItem.title = `ios设备当前最高兼容 1.11 版本, 当前为 ${latestSingboxName}`
-          newItem.dataset.link = `${baseUrl}/api/file/${latestSingboxName}`
+          if (newItem) {
+            newItem.textContent = `${latestSingboxName} 订阅`
+            newItem.title = `ios设备当前最高兼容 1.11 版本, 当前为 ${latestSingboxName}`
+            newItem.dataset.link = `${baseUrl}/api/file/${latestSingboxName}`
+          }
 
-          // 6. 显示菜单
+          // 显示菜单
           const rect = btn.getBoundingClientRect()
           const isMobile = window.innerWidth < 768
           menu.style.top = `${rect.top}px`
-          menu.style.left = isMobile
-            ? `${rect.left - 160}px`
-            : `${rect.right * 0.9}px`
+          menu.style.left = isMobile ? `${rect.left - 160}px` : `${rect.right * 0.9}px`
           menu.style.transform = 'none'
           menu.classList.add('active')
         } catch (err) {
           console.error(err)
           showToast('获取链接失败', 'error')
-          cachedConfigPayload = null
-          cachedSingboxVersions = null
         }
       })
     }
+
     setupShare('share')
     setupShare('btnShare')
 
@@ -3407,6 +3405,28 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     })
   }
 
+  /**
+     * 预检分享域名：负责探测路由状态
+     */
+  async function prefetchShareDomain() {
+    if (window.__WAILS_GUI?.baseURL) return;
+
+    // 读内存状态
+    let path = window.__scp_subStorePath || '/api';
+    if (!path.startsWith('/')) path = '/' + path;
+    const port = String(window.__scp_subStorePort).trim().replace(/^:/, '');
+
+    // 缓存探测进程供其他组件 await
+    getBaseUrl._prefetchPromise = getBaseUrl(path, port);
+    await getBaseUrl._prefetchPromise;
+
+    // 登录后预检，如果是旧版或全部不通，带记忆功能尝试弹窗提示用户
+    const info = getBaseUrl._routeStatus;
+    if (info && (info.status === 'legacy' || info.status === 'warn')) {
+      checkAndShowRouteWarning(info.status, info.path, info.port);
+    }
+  }
+
   async function loadAll() {
     await Promise.all([
       loadConfigValidated().catch(() => { }),
@@ -3415,6 +3435,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       loadStatus().catch(() => { }),
       getVersion().catch(() => { })
     ])
+    // 触发预检
+    prefetchShareDomain().catch(() => { });
   }
 
   /**
