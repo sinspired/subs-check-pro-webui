@@ -725,6 +725,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const successlimited = !!d.successlimited // 获取数量限制标志
       const processResults = !!d.processResults // 正在处理结果阶段
 
+      // 将 Sub-Store 运行状态缓存为全局变量，供分享菜单读取
+      window.__scp_subStoreRunning = !!d.isSubStoreRunning;
+
       let realStartTime = null
       if (checking && lastLogLines && lastLogLines.length > 0) {
         realStartTime = findActiveTaskStartTime(lastLogLines)
@@ -2158,6 +2161,15 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   // ==================== Sub-Store & Share ====================
 
   /**
+   * RFC 域名规范提醒：
+   * sub_store_for_subs_check 不符合 RFC 1035 / RFC 1123（域名不能包含下划线 `_`）。
+   * 新域名已更换为 scp-store，请在 Cloudflare 添加对应路由。
+   *
+   * RFC 1035: https://www.rfc-editor.org/rfc/rfc1035
+   * RFC 1123: https://www.rfc-editor.org/rfc/rfc1123
+   */
+
+  /**
    * 获取 sub-store 配置，主要包括 sub-store 路径和端口。
    *
    * @async
@@ -2183,16 +2195,14 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   /**
-     * 构建 Sub-Store 访问 URL
-     * @param {Object} config 配置对象
-     * @param {string} config.subStorePath sub-store 路径
-     * @param {string|number} config.portStr sub-store 端口
-     * @returns {Object} 包含完整 URL 和 subStorePath
-     */
+   * 构建 Sub-Store 访问 URL
+   * @param {Object} config 配置对象
+   * @returns {Object} 包含完整 URL 和 subStorePath
+   */
   function buildSubStoreUrl(config) {
     const { subStorePath, subStorePathYaml, portStr } = config
     if (!subStorePath) throw new Error('配置中未找到 sub_store_path')
-    if (!subStorePathYaml || subStorePathYaml == '')
+    if (!subStorePathYaml || subStorePathYaml === '')
       showToast('您未设置sub-store-path，当前使用随机值。请尽快设置！', 'warn')
 
     let path = subStorePath
@@ -2202,11 +2212,13 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
     const cleanPort = (portStr ?? '').toString().trim().replace(/^:/, '')
 
+    // Wails GUI 优先
     // 在 Wails WebView 中 window.location 为 wails:// 或 http://wails.localhost，
     // 无法用于构造真实的后端地址。优先使用 Go 模板注入的 __WAILS_GUI.baseURL
     // （形如 http://127.0.0.1:8199），仅在普通浏览器环境下回退到 window.location。
     const wailsBase = window.__WAILS_GUI?.baseURL  // e.g. "http://127.0.0.1:8199"
     let baseUrl
+
     if (wailsBase) {
       // 替换端口为 sub-store 端口（如果有）
       if (cleanPort) {
@@ -2230,13 +2242,13 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         const parts = hostname.split('.')
         // 防止 IP 地址访问时生成错误的域名 (如: sub_store.104.56.43.43)
         const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname)
+
         if (parts.length > 1 && !isIp) {
-          hostname =
-            parts.length === 2
-              ? 'sub_store_for_subs_check.' + hostname
-              : 'sub_store_for_subs_check.' + parts.slice(1).join('.')
+          const root = parts.length === 2 ? hostname : parts.slice(1).join('.')
+          hostname = `scp-store.${root}`   // 新域名（符合 RFC）
         }
       }
+
       baseUrl = window.location.protocol + '//' + hostname + portToAdd
     }
 
@@ -2377,11 +2389,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   /**
-   * 获取分享链接的 Base URL
-   * @param {string} path 路径
-   * @param {string|number} port 端口号
-   * @returns {Promise<string>} 可用的 Base URL
-   */
+     * 获取分享链接的 Base URL
+     * @param {string} path 路径
+     * @param {string|number} port 端口号
+     * @returns {Promise<string>} 可用的 Base URL
+     */
   async function getBaseUrl(path, port) {
     // 在 Wails WebView 中 window.location 为 wails:// 或 http://wails.localhost，
     // 无法用于构造真实的后端地址。优先使用 Go 模板注入的 __WAILS_GUI.baseURL
@@ -2412,26 +2424,72 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     const shouldAddPort = !!currentPort
     const portToAdd = shouldAddPort && port ? `:${port}` : ''
 
-    let sub_store_hostname = hostname
+    // fallback 域名（旧的 sub_store_for_subs_check）
+    let legacy_hostname = hostname
+    let scp_hostname = hostname
+
     if (!shouldAddPort) {
       const parts = hostname.split('.')
-      if (parts.length === 2) {
-        sub_store_hostname = `sub_store_for_subs_check.${hostname}`
-      } else if (parts.length > 2) {
-        sub_store_hostname = `sub_store_for_subs_check.${parts
-          .slice(1)
-          .join('.')}`
+      const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname)
+      if (parts.length > 1 && !isIp) {
+        const root =
+          parts.length === 2 ? hostname : parts.slice(1).join('.')
+        scp_hostname = `scp-store.${root}`
+        legacy_hostname = `sub_store_for_subs_check.${root}`
       }
     }
 
-    const baseUrl = `${baseUrlWithoutPort}${portToAdd}${path}`
-    const fallbackUrl = `${protocol}//${sub_store_hostname}${portToAdd}${path}`
+    // 缓存校验拦截
+    // 如果之前已经成功检测过可用的域名，直接复用该缓存结果，避免每次重复发网络请求
+    if (getBaseUrl._cachedHostname) {
+      return `${protocol}//${getBaseUrl._cachedHostname}${portToAdd}${path}`
+    }
+
+    const originalUrl = `${baseUrlWithoutPort}${portToAdd}${path}`
+    const scpUrl = `${protocol}//${scp_hostname}${portToAdd}${path}`
+    const legacyUrl = `${protocol}//${legacy_hostname}${portToAdd}${path}`
 
     try {
-      const res = await fetch(baseUrl, { method: 'HEAD' }).catch(() => null)
-      return res && res.ok ? baseUrl : fallbackUrl
+      // ① 先试原始域名
+      const resOriginal = await fetch(originalUrl, { method: 'HEAD' }).catch(
+        () => null
+      )
+      if (resOriginal && resOriginal.ok) {
+        getBaseUrl._cachedHostname = hostname // 写入缓存
+        return originalUrl
+      }
+
+      // ② 原始域名不可用时，并发检测新旧域名
+      const [resScp, resLegacy] = await Promise.all([
+        fetch(scpUrl, { method: 'HEAD' }).catch(() => null),
+        fetch(legacyUrl, { method: 'HEAD' }).catch(() => null)
+      ])
+
+      if (resScp && resScp.ok) {
+        getBaseUrl._cachedHostname = scp_hostname // 写入缓存
+        return scpUrl
+      }
+
+      if (resLegacy && resLegacy.ok) {
+        showToast(
+          '当前子域不符合 RFC 规范，请尽快在 Cloudflare Tunnel 添加 scp-store 路由！',
+          'warn'
+        )
+        getBaseUrl._cachedHostname = legacy_hostname // 写入缓存
+        return legacyUrl
+      }
+
+      // ③ 三个都不可用时，最后退回原始 URL
+      showToast(
+        '请尽快在 Cloudflare Tunnel 添加 scp-store 路由！',
+        'warn'
+      )
+      getBaseUrl._cachedHostname = hostname // 写入缓存
+      return originalUrl
     } catch {
-      return fallbackUrl
+      // 网络异常时，保持原始 fallback 行为
+      getBaseUrl._cachedHostname = legacy_hostname // 写入缓存
+      return legacyUrl
     }
   }
 
@@ -3113,37 +3171,27 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           return
         }
 
-        const r = await sfetch(API.status)
-        if (!r.ok) {
-          if (els.statusEl) {
-            els.statusEl.textContent = '获取状态失败'
-            els.statusEl.className = 'muted status-label status-error'
-          }
-          return
-        }
-
-        const d = r.payload || {}
-        const isSubStoreRunning = !!d.isSubStoreRunning;
-
-        if (!isSubStoreRunning) {
-          showToast('Sub-Store 服务未运行，无法分享订阅', 'warn')
-          showToast('请修改配置或使用内置文件服务', 'info', 6000)
-          return
-        }
-
         const menu = document.getElementById('shareMenu')
         const pm = document.getElementById('projectMenu')
 
-        // 打开分享菜单时，先关闭项目菜单
-        pm?.classList.remove('active')
-
+        // 1. 将收起菜单的判断置顶！避免任何等待，点击立刻收起
         if (menu.classList.contains('active')) {
           menu.classList.remove('active')
           return
         }
 
+        // 打开分享菜单时，先关闭项目菜单
+        pm?.classList.remove('active')
+
         if (!sessionKey) {
           showLogin(true)
+          return
+        }
+
+        // 2. 直接读取 loadStatus 后台轮询维护的全局状态，免去 await sfetch(API.status)
+        if (window.__scp_subStoreRunning === false) {
+          showToast('Sub-Store 服务未运行，无法分享订阅', 'warn')
+          showToast('请修改配置或使用内置文件服务', 'info', 6000)
           return
         }
 
