@@ -756,6 +756,7 @@ const SCHEMA = [
             key: 'sub-process.regex-filter',
             label: '正则筛选',
             type: 'url-list',
+            placeholder: '正则表达式',
             hint: '每行一条正则，模式由上方"筛选模式"决定；留空不筛选',
             hintExamples: [
               '(.*GPT⁺.*)(.*GM.*)',
@@ -769,6 +770,7 @@ const SCHEMA = [
         fields: [
           {
             key: 'sub-process.regex-sort', label: '正则排序', type: 'url-list',
+            placeholder: '正则表达式',
             hint: '按优先级填写正则表达式，匹配的节点排在前面；留空不排序',
             hintExamples: [
               '.*\\bSG[¹²]\\b.*',
@@ -889,6 +891,7 @@ const SCHEMA = [
           },
           {
             key: 'recipient-url', label: '通知渠道', type: 'url-list',
+            placeholder: 'schema://',
             hint: '支持 100+ 通知渠道，覆盖版本更新、节点状态和内置数据库更新通知，建议配置！',
             hintExamples: [
               "tgram://",
