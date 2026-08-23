@@ -732,7 +732,6 @@ const SCHEMA = [
           { key: 'node-prefix', label: '节点前缀', type: 'text', placeholder: 'Ubuntu-', hint: '依赖"检测 - 重命名节点"开关' },
         ],
       },
-      // TODO:添加手动更新按钮
       {
         title: '覆写规则 (Sub-Store)',
         fields: [
@@ -974,29 +973,28 @@ const SCHEMA = [
         ],
       },
       {
-        // TODO:添加手动更新按钮
         title: 'Singbox 规则',
         fields: [
           {
             key: 'singbox-latest.version', label: '最新版本号', type: 'text',
-            placeholder: '1.12',
+            placeholder: '1.14',
             hint: 'singbox 最新版，Android / Windows 客户端首选',
           },
           {
             key: 'singbox-latest.json', label: '最新版规则 JSON', type: 'text', fullWidth: true,
-            placeholder: 'https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.12.x/sing-box.json',
+            placeholder: 'https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.14.x/sing-box.json',
             hint: '分流规则文件地址，留空使用内置默认值',
             links: [{ label: '查看模板仓库', href: 'https://github.com/sinspired/sub-store-template', icon: 'github' }],
           },
           {
             key: 'singbox-latest.js', label: '最新版处理脚本', type: 'text', fullWidth: true,
-            placeholder: 'https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.12.x/sing-box.js',
+            placeholder: 'https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.14.x/sing-box.js',
             hint: '节点处理脚本地址，留空使用内置默认值',
           },
           {
             key: 'singbox-old.version', label: '兼容版本号', type: 'text',
             placeholder: '1.11',
-            hint: 'iOS 等旧客户端兼容版本（如 1.11）',
+            hint: '// Deprecated: sing-box MT 于 2026-08-31 上架 App Store 后将逐步移除，iOS 同步最新 1.14 版本',
           },
           {
             key: 'singbox-old.json', label: '兼容版规则 JSON', type: 'text', fullWidth: true,
@@ -1313,6 +1311,69 @@ const FIELD_VALIDATORS = {
     }
     return null;
   },
+
+  'singbox-latest.version': v => {
+    const raw = String(v || '').trim();
+    if (!raw) {
+      return { level: 'info', msg: '未填写版本号，默认使用最新版本 1.14' };
+    }
+
+    // 更强健的版本提取：支持 v1.14.x / 1.14.33 / 1.14 / v1.14
+    const match = raw.match(/(\d+)\.(\d+)/);
+    if (!match) {
+      return { level: 'warn', msg: `版本号格式不正确：${raw}，示例：1.14 或 v1.14.33` };
+    }
+
+    const major = Number(match[1]);
+    const minor = Number(match[2]);
+
+    // < 1.14 → 需要升级
+    if (major < 1 || (major === 1 && minor < 14)) {
+      return {
+        level: 'warn',
+        msg: `版本号 ${raw}（解析为 ${major}.${minor}）低于最新版本 1.14，建议升级`
+      };
+    }
+
+    // = 1.14 → OK
+    if (major === 1 && minor === 14) {
+      return { level: 'ok', msg: `版本号 ${raw} 已是最新稳定版本 1.14` };
+    }
+
+    // > 1.14 → 用户主动选择高版本
+    return {
+      level: 'info',
+      msg: `版本号 ${raw} 高于当前推荐版本 1.14，请确认兼容性`
+    };
+  },
+
+  'singbox-old.version': v => {
+    const raw = String(v || '').trim();
+    if (!raw) {
+      return { level: 'info', msg: '未填写版本号，默认使用兼容版 1.11' };
+    }
+
+    // 提取数字版本：支持 v1.11.x / 1.11 / 1.11.5 / v1.12 等
+    const match = raw.match(/(\d+)\.(\d+)/);
+    if (!match) {
+      return { level: 'warn', msg: `版本号格式不正确：${raw}，示例：1.11 或 v1.11.5` };
+    }
+
+    const major = Number(match[1]);
+    const minor = Number(match[2]);
+
+    // ≤ 1.11 → 使用你的新文案
+    if (major === 1 && minor <= 11) {
+      return {
+        level: 'warn',
+        msg: `singbox-old 版本 ${raw} 已从 App Store 下架；sing-box MT 版本 1.14 于 2026-08-31 上架 App Store，建议尽快下载`
+      };
+    }
+
+    // > 1.11 → 用户主动选择旧版本，不提示
+    return { level: 'ok', msg: `使用兼容版本 ${raw}` };
+  },
+
 };
 
 
