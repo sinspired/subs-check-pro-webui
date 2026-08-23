@@ -5,6 +5,52 @@
 
 import { FIELD_VALIDATORS } from './config-form.js';
 
+function getNested(cfg, key) {
+  if (!key.includes('.')) return cfg[key];
+  const parts = key.split('.');
+  let cur = cfg;
+  for (const p of parts) {
+    if (cur && typeof cur === 'object' && p in cur) {
+      cur = cur[p];
+    } else {
+      return undefined;
+    }
+  }
+  return cur;
+}
+
+FIELD_VALIDATORS['singbox-latest.version'] = v => {
+  const raw = String(v || '').trim();
+  const m = raw.match(/(\d+)\.(\d+)/);
+  if (!m) return { level: 'warn', msg: '格式错误', suffix: '格式错' };
+
+  const major = Number(m[1]);
+  const minor = Number(m[2]);
+
+  if (major < 1 || (major === 1 && minor < 14))
+    return { level: 'warn', msg: `版本号 ${raw} 低于最新版本 1.14，建议升级`, suffix: `低于最新版本 1.14，建议升级` };
+
+  if (major === 1 && minor === 14)
+    return { level: 'ok', msg: `版本号 ${raw} 已是最新稳定版本`, suffix: `已是最新稳定版本` };
+
+  return { level: 'info', msg: `版本号 ${raw} 高于推荐版本 1.14，请确认可用性`, suffix: `高于推荐版本 1.14，请确认可用性` };
+};
+
+FIELD_VALIDATORS['singbox-old.version'] = v => {
+  const raw = String(v || '').trim();
+  const m = raw.match(/(\d+)\.(\d+)/);
+  if (!m) return { level: 'warn', msg: '格式错误', suffix: '格式错' };
+
+  const major = Number(m[1]);
+  const minor = Number(m[2]);
+
+  if (major === 1 && minor <= 11)
+    return { level: 'warn', msg: `兼容版 ${raw} 已从 App Store 下架，建议升级到 1.14`, suffix: `已从 App Store 下架，建议升级到 1.14` };
+
+  return { level: 'ok', msg: `兼容版 ${raw} 为用户主动选择旧版本`, suffix: `为用户主动选择旧版本` };
+};
+
+
 // ── 要展示的关键配置分组 ────────────────────────────────────
 const PREVIEW_GROUPS = [
   {
@@ -65,7 +111,7 @@ const PREVIEW_GROUPS = [
         optional: true,
       },
       { key: 'recipient-url', label: '通知渠道', fmt: v => Array.isArray(v) ? v.filter(Boolean).length + ' 个' : (v ? '已配置' : null), warnIfEmpty: '未配置，检测结果无法推送' },
-
+      { key: 'system-proxy', label: '系统代理', fmt: v => v || null, optional: true },
     ],
   },
   {
@@ -89,9 +135,39 @@ const PREVIEW_GROUPS = [
       { key: 'save-method', label: '存储方式', fmt: v => v || 'local' },
       { key: 'share-password', label: '分享密码', fmt: v => v ? '已设置' : null, warnIfEmpty: '未设置，订阅分享功能未启用' },
       { key: 'update', label: '自动更新', fmt: v => v !== false ? '开启' : '关闭', warnIfFalse: '已关闭，建议保持开启以获取最新修复' },
-      { key: 'system-proxy', label: '系统代理', fmt: v => v || null, optional: true },
+      {
+        key: 'singbox-latest.version',
+        label: 'singbox 最新',
+        fmt: (v, cfg) => {
+          if (!v) return '未设置';
+          const r = FIELD_VALIDATORS['singbox-latest.version'](v, cfg);
+          return `${v}-${r.suffix}`;
+        },
+        validator: FIELD_VALIDATORS['singbox-latest.version']
+      },
+      // { key: 'singbox-latest.json', label: '最新版 JSON', fmt: v => v || '未设置' },
+      // { key: 'singbox-latest.js', label: '最新版脚本', fmt: v => v || '未设置' },
+
+      {
+        key: 'singbox-old.version',
+        label: 'singbox 兼容',
+        fmt: (v, cfg) => {
+          if (!v) return '未设置';
+          const r = FIELD_VALIDATORS['singbox-old.version'](v, cfg);
+          return `${v}-${r.suffix}`;
+        },
+        validator: FIELD_VALIDATORS['singbox-old.version']
+      },
+      // { key: 'singbox-old.json', label: '兼容版 JSON', fmt: v => v || '未设置' },
+      // { key: 'singbox-old.js', label: '兼容版脚本', fmt: v => v || '未设置' },
     ],
   },
+  // {
+  //   title: 'Singbox 版本',
+  //   icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 4-9 4-9-4 9-4z"/><path d="M3 10l9 4 9-4"/><path d="M3 18l9 4 9-4"/></svg>`,
+  //   items: [
+  //   ]
+  // }
 ];
 
 // ── SVG 图标 ──────────────────────────────────────────────
@@ -109,16 +185,15 @@ function _esc(s) {
  */
 function _renderCard(group, cfg) {
   const rows = group.items.map(item => {
-    const rawVal = cfg[item.key];
+    const rawVal = getNested(cfg, item.key);
+
     const displayVal = item.fmt(rawVal, cfg);
 
-    // 确定状态和 tooltip
     let statusIcon = ICON_OK;
     let statusCls = 'ok';
     let tooltip = '';
 
     if (displayVal === null || displayVal === undefined) {
-      // 值为空
       if (item.optional) {
         statusIcon = ICON_DASH;
         statusCls = 'muted';
@@ -130,26 +205,17 @@ function _renderCard(group, cfg) {
         statusIcon = ICON_INFO;
         statusCls = 'info';
       }
-    } else if (item.warnIfFalse && rawVal === false) {
-      statusIcon = ICON_WARN;
-      statusCls = 'warn';
-      tooltip = item.warnIfFalse;
-    } else if (item.warnIfZero && (rawVal === 0 || rawVal === '0' || !rawVal)) {
-      statusIcon = ICON_INFO;
-      statusCls = 'info';
-      tooltip = item.warnIfZero;
     } else {
-      // 优先使用自身定义的 validator，降级使用全局 FIELD_VALIDATORS
       const validator = item.validator || FIELD_VALIDATORS[item.key];
       if (validator) {
         const result = validator(rawVal, cfg); // 传入 cfg 对象供跨字段联动使用
         if (result) {
-          if (result.level === 'warn') statusIcon = ICON_WARN;
-          else if (result.level === 'ok') statusIcon = ICON_OK; // 修复原本只有 warn/info 状态的问题
-          else statusIcon = ICON_INFO;
-
           statusCls = result.level;
           tooltip = result.msg;
+          statusIcon =
+            result.level === 'warn' ? ICON_WARN :
+              result.level === 'ok' ? ICON_OK :
+                ICON_INFO;
         }
       }
     }
@@ -160,7 +226,7 @@ function _renderCard(group, cfg) {
 
     return `<div class="pv-kv"${titleAttr}>
       <span class="pv-k">${_esc(item.label)}</span>
-      <span class="pv-status-wrap">${statusIcon}<span class="pv-v ${valCls}" title="${_esc(String(shownVal))}">${_esc(String(shownVal))}</span></span>
+      <span class="pv-status-wrap">${statusIcon}<span class="pv-v ${valCls}">${_esc(String(shownVal))}</span></span>
     </div>`;
   }).join('');
 
@@ -176,14 +242,19 @@ function _renderCard(group, cfg) {
 function _buildPanel(cfg) {
   // 计算整体健康度
   let warnCount = 0;
+
   for (const group of PREVIEW_GROUPS) {
     for (const item of group.items) {
-      const rawVal = cfg[item.key];
+
+      // 使用 getNested
+      const rawVal = getNested(cfg, item.key);
+
       const displayVal = item.fmt(rawVal, cfg);
+
       if (!item.optional) {
-        if ((displayVal === null || displayVal === undefined) && item.warnIfEmpty) warnCount++;
-        else if (item.warnIfFalse && rawVal === false) warnCount++;
-        else {
+        if ((displayVal === null || displayVal === undefined) && item.warnIfEmpty) {
+          warnCount++;
+        } else {
           const validator = item.validator || FIELD_VALIDATORS[item.key];
           if (validator) {
             const r = validator(rawVal, cfg);

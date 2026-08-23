@@ -2177,7 +2177,8 @@ textarea.cfg-expandable-input:focus {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 140px;
+  /* 限制 右侧内容宽度，超出后截断 */
+  max-width: 300px;
 }
 
 .pv-v.ok {
@@ -2675,16 +2676,14 @@ textarea.cfg-expandable-input:focus {
   max-width: 500px; /* 防止太宽，可按需调整 */
 }
 
-
 .mtt-traffic-inline {
-  white-space: normal;          /* 允许换行 */
-  overflow-wrap: anywhere;      /* 必要时断词换行 */
-  word-break: break-word;       /* 防止长节点名撑爆 */
-  
+  white-space: normal; /* 允许换行 */
+  overflow-wrap: anywhere; /* 必要时断词换行 */
+  word-break: break-word; /* 防止长节点名撑爆 */
+
   font-family: var(--font-mono, "SF Mono", "Fira Code", monospace);
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.002em !important;
-  line-height: 1.25;            /* 紧凑行高 */
+  line-height: 1.25; /* 紧凑行高 */
 }
-
