@@ -47,7 +47,12 @@ const configCompletions = [
   { label: "node-prefix", type: "property", detail: "节点前缀", section: "节点处理", isArray: false },
   { label: "node-type", type: "property", detail: "只测试指定协议的节点", section: "节点处理", isArray: true },
   { label: "node-loc", type: "property", detail: "只测试指定地区的节点", section: "节点处理", isArray: true },
-  { label: "isp-check", type: "property", detail: "是否开启isp检测", section: "节点质量", isArray: false },
+  { label: "isp-check", type: "property", detail: "是否开启isp检测", section: "isp检测", isArray: false },
+  { label: "isp-timeout", type: "property", detail: "isp检测超时(s)", section: "isp检测", isArray: false },
+  { label: "isp-check-api-key-ipapi", type: "property", detail: "ISPCheckAPIKeyIPAPI ipapi.is 的 apikey（https://ipapi.is）", section: "isp检测 API KEY", isArray: false },
+  { label: "isp-check-api-key-proxycheck", type: "property", detail: "ISPCheckAPIKeyProxyCheck proxycheck.io 的 apikey（https://proxycheck.io）", section: "isp检测 API KEY", isArray: false },
+  { label: "isp-check-api-key-iplocate", type: "property", detail: "ISPCheckAPIKeyIPLocate iplocate.io 的 apikey（https://iplocate.io）", section: "isp检测 API KEY", isArray: false },
+  { label: "isp-check-api-key-ipdata", type: "property", detail: "ISPCheckAPIKeyIPData ipdata.co 的 apikey（https://ipdata.co）", section: "isp检测 API KEY", isArray: false },
   { label: "media-check", type: "property", detail: "是否开启解锁检测", section: "媒体解锁", isArray: false },
   { label: "platforms", type: "property", detail: "流媒体检测平台列表", section: "媒体解锁", isArray: true },
   { label: "media-check-timeout", type: "property", detail: "媒体解锁检测测试时间(s)", section: "检测参数", isArray: false },
@@ -94,6 +99,10 @@ const configCompletions = [
   { label: "sub-urls-timeout", type: "property", detail: "获取订阅超时(默认10s)", section: "订阅设置", isArray: false },
   { label: "sub-urls-stats", type: "property", detail: "统计订阅链接有效性和成功率", section: "订阅设置", isArray: false },
   { label: "success-rate", type: "property", detail: "节点订阅成功率", section: "订阅设置", isArray: false },
+  { label: "subs-parse-batch", type: "property", detail: "解析到该数量的的节点就进入一次去重队列", section: "内存管理", isArray: false },
+  { label: "subs-dedupe-batch", type: "property", detail: "获取到该数量的节点就进行一次内存释放", section: "内存管理", isArray: false },
+  { label: "memory-limit-mb", type: "property", detail: "MemoryLimitMB 设置 Go 运行时软内存上限（GOMEMLIMIT，单位 MB）", section: "内存管理", isArray: false },
+  { label: "gc-percent", type: "property", detail: "GCPercent 对应 Go 的 GOGC：堆允许长到存活对象的多少倍才触发下一次 GC", section: "内存管理", isArray: false },
   { label: "sub-urls-remote", type: "property", detail: "远程订阅清单地址", section: "订阅设置", isArray: true },
   { label: "sub-urls", type: "property", detail: "订阅地址", section: "订阅设置", isArray: true },
   // singbox 子字段
@@ -103,7 +112,16 @@ const configCompletions = [
 
   // sub-process 及子字段
   { label: "sub-process", type: "property", detail: "sub-store 节点后处理配置", section: "sub-store", isArray: false },
-  { label: "resolve-domain", type: "property", detail: "开启 DNS 解析（固定 Ali/IPv6/缓存）", section: "sub-process", isArray: false },
+  { label: "resolve-domain", type: "property", detail: "DNS 解析操作（新版对象格式）", section: "sub-process", isArray: false },
+
+  { label: "enable", type: "property", detail: "是否开启 DNS 解析", section: "resolve-domain", isArray: false },
+  { label: "provider", type: "property", detail: "DNS 服务商（ali / cloudflare / google）", section: "resolve-domain", isArray: false },
+  { label: "edns", type: "property", detail: "EDNS 设置", section: "resolve-domain", isArray: false },
+  { label: "concurrency", type: "property", detail: "并发数（默认10，代理软件中不要超过20）", section: "resolve-domain", isArray: false },
+  { label: "timeout", type: "property", detail: "超时（毫秒，默认8000）", section: "resolve-domain", isArray: false },
+  { label: "type", type: "property", detail: "解析类型（ipv4 / ipv6）", section: "resolve-domain", isArray: false },
+  { label: "cache", type: "property", detail: "缓存策略（enable / disable）", section: "resolve-domain", isArray: false },
+  { label: "cache-ttl", type: "property", detail: "缓存时长（秒）", section: "resolve-domain", isArray: false },
   { label: "node-split", type: "property", detail: "节点裂变：将多 IP 展开为独立节点", section: "sub-process", isArray: false },
   { label: "regex-filter-keep", type: "property", detail: "true=保留匹配节点（白名单），false=丢弃匹配节点（黑名单）", section: "sub-process", isArray: true },
   { label: "regex-filter", type: "property", detail: "正则筛选表达式列表，", section: "sub-process", isArray: true },
@@ -228,9 +246,29 @@ const valueCompletions = {
     { label: "1.11", detail: "singbox 旧版（1.11.x，iOS 兼容）" },
     { label: "1.10", detail: "singbox 1.10.x" },
   ],
-  "resolve-domain": [
+  "enable": [
     { label: "true", detail: "开启 DNS 解析" },
-    { label: "false", detail: "关闭（默认）" },
+    { label: "false", detail: "关闭（默认）" }
+  ],
+
+  "provider": [
+    { label: "ali", detail: "阿里 DNS（默认）" },
+    { label: "cloudflare", detail: "Cloudflare DNS" },
+    { label: "google", detail: "Google DNS" }
+  ],
+
+  "type": [
+    { label: "ipv4", detail: "仅解析 IPv4 地址" },
+    { label: "ipv6", detail: "仅解析 IPv6 地址" }
+  ],
+
+  "cache": [
+    { label: "enable", detail: "启用缓存（默认）" },
+    { label: "disable", detail: "禁用缓存" }
+  ],
+
+  "cache-ttl": [
+    { label: "3600", detail: "默认缓存 3600 秒（1 小时）" }
   ],
   "node-split": [
     { label: "true", detail: "启用节点裂变" },
@@ -556,7 +594,7 @@ const placeholderMatcher = new MatchDecorator({
   regexp: new RegExp(
     [
       // 匹配所有 configCompletions 中的 label
-      '(?<=^[ \t]*)(print-progress|progress-mode|update|update-on-startup|cron-check-update|prerelease|update-timeout|concurrent|alive-concurrent|speed-concurrent|media-concurrent|ipv6|check-interval|cron-expression|success-limit|timeout|speed-test-url|min-speed|download-timeout|download-mb|total-speed-limit|threshold|gc-threshold|rename-node|node-prefix|node-type|node-loc|isp-check|media-check|platforms|media-check-timeout|drop-bad-cf-nodes|enhanced-tag|maxmind-db-path|output-dir|keep-success-proxies|listen-port|enable-web-ui|api-key|share-password|callback-script|apprise-api-server|recipient-url|notify-title|sub-store-port|sub-store-path|mihomo-overwrite-url|singbox-latest|singbox-old|sub-store-sync-cron|sub-store-produce-cron|sub-store-push-service|save-method|webdav-url|webdav-username|webdav-password|github-gist-id|github-token|github-api-mirror|worker-url|worker-token|s3-endpoint|s3-access-id|s3-secret-key|s3-bucket|s3-use-ssl|s3-bucket-lookup|system-proxy|github-proxy|ghproxy-group|sub-urls-retry|sub-urls-timeout|sub-urls-stats|success-rate|sub-urls-remote|sub-urls|sub-process|resolve-domain|node-split|regex-filter-keep|regex-filter|regex-sort|sub-info|version|json|js)(?=\s*:\s*)',
+      '(?<=^[ \t]*)(print-progress|progress-mode|update|update-on-startup|cron-check-update|prerelease|update-timeout|concurrent|alive-concurrent|speed-concurrent|media-concurrent|ipv6|check-interval|cron-expression|success-limit|timeout|speed-test-url|min-speed|download-timeout|download-mb|total-speed-limit|threshold|gc-threshold|rename-node|node-prefix|node-type|node-loc|isp-check|isp-timeout|isp-check-api-key-ipapi|isp-check-api-key-proxycheck|isp-check-api-key-iplocate|isp-check-api-key-ipdata|media-check|platforms|media-check-timeout|drop-bad-cf-nodes|enhanced-tag|maxmind-db-path|output-dir|keep-success-proxies|listen-port|enable-web-ui|api-key|share-password|callback-script|apprise-api-server|recipient-url|notify-title|sub-store-port|sub-store-path|mihomo-overwrite-url|singbox-latest|singbox-old|sub-store-sync-cron|sub-store-produce-cron|sub-store-push-service|save-method|webdav-url|webdav-username|webdav-password|github-gist-id|github-token|github-api-mirror|worker-url|worker-token|s3-endpoint|s3-access-id|s3-secret-key|s3-bucket|s3-use-ssl|s3-bucket-lookup|system-proxy|github-proxy|ghproxy-group|sub-urls-retry|sub-urls-timeout|sub-urls-stats|success-rate|subs-parse-batch|subs-dedupe-batch|memory-limit-mb|gc-percent|sub-urls-remote|sub-urls|sub-process|resolve-domain|node-split|regex-filter-keep|regex-filter|regex-sort|sub-info|version|json|js|enable|provider|edns|concurrency|type|cache|cache-ttl)(?=\s*:\s*)',
 
       // 列表项：- openai / - "openai"
       '(?<=^[ \\t]*-\\s*["\']?)(openai|iprisk|gemini|copilot|tiktok|youtube|disney|netflix|x|ss|trojan|vless|vmess|shadowsocks)(?=["\']?\\b)',
@@ -573,12 +611,7 @@ const placeholderMatcher = new MatchDecorator({
       // 列表项：- tgram / dingtalk / mailto
       '(?<=^[ \\t]*-\\s*["\']?)(bark|ntfy|tgram|x|twitter|line|slack|qq|discord|whatsapp|dingtalk|wecom|wechat|feishu|mailto)(?=["\']?\\b)',
 
-      // // 注释内的占位符 {xxx},避免小白误解
-      // '(?<=#.*?)(\{[A-Za-z0-9_-]+\})(?=.*$)',
-      // // 注释内仅中文占位符 {中文...}
-      // '(?<=#.*?)(\{[\u4e00-\u9fa5]+\})(?=.*$)',
-
-      // 注释内的占位符 {xxx},避免小白误解（支持中英文混合）
+      // 注释内的占位符 {xxx}（支持中英文混合）
       '(?<=#.*?)(\{[A-Za-z0-9\u4e00-\u9fa5_-]+\})(?=.*$)',
     ].join('|'),
     'mg'
