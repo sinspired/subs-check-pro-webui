@@ -956,6 +956,24 @@ import { initQuickPreview } from './cfg-quickpreview.js';
             if (stats.remote) parts.push(`远程: <span style="font-weight:600;color:var(--success)">${stats.remote}</span>`)
             if (stats.history) parts.push(`历史: <span style="font-weight:600;color:var(--success)">${stats.history}</span>`)
 
+            // 后缀判断
+            if (stats.total) {
+              const total = Number(stats.total) || 0
+              const sum = ['local', 'remote', 'history']
+                .map(key => Number(stats[key]) || 0)
+                .reduce((a, b) => a + b, 0)
+
+              const dupCount = sum > total ? sum - total : 0
+
+              if (dupCount) {
+                parts.push(
+                  `总计: <span style="font-weight:600;color:var(--success)">${stats.total}</span>` +
+                  ` | <span style="font-weight:500;color:var(--muted);">已去重: ${dupCount}</span>`
+                )
+              } else {
+                parts.push(`总计: <span style="font-weight:600;color:var(--success)">${stats.total}</span>`)
+              }
+            }
             if (parts.length > 0) {
               if (els.statusEl) {
                 els.statusEl.innerHTML = `${checking_SPINNER}<span>正在${d.stepName || '获取'} 丨${parts.join(' | ')}</span>`
