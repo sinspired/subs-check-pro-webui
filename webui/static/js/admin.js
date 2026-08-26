@@ -740,7 +740,10 @@ import { initQuickPreview } from './cfg-quickpreview.js';
    * @returns {Promise<Object>} 包含 ok、status、payload、error
    */
   async function sfetch(url, opts = {}) {
-    if (!sessionKey) return { ok: false, status: 401, error: '未认证' }
+    if (!sessionKey) {
+      doLogout('未认证：请登录或输入 API 密钥')
+      return { ok: false, status: 401, error: '未认证' }
+    }
     opts.headers = { ...opts.headers, 'X-API-Key': sessionKey }
     try {
       const r = await fetch(url, opts)
@@ -2206,13 +2209,20 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     getPublicVersion()
     const isWails = !!window.__WAILS_GUI?.baseURL
 
-    if (els.loginModal) els.loginModal.classList.toggle('login-hidden', !show || isWails)
+    // 动态获取 DOM，防止页面初始化过快 els.loginModal 还没挂载
+    const modal = els.loginModal || document.getElementById('loginModal')
+    if (modal) modal.classList.toggle('login-hidden', !show || isWails)
+
     if (show) {
       if (isWails) {
         // 调用 Wails binding 切回登录小窗
-        fetch('/gui/back-to-login').catch(() => { })
+        fetch('/gui/back-to-login').catch(() => {
+          // 如果桌面端通知切换失败，降级显示网页内的登录框，避免卡死在管理页
+          if (modal) modal.classList.remove('login-hidden')
+        })
       } else {
-        els.apiKeyInput?.focus()
+        const input = els.apiKeyInput || document.getElementById('apiKeyInput')
+        input?.focus()
       }
     }
   }
