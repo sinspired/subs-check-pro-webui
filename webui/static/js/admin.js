@@ -316,115 +316,106 @@ import { initQuickPreview } from './cfg-quickpreview.js';
      * @param {boolean} allowDismiss 是否允许显示"以后提醒/不再提醒"记忆按钮
      */
   function showCfTunnelRouteWarning(isLegacy, subStorePath = '', subStorePort = '8299', allowDismiss = false) {
-    if (document.getElementById('cfTunnelWarnOverlay')) return;
+    return new Promise((resolve) => {
+      if (document.getElementById('cfTunnelWarnOverlay')) return resolve(false);
 
-    const hostname = window.location.hostname;
-    const parts = hostname.split('.');
-    const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
 
-    let rootDomain = '你的域名.com';
-    if (!isIp && parts.length >= 2) {
-      rootDomain = parts.length > 2 ? parts.slice(1).join('.') : hostname;
-    }
+      let rootDomain = '你的域名.com';
+      if (!isIp && parts.length >= 2) {
+        rootDomain = parts.length > 2 ? parts.slice(1).join('.') : hostname;
+      }
 
-    const overlay = document.createElement('div');
-    overlay.id = 'cfTunnelWarnOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.25s ease;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);';
+      const overlay = document.createElement('div');
+      overlay.id = 'cfTunnelWarnOverlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.25s ease;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);';
 
-    const modal = document.createElement('div');
-    modal.className = 'card';
-    modal.style.cssText = 'width:92%;max-width:480px;padding:24px;position:relative;transform:translateY(15px);transition:transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);display:flex;flex-direction:column;gap:18px;box-shadow:var(--glass-shadow);border:1px solid var(--border);';
+      const modal = document.createElement('div');
+      modal.className = 'card';
+      modal.style.cssText = 'width:92%;max-width:480px;padding:24px;position:relative;transform:translateY(15px);transition:transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);display:flex;flex-direction:column;gap:18px;box-shadow:var(--glass-shadow);border:1px solid var(--border);';
 
-    // 优化后的描述文案，加入 ICNY 超链接并明确旧版路由
-    const incyLink = '<a href="https://incy.cc/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">INCY</a>';
-    const desc = isLegacy
-      ? `原订阅管理子域名 <b style="color:var(--accent);">sub_store_for_subs_check</b> 包含下划线，不符合 RFC 规范，会导致 ${incyLink} 等代理软件无法拉取订阅。`
-      : `未设置订阅管理子域名，将无法在公网更新订阅链接和管理管理订阅。`;
+      const incyLink = '<a href="https://incy.cc/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">INCY</a>';
 
-    // 根据 allowDismiss 决定底部操作区的渲染
-    const actionButtons = allowDismiss ? `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;">
-        <button id="cfNeverBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;opacity:0.6;">不再提醒</button>
-        <button id="cfLaterBtn" style="background:none;border:none;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;">以后提醒</button>
-      </div>
-    ` : `
-      <div style="text-align:center;">
-        <button id="cfCloseBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;">关闭提示</button>
-      </div>
-    `;
+      // 优化网络预检失败的文案
+      const desc = isLegacy
+        ? `原订阅管理子域名 <b style="color:var(--accent);">sub_store_for_subs_check</b> 包含下划线，不符合 RFC 规范，会导致 ${incyLink} 等代理软件无法拉取订阅。`
+        : `网络预检失败。可能未设置专属路由，或因网络波动/广告拦截导致探测被阻断。如果您确定已设置映射，请直接继续。`;
 
-    modal.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-        <span style="font-size:16px;font-weight:800;letter-spacing:0.5px;">路由映射建议</span>
-      </div>
-      
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <p style="font-size:12px;color:var(--fg);opacity:0.55;line-height:1.6;margin:0;">
-          ${desc}
-        </p>
-
-        <p style="font-size:13px;color:var(--fg);opacity:0.85;line-height:1.6;margin:0;">
-          请在 Cloudflare Tunnel 添加以下 <b>HTTP</b> 映射：
-        </p>
-      </div>
-      
-      <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-family:var(--font-code);font-size:12px;">
-        <table style="width:100%;border-collapse:collapse;text-align:left;">
-          <thead style="background:color-mix(in srgb, var(--fg) 5%, transparent);color:var(--muted);">
-            <tr>
-              <th style="padding:8px 12px;font-weight:600;font-size:11px;">应用程序路由</th>
-              <th style="padding:8px 12px;font-weight:600;font-size:11px;">服务</th>
-            </tr>
-          </thead>
-          <tbody style="color:var(--fg);">
-            <tr style="border-bottom:1px solid var(--border);">
-              <td style="padding:10px 12px;word-break:break-all;"><span style="color:var(--accent);font-weight:600;">scp-store</span>.${rootDomain}</td>
-              <td style="padding:10px 12px;color:var(--success);">localhost:${subStorePort}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div style="display:flex;gap:10px;">
-           <button id="cfGoBtn" class="btn" style="flex:1.2;background:var(--accent);color:#fff;border:none;font-weight:600;height:38px;">前往 Cloudflare</button>
-           <button id="cfWikiBtn" class="btn" style="flex:1;height:38px;">查看文档</button>
+      // 无论何种情况，都提供【取消】和【强行继续】的选项
+      const actionButtons = `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;margin-top:4px;">
+          <button id="cfNeverBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;">已设置，不再提醒</button>
+          <div style="display:flex;gap:16px;">
+            <button id="cfCloseBtn" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;">取消</button>
+            <button id="cfContinueBtn" style="background:none;border:none;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;">强行继续</button>
+          </div>
         </div>
-        ${actionButtons}
-      </div>
-    `;
+      `;
 
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-    requestAnimationFrame(() => { overlay.style.opacity = '1'; modal.style.transform = 'translateY(0)'; });
+      modal.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span style="font-size:16px;font-weight:800;letter-spacing:0.5px;">路由映射建议</span>
+        </div>
+        
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <p style="font-size:12px;color:var(--fg);opacity:0.55;line-height:1.6;margin:0;">
+            ${desc}
+          </p>
+          <p style="font-size:13px;color:var(--fg);opacity:0.85;line-height:1.6;margin:0;">
+            请在 Cloudflare Tunnel 添加以下 <b>HTTP</b> 映射：
+          </p>
+        </div>
+        
+        <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-family:var(--font-code);font-size:12px;">
+          <table style="width:100%;border-collapse:collapse;text-align:left;">
+            <thead style="background:color-mix(in srgb, var(--fg) 5%, transparent);color:var(--muted);">
+              <tr>
+                <th style="padding:8px 12px;font-weight:600;font-size:11px;">应用程序路由</th>
+                <th style="padding:8px 12px;font-weight:600;font-size:11px;">服务</th>
+              </tr>
+            </thead>
+            <tbody style="color:var(--fg);">
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:10px 12px;word-break:break-all;"><span style="color:var(--accent);font-weight:600;">scp-store</span>.${rootDomain}</td>
+                <td style="padding:10px 12px;color:var(--success);">localhost:${subStorePort}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-    const closeOverlay = () => {
-      overlay.style.opacity = '0';
-      modal.style.transform = 'translateY(10px)';
-      setTimeout(() => overlay.remove(), 250);
-    };
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;gap:10px;">
+             <button id="cfGoBtn" class="btn" style="flex:1.2;background:var(--accent);color:#fff;border:none;font-weight:600;height:38px;">前往 Cloudflare</button>
+             <button id="cfWikiBtn" class="btn" style="flex:1;height:38px;">查看文档</button>
+          </div>
+          ${actionButtons}
+        </div>
+      `;
 
-    document.getElementById('cfWikiBtn').onclick = () => window.open('https://sinspired.github.io/subs-check-pro/docs/Cloudflare-Tunnel', '_blank');
-    document.getElementById('cfGoBtn').onclick = () => window.open('https://one.dash.cloudflare.com/', '_blank');
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => { overlay.style.opacity = '1'; modal.style.transform = 'translateY(0)'; });
 
-    if (allowDismiss) {
-      document.getElementById('cfLaterBtn').onclick = () => {
-        localStorage.setItem('scp_cftunnel_warn_dismissed', Date.now().toString());
-        closeOverlay();
+      const closeOverlay = (result) => {
+        overlay.style.opacity = '0';
+        modal.style.transform = 'translateY(10px)';
+        setTimeout(() => { overlay.remove(); resolve(result); }, 250);
       };
+
+      document.getElementById('cfWikiBtn').onclick = () => window.open('https://sinspired.github.io/subs-check-pro/docs/Cloudflare-Tunnel', '_blank');
+      document.getElementById('cfGoBtn').onclick = () => window.open('https://one.dash.cloudflare.com/', '_blank');
+
+      // 绑定新的按钮交互
+      document.getElementById('cfContinueBtn').onclick = () => closeOverlay(true);
+      document.getElementById('cfCloseBtn').onclick = () => closeOverlay(false);
       document.getElementById('cfNeverBtn').onclick = () => {
-        const msg = isLegacy
-          ? '确定不再提示？\n强烈建议您尽快完成 scp-store 映射，以确保分享链接的兼容性。'
-          : '确定不再主动提示？\n如果未配置专属映射，后续在使用分享和订阅功能时，依然会弹出此窗口。';
-        if (confirm(msg)) {
-          localStorage.setItem('scp_cftunnel_warn_forever', 'true');
-          closeOverlay();
-        }
+        localStorage.setItem('scp_cftunnel_warn_forever', 'true');
+        closeOverlay(true); // 记录状态并强行继续
       };
-    } else {
-      document.getElementById('cfCloseBtn').onclick = closeOverlay;
-    }
+    });
   }
 
   /**
@@ -758,7 +749,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       let payload = ct.includes('application/json') ? JSON.parse(text) : text
 
       if (r.status === 401) {
-        doLogout('未授权：API Key 无效或已失效')
+        doLogout('未授权：API Key 错误或已失效')
         return { ok: false, status: 401, payload }
       }
       if (r.ok) {
@@ -2158,7 +2149,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     try {
       const resp = await fetch(API.status, { headers: { 'X-API-Key': k } })
       if (resp.status === 401) {
-        showToast('API 密钥无效', 'error')
+        showToast('API 密钥错误', 'error')
         return
       }
       if (!resp.ok) {
@@ -2172,7 +2163,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       setAuthUI(true)
       await loadAll()
       startPollers()
-      showToast('验证成功，已登录', 'success')
+      showToast('密钥验证通过', 'success')
 
       // 初始化配置快速预览
       const qp = initQuickPreview(
@@ -2188,7 +2179,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       );
       qp?.enable();
     } catch (e) {
-      showToast('网络错误或服务器未响应', 'error')
+      console.error('网络错误或服务器未响应：', e)
+      showToast(`网络错误或服务器未响应：${e?.message || e}`, 'error')
     } finally {
       els.loginBtn.disabled = false
       els.loginBtn.textContent = '进入管理界面'
@@ -2366,8 +2358,10 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     const info = getBaseUrl._routeStatus;
 
     if (info && info.status === 'warn') {
-      showCfTunnelRouteWarning(false, info.path, info.port, false);
-      return;
+      if (localStorage.getItem('scp_cftunnel_warn_forever') !== 'true') {
+        const proceed = await showCfTunnelRouteWarning(false, info.path, info.port, true);
+        if (!proceed) return; // 用户点击了取消，中断执行
+      }
     }
 
     if (info && info.status === 'legacy') {
@@ -2417,17 +2411,18 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       newWindow.location.href = result.url;
     } catch (err) {
       newWindow.close();
+      console.error(err)
       showToast(err.message || '打开失败', 'error');
     }
   }
 
   /**
-     * 获取分享链接的 Base URL
-     * 严格探测推荐路由 scp-store 或兼容路由 legacy
-     * @param {string} path 路径
-     * @param {string|number} port 端口号
-     * @returns {Promise<string>} 可用的 Base URL
-     */
+   * 获取分享链接的 Base URL
+   * 严格探测推荐路由 scp-store 或兼容路由 legacy
+   * @param {string} path 路径
+   * @param {string|number} port 端口号
+   * @returns {Promise<string>} 可用的 Base URL
+   */
   async function getBaseUrl(path, port) {
     // 在 Wails WebView 中 window.location 为 wails:// 或 http://wails.localhost，
     // 无法用于构造真实的后端地址。优先使用 Go 模板注入的 __WAILS_GUI.baseURL
@@ -2455,8 +2450,10 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
     const isLocalTLD = hostname.endsWith('.local') || hostname.endsWith('.lan');
 
-    // 1. 缓存短路：如果探测过，瞬间返回
-    if (getBaseUrl._routeStatus) {
+    const now = Date.now();
+
+    // 1. 缓存短路优化：加入过期时间 (TTL) 机制
+    if (getBaseUrl._routeStatus && getBaseUrl._cacheExpire > now) {
       const st = getBaseUrl._routeStatus.status;
       const targetHost = getBaseUrl._cachedHostname;
       // 局域网带端口，公网 CF 路由不带端口
@@ -2464,10 +2461,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       return `${protocol}//${targetHost}${path}`;
     }
 
-    // 2. 局域网/本地环境直通：绕过探测，直接返回本地 Host + 端口
+    // 2. 局域网/本地环境直通
     if (isIp || isLocalhost || isLocalTLD || parts.length < 2) {
       getBaseUrl._routeStatus = { status: 'local', path, port };
       getBaseUrl._cachedHostname = hostname;
+      getBaseUrl._cacheExpire = Infinity; // 本地环境永久缓存
       return `${protocol}//${hostname}${port ? ':' + port : ''}${path}`;
     }
 
@@ -2479,38 +2477,81 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     const scpUrl = `${protocol}//${scpHost}${path}`;
     const legacyUrl = `${protocol}//${legacyHost}${path}`;
 
+    // --- 动态 Fallback 策略 ---
+    // 以 2026年09月10日 00:00:00 (北京时间) 为界限
+    const thresholdDate = new Date('2026-09-10T00:00:00+08:00').getTime();
+    const useLegacyFallback = now < thresholdDate;
+
+    const fallbackHost = useLegacyFallback ? legacyHost : scpHost;
+    const fallbackUrl = useLegacyFallback ? legacyUrl : scpUrl;
+
     try {
-      const probe = async (url) => {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3000);
-          const res = await fetch(url, { method: 'GET', signal: controller.signal });
-          clearTimeout(timeoutId);
-          return res.status < 500;
-        } catch (e) { return false; }
+      // 带有重试机制的探针
+      const probe = async (url, maxRetries = 2) => {
+        for (let i = 0; i < maxRetries; i++) {
+          try {
+            const controller = new AbortController();
+            // 单次请求超时时间设为 5 秒（2次重试总计最多约 10 秒）
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            // 使用 HEAD 请求，仅请求头部，不下载 Body，响应更快且省流量
+            const res = await fetch(url, { method: 'HEAD', signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (res.status < 500) return true;
+          } catch (e) {
+            // 遇到超时或网络错误（TypeError: Failed to fetch），继续下一次循环
+            if (i === maxRetries - 1) return false;
+          }
+        }
+        return false;
       };
 
-      const [scpOk, legacyOk] = await Promise.all([probe(scpUrl), probe(legacyUrl)]);
+      const [scpOk, legacyOk] = await Promise.all([
+        probe(scpUrl),
+        probe(legacyUrl)
+      ]);
 
       if (scpOk) {
         getBaseUrl._cachedHostname = scpHost;
         getBaseUrl._routeStatus = { status: 'ok', path, port };
+        getBaseUrl._cacheExpire = Infinity; // 探测成功，永久缓存（当前页面生命周期内）
+        showToast("订阅管理&链接-域名状态正常", "success", 5000)
         return scpUrl;
       }
 
       if (legacyOk) {
         getBaseUrl._cachedHostname = legacyHost;
         getBaseUrl._routeStatus = { status: 'legacy', path, port };
+        getBaseUrl._cacheExpire = Infinity; // 探测成功，永久缓存
+        showToast("订阅管理&链接-域名包含下划线，建议及时替换为 scp-store", "info")
         return legacyUrl;
       }
 
-      getBaseUrl._cachedHostname = scpHost;
+      // 两个都不通：说明遇到严重的网络问题，或者路由真的不存在。
+      // 返回默认的 scpUrl 作为 Fallback，但**只缓存 10 秒**。
+      // 这样 10 秒后如果用户再次触发操作，系统会重新发起探测，给网络恢复留下余地。
+      getBaseUrl._cachedHostname = fallbackHost;
       getBaseUrl._routeStatus = { status: 'warn', path, port };
-      return scpUrl;
+      getBaseUrl._cacheExpire = now + 10000; // 失败状态 TTL = 10s
+      showToast("未检测到可用订阅管理&链接-域名，可能是网络原因，请及时设置路由或稍后重试", "warn")
+      return fallbackUrl;
+
     } catch (e) {
-      getBaseUrl._cachedHostname = scpHost;
+      // 兜底异常捕获，同样采用短效缓存
+      getBaseUrl._cachedHostname = fallbackHost;
       getBaseUrl._routeStatus = { status: 'warn', path, port };
-      return scpUrl;
+      getBaseUrl._cacheExpire = now + 10000;
+      console.error("检测订阅管理&链接-域名出错：", e);
+      // 提取可读的错误信息
+      const detail =
+        e?.message ||
+        (typeof e === 'string' ? e : '') ||
+        '未知错误';
+
+      // Toast 显示简化后的错误内容
+      showToast(`检测订阅管理&链接-域名出错：${detail}`, 'warn');
+      return fallbackUrl;
     }
   }
 
@@ -2630,7 +2671,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       _rawConfigYaml = formatted
 
     } catch (e) {
-      return showToast('校验失败：' + e.message, 'error')
+      return showToast('配置校验失败：' + e.message, 'error')
     }
 
     const r = await sfetch(API.config, {
@@ -2834,7 +2875,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         guiUpdateVersion = rel.version ?? rel.Version ?? ''
         applyGuiUpdateBadge()
         els.siderBarCheckupdate?.classList.remove('checking-update')
-        showToast(`发现新版本 v${guiUpdateVersion}，点击侧边栏图标查看`, 'info', 5000)
+        showToast(`发现 GUI 新版本 v${guiUpdateVersion}，点击侧边栏图标查看`, 'info', 5000)
       })
 
       Events.On('wails:updater:update-ready', e => {
@@ -3195,8 +3236,10 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         const info = getBaseUrl._routeStatus;
 
         if (info && info.status === 'warn') {
-          showCfTunnelRouteWarning(false, info.path, info.port, false);
-          return;
+          if (localStorage.getItem('scp_cftunnel_warn_forever') !== 'true') {
+            const proceed = await showCfTunnelRouteWarning(false, info.path, info.port, true);
+            if (!proceed) return; // 用户点击了取消，不弹出分享菜单
+          }
         }
 
         if (info && info.status === 'legacy') {
@@ -3267,8 +3310,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           menu.style.transform = 'none'
           menu.classList.add('active')
         } catch (err) {
-          console.error(err)
-          showToast('获取链接失败', 'error')
+          console.error('获取链接失败：', e)
+          showToast(`获取链接失败：${e?.message || e}`, 'error')
         }
       })
     }
