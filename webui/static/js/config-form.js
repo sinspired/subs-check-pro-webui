@@ -157,7 +157,32 @@ const MINI_GENERIC_INFO = {
   * 此为模拟通知预览，实际数值由检测结果动态决定。
 </div>`;
     }
-  }
+  },
+  'threshold': {
+    title: '智能乱序',
+    tagLabel: '配置',
+    tagVal: 'threshold',
+    color: 'var(--success, #22c55e)',
+    desc: `
+<div class="mtt-tag-list">
+  <div class="mtt-tag-title">工作原理</div>
+  <div class="mtt-tag-item" style="font-size: 11px; line-height: 1.5; align-items: flex-start;">
+    基于节点 IP 的 CIDR 网段相似度，强制分散同网段节点，降低因集中检测而触发阻断的风险。
+  </div>
+</div>
+
+<div class="mtt-tag-list">
+  <div class="mtt-tag-title">阈值映射</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-muted" style="min-width: 45px">1.00</span>散开完全相同的 IP (/32)</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-success" style="min-width: 45px">0.75</span>散开相同的 C 段 (/24)</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-info" style="min-width: 45px">0.50</span>散开相同的 B 段 (/16)</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-orange" style="min-width: 45px">0.25</span>散开相同的 A 段 (/8)</div>
+</div>
+
+<div class="mtt-tag-note">
+  * 数字越小，顺序越乱，触发阻断风险减小
+</div>`
+  },
 };
 
 function getMiniProtoInfo(name) {
@@ -494,6 +519,7 @@ const SCHEMA = [
               { value: '0.50', label: '0.50 - CIDR /16' },
               { value: '0.25', label: '0.25 - CIDR /8' },
             ],
+            links: [{ label: '机制说明', miniInfo: 'threshold', icon: 'docs' }],
           },
         ],
       },
