@@ -167,16 +167,16 @@ const MINI_GENERIC_INFO = {
 <div class="mtt-tag-list">
   <div class="mtt-tag-title">工作原理</div>
   <div class="mtt-tag-item" style="font-size: 11px; line-height: 1.5; align-items: flex-start;">
-    基于节点 IP 的 CIDR 网段相似度，强制分散同网段节点，降低因集中检测而触发阻断的风险。
+    基于节点 IP (CIDR 网段) 或域名的层级相似度，强制分散同网段或同主域名的节点，降低因集中检测而触发阻断的风险。
   </div>
 </div>
 
 <div class="mtt-tag-list">
   <div class="mtt-tag-title">阈值映射</div>
-  <div class="mtt-tag-item"><span class="mtt-badge-muted" style="min-width: 45px">1.00</span>散开完全相同的 IP (/32)</div>
-  <div class="mtt-tag-item"><span class="mtt-badge-success" style="min-width: 45px">0.75</span>散开相同的 C 段 (/24)</div>
-  <div class="mtt-tag-item"><span class="mtt-badge-info" style="min-width: 45px">0.50</span>散开相同的 B 段 (/16)</div>
-  <div class="mtt-tag-item"><span class="mtt-badge-orange" style="min-width: 45px">0.25</span>散开相同的 A 段 (/8)</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-muted" style="min-width: 45px">1.00</span>散开同 IP / 域名</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-success" style="min-width: 45px">0.75</span>散开同 C 段 / 主域名</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-info" style="min-width: 45px">0.50</span>散开同 B 段 / 二级域</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-orange" style="min-width: 45px">0.25</span>散开同 A 段 / 顶级域</div>
 </div>
 
 <div class="mtt-tag-note">
