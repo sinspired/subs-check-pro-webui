@@ -512,12 +512,12 @@ const SCHEMA = [
           {
             key: 'threshold', label: '节点乱序', type: 'select', numericOptions: true,
             selectWidth: '500px',
-            hint: '按网段智能乱序，数值越小顺序越乱',
+            hint: '按网段和域名智能乱序，数值越小顺序越乱',
             options: [
-              { value: '1.00', label: '1.00 - CIDR /32' },
-              { value: '0.75', label: '0.75 - CIDR /24' },
-              { value: '0.50', label: '0.50 - CIDR /16' },
-              { value: '0.25', label: '0.25 - CIDR /8' },
+              { value: '1.00', label: '1.00 - 全域名 - CIDR /32' },
+              { value: '0.75', label: '0.75 - 主域名 - CIDR /24' },
+              { value: '0.50', label: '0.50 - 二级域 - CIDR /16' },
+              { value: '0.25', label: '0.25 - 顶级域 - CIDR /8' },
             ],
             links: [{ label: '机制说明', miniInfo: 'threshold', icon: 'docs' }],
           },
