@@ -3287,7 +3287,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
         pm?.classList.remove('active')
         if (menu.classList.contains('active')) {
-          menu.classList.remove('active')
+          menu.classList.add('closing')
+          setTimeout(() => menu.classList.remove('active', 'closing'), 150)
           return
         }
 
@@ -3312,6 +3313,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
           setLink('commonSub-item', '/download/sub')
           setLink('v2raySub-item', '/download/sub?target=V2Ray')
+          setLink('shadowrocketSub-item', '/download/sub?target=ShadowRocket')
           setLink('mihomoSub-item', '/api/file/mihomo')
 
           const oldSingboxName = `singbox-${window.__scp_singboxOld}`;
@@ -3319,24 +3321,52 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
           const oldItem = document.getElementById('singboxOldSub-item')
           if (oldItem) {
-            oldItem.textContent = `${oldSingboxName} 订阅`
+            const textSpan = oldItem.querySelector('.share-text');
+            if (textSpan) {
+              textSpan.textContent = `${oldSingboxName}`;
+            } else {
+              oldItem.textContent = `${oldSingboxName}`;
+            }
+            oldItem.title = `ios设备当前最新版本 1.14, 当前为 ${oldSingboxName}`
             oldItem.dataset.link = `${baseUrl}/api/file/${oldSingboxName}`
           }
 
           const newItem = document.getElementById('singboxLatestSub-item')
           if (newItem) {
-            newItem.textContent = `${latestSingboxName} 订阅`
-            newItem.title = `ios设备当前最高兼容 1.11 版本, 当前为 ${latestSingboxName}`
+            const textSpan = newItem.querySelector('.share-text');
+            if (textSpan) {
+              textSpan.textContent = `${latestSingboxName}`;
+            } else {
+              newItem.textContent = `${latestSingboxName}`;
+            }
+            newItem.title = `ios设备当前最新版本 1.14, 当前为 ${latestSingboxName}`
             newItem.dataset.link = `${baseUrl}/api/file/${latestSingboxName}`
           }
 
           // 显示菜单
-          const rect = btn.getBoundingClientRect()
-          const isMobile = window.innerWidth < 768
-          menu.style.top = `${rect.top}px`
-          menu.style.left = isMobile ? `${rect.left - 160}px` : `${rect.right * 0.9}px`
-          menu.style.transform = 'none'
-          menu.classList.add('active')
+          // 动态计算尺寸与位置
+          const rect = btn.getBoundingClientRect();
+          const vw = window.innerWidth;
+          const GAP = 0;
+
+          menu.style.display = 'block'; // 临时显示以便获取真实宽度
+          const menuW = menu.offsetWidth || 190;
+
+          if (vw < 768) {
+            // 小屏：高度保持不变，水平方向在按钮【左侧】避让
+            let left = rect.left - menuW - GAP;
+            if (left < GAP) left = GAP; // 防止溢出屏幕左侧
+
+            menu.style.top = `${rect.top}px`; // 【恢复原来的高度】
+            menu.style.left = `${left}px`;
+          } else {
+            // 大屏：保持原有逻辑
+            menu.style.top = `${rect.top}px`;
+            menu.style.left = `${rect.right * 0.9}px`;
+          }
+          menu.style.display = '';
+          menu.style.transform = 'none';
+          menu.classList.add('active');
         } catch (err) {
           console.error('获取链接失败：', e)
           showToast(`获取链接失败：${e?.message || e}`, 'error')
@@ -3350,13 +3380,16 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     document.addEventListener('click', e => {
       const sm = document.getElementById('shareMenu')
       const pm = document.getElementById('projectMenu')
-      if (sm?.classList.contains('active') && !sm.contains(e.target))
-        sm.classList.remove('active')
+      if (sm?.classList.contains('active') && !sm.contains(e.target) && !sm.classList.contains('closing')) {
+        sm.classList.add('closing');
+        setTimeout(() => sm.classList.remove('active', 'closing'), 50);
+      }
       if (
         pm?.classList.contains('active') &&
         !els.projectInfoBtn.contains(e.target)
-      )
+      ) {
         pm.classList.remove('active')
+      }
     })
 
     function openProjectMenu(anchorEl) {
@@ -3455,7 +3488,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         if (!link) return
         try {
           await navigator.clipboard.writeText(link)
-          showToast('已复制链接', 'success')
+          showToast(`已复制 ${el.textContent} 链接`, 'success')
         } catch (err) {
           const inp = document.createElement('input')
           inp.value = link
@@ -3463,9 +3496,32 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           inp.select()
           document.execCommand('copy')
           document.body.removeChild(inp)
-          showToast('已复制链接', 'success')
+          showToast(`已复制 ${el.textContent} 链接`, 'success')
         }
-        document.getElementById('shareMenu').classList.remove('active')
+
+        // --- 复制成功动画与延迟关闭 ---
+        el.classList.add('copied');
+        const svg = el.querySelector('.share-copy-icon');
+        const origHTML = svg ? svg.innerHTML : '';
+        if (svg) {
+          // 瞬间将图标切换为打勾样式 ✓
+          svg.innerHTML = `<polyline points="20 6 9 17 4 12"></polyline>`;
+        }
+
+        // 停留 350ms 让用户看清成功状态，然后开始执行退出动画
+        setTimeout(() => {
+          const menu = document.getElementById('shareMenu');
+          if (menu) {
+            menu.classList.add('closing');
+
+            // 等待退出动画 (150ms) 播放完毕后再重置 DOM
+            setTimeout(() => {
+              menu.classList.remove('active', 'closing');
+              el.classList.remove('copied');
+              if (svg) svg.innerHTML = origHTML; // 恢复为原来的复制框图标
+            }, 50);
+          }
+        }, 50);
       })
     })
 

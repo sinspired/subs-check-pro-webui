@@ -154,21 +154,77 @@
     <div class="layout">
       <!-- 侧滑菜单 -->
       <div id="shareMenu" class="slide-menu">
-        <!-- <div class="menu-header content">订阅分享</div> -->
         <div class="menu-content">
-          <p class="list-item" id="commonSub-item" role="button" tabindex="0" aria-label="复制通用订阅链接" data-link="#">通用订阅
-          </p>
-          <p class="list-item" id="v2raySub-item" role="button" tabindex="0" aria-label="复制 v2ray 订阅链接" data-link="#">
-            v2ray 订阅
-          </p>
-          <p class="list-item" id="mihomoSub-item" role="button" tabindex="1" aria-label="复制 Mihomo 订阅链接" data-link="#">
-            Mihomo 订阅</p>
-          <p class="list-item" id="singboxOldSub-item" role="button" tabindex="2" aria-label="复制 singbox 订阅链接"
+          <!-- 通用订阅 -->
+          <div class="list-item" id="commonSub-item" role="button" tabindex="0" aria-label="复制通用订阅链接" data-link="#"
+            title="自适应订阅，无分流规则，除 Mihomo、sing-box 之外的客户端">
+            <svg class="share-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <span class="share-text">通用订阅</span>
+            <svg class="share-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </div>
+          <!-- v2ray 订阅 -->
+          <div class="list-item" id="v2raySub-item" role="button" tabindex="0" aria-label="复制 v2ray 订阅链接" data-link="#"
+            title="适用 X-Ray 系列内核（V2rayN、Happ、INCY等），无分流规则">
+            <img src="/static/icon/v2ray.svg" class="share-icon" alt="v2ray">
+            <span class="share-text">v2ray</span>
+            <svg class="share-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </div>
+          <!-- Mihomo 订阅 -->
+          <div class="list-item" id="mihomoSub-item" role="button" tabindex="1" aria-label="复制 Mihomo 订阅链接"
+            data-link="#" title="适用 Mihomo 内核，Flclash，Clash Meta，Flyclash，Clash Party等">
+            <img src="/static/icon/mihomo.svg" class="share-icon" alt="mihomo">
+            <span class="share-text">Mihomo</span>
+            <svg class="share-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </div>
+          <!-- shadowrocket 订阅 -->
+          <div class="list-item" id="shadowrocketSub-item" role="button" tabindex="0" aria-label="复制 shadowrocket 订阅链接"
+            data-link="#" title="iOS Shadowrocket APP">
+            <img src="/static/icon/shadowrocket.svg" class="share-icon" alt="shadowrocket">
+            <span class="share-text">Shadowrocket</span>
+            <svg class="share-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </div>
+          <!-- singbox-old 订阅 -->
+          <div class="list-item" id="singboxOldSub-item" role="button" tabindex="2" aria-label="复制 singbox 订阅链接"
             data-link="#">
-            singbox-old 订阅</p>
-          <p class="list-item" id="singboxLatestSub-item" role="button" tabindex="3" aria-label="复制 singbox 订阅链接"
+            <img src="/static/icon/sing-box.svg" class="share-icon" alt="singbox">
+            <span class="share-text">singbox-old 订阅</span>
+            <svg class="share-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </div>
+          <!-- singbox-Latest 订阅 -->
+          <div class="list-item" id="singboxLatestSub-item" role="button" tabindex="3" aria-label="复制 singbox 订阅链接"
             data-link="#">
-            singbox-Latest 订阅</p>
+            <img src="/static/icon/sing-box.svg" class="share-icon" alt="singbox">
+            <span class="share-text">singbox-Latest 订阅</span>
+            <svg class="share-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </div>
         </div>
       </div>
       <div id="projectMenu" class="slide-menu">
@@ -177,7 +233,11 @@
             <!-- 项目介绍 -->
             <div class="project-desc">
               <p>
-                <a href="https://github.com/sinspired/subs-check-pro-gui" target="_blank" rel="noopener">跨平台 GUI</a>丨<a href="https://sinspired.github.io/subs-check-pro/" target="_blank" rel="noopener">文档站</a>丨<a href="https://github.com/sinspired/subs-check-pro/wiki" target="_blank" rel="noopener">Wiki</a>丨<a href="https://github.com/sinspired/subs-check-pro/blob/main/config/config.yaml.example" target="_blank" rel="noopener">配置模板</a>
+                <a href="https://github.com/sinspired/subs-check-pro-gui" target="_blank" rel="noopener">跨平台 GUI</a>丨<a
+                  href="https://sinspired.github.io/subs-check-pro/" target="_blank" rel="noopener">文档站</a>丨<a
+                  href="https://github.com/sinspired/subs-check-pro/wiki" target="_blank" rel="noopener">Wiki</a>丨<a
+                  href="https://github.com/sinspired/subs-check-pro/blob/main/config/config.yaml.example"
+                  target="_blank" rel="noopener">配置模板</a>
               </p>
             </div>
             <div class="project-icons">
