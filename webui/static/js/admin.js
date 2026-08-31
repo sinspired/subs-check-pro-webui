@@ -3321,7 +3321,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
           const oldItem = document.getElementById('singboxOldSub-item')
           if (oldItem) {
-            const textSpan = oldItem.querySelector('.share-text');
+            const textSpan = oldItem.querySelector('.link-text');
             if (textSpan) {
               textSpan.textContent = `${oldSingboxName}`;
             } else {
@@ -3333,7 +3333,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
           const newItem = document.getElementById('singboxLatestSub-item')
           if (newItem) {
-            const textSpan = newItem.querySelector('.share-text');
+            const textSpan = newItem.querySelector('.link-text');
             if (textSpan) {
               textSpan.textContent = `${latestSingboxName}`;
             } else {
@@ -3501,7 +3501,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
         // --- 复制成功动画与延迟关闭 ---
         el.classList.add('copied');
-        const svg = el.querySelector('.share-copy-icon');
+        const svg = el.querySelector('.link-copy-icon');
         const origHTML = svg ? svg.innerHTML : '';
         if (svg) {
           // 瞬间将图标切换为打勾样式 ✓

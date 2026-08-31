@@ -875,9 +875,9 @@ main {
   background-color: color-mix(in srgb, var(--success) 12%, transparent);
 }
 
-#shareMenu .menu-content .list-item.copied .share-text,
-#shareMenu .menu-content .list-item.copied .share-icon,
-#shareMenu .menu-content .list-item.copied .share-copy-icon {
+#shareMenu .menu-content .list-item.copied .link-text,
+#shareMenu .menu-content .list-item.copied .link-icon,
+#shareMenu .menu-content .list-item.copied .link-copy-icon {
   color: var(--success);
   opacity: 1;
   transform: translateX(0);
@@ -936,7 +936,7 @@ main {
 }
 
 /* --- 图标 & 交互 --- */
-.share-icon {
+.link-icon {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
@@ -948,28 +948,25 @@ main {
 }
 
 /* 动态适应深浅色：针对 svg */
-img.share-icon {
+img.link-icon {
   filter: invert(var(--invert));
 }
 
-.share-text {
-  flex: 1 1 0%;
+.link-text {
+  flex: 1;
   min-width: 0;
-  display: block;
   text-align: left;
   font-size: 13px;
   font-weight: 500;
   color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
-  /* 超出部分隐藏 */
   text-overflow: ellipsis;
-  /* 超出显示省略号 */
   transition: color 0.2s ease;
 }
 
 /* 隐藏在右侧的复制图标 */
-.share-copy-icon {
+.link-copy-icon {
   width: 14px;
   height: 14px;
   color: var(--muted);
@@ -983,16 +980,16 @@ img.share-icon {
 }
 
 /* Hover 时状态变更 (色彩高亮 & 图标滑出) */
-#shareMenu .menu-content .list-item:hover .share-icon {
+#shareMenu .menu-content .list-item:hover .link-icon {
   opacity: 1;
   color: var(--accent);
 }
 
-#shareMenu .menu-content .list-item:hover .share-text {
+#shareMenu .menu-content .list-item:hover .link-text {
   color: var(--accent);
 }
 
-#shareMenu .menu-content .list-item:hover .share-copy-icon {
+#shareMenu .menu-content .list-item:hover .link-copy-icon {
   opacity: 1;
   transform: translateX(0);
   color: var(--accent);
