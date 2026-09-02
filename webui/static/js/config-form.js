@@ -761,7 +761,7 @@ const SCHEMA = [
       {
         title: '覆写规则 (Sub-Store)',
         fields: [
-          { key: 'mihomo-overwrite-url', label: 'Mihomo 覆写 URL', type: 'text', fullWidth: true, placeholder: 'http://127.0.0.1:8199/Sinspired_Rules_CDN.yaml', hint: '用于生成带指定规则的 mihomo/clash.meta 订阅链接，包含分组、分流等；自定义规则使用内置文件服务', links: [{ label: '内置文件服务', href: '/files', icon: 'files' }], },
+          { key: 'mihomo-overwrite-url', label: 'Mihomo 覆写 URL', type: 'text', fullWidth: true, placeholder: 'http://127.0.0.1:8199/Mihomo-Rules-CDN.yaml', hint: '用于生成带指定规则的 mihomo/clash.meta 订阅链接，包含分组、分流等；自定义规则使用内置文件服务', links: [{ label: '内置文件服务', href: '/files', icon: 'files' }], },
         ],
       },
       {
@@ -1448,8 +1448,9 @@ const SPECIAL_INPUT_VALUES = {
     { value: '', label: '禁用 Sub Store 服务', hint: '未设置端口，Sub Store 服务禁用' },
   ],
   'mihomo-overwrite-url': [
-    { value: 'http://127.0.0.1:8199/Sinspired_Rules_CDN.yaml', label: 'PRO', hint: 'PRO' },
-    { value: 'http://127.0.0.1:8199/Sinspired_Rules_Lite_CDN.yaml', label: 'PRO-Lite', hint: 'PRO 精简' },
+    { value: 'http://127.0.0.1:8199/Shadowrocket-Rules-CDN.conf', label: 'Shadowrocket', hint: '经典' },
+    { value: 'http://127.0.0.1:8199/Mihomo-Rules-CDN.yaml', label: 'PRO', hint: 'PRO' },
+    { value: 'http://127.0.0.1:8199/Mihomo-Rules-Lite-CDN.yaml', label: 'PRO-Lite', hint: 'PRO 精简' },
     { value: 'http://127.0.0.1:8199/ACL4SSR_Online_Full.yaml', label: 'ACL4SSR', hint: '经典' },
   ],
 };
