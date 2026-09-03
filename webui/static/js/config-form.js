@@ -1448,7 +1448,6 @@ const SPECIAL_INPUT_VALUES = {
     { value: '', label: '禁用 Sub Store 服务', hint: '未设置端口，Sub Store 服务禁用' },
   ],
   'mihomo-overwrite-url': [
-    { value: 'http://127.0.0.1:8199/Shadowrocket-Rules-CDN.conf', label: 'Shadowrocket', hint: '经典' },
     { value: 'http://127.0.0.1:8199/Mihomo-Rules-CDN.yaml', label: 'PRO', hint: 'PRO' },
     { value: 'http://127.0.0.1:8199/Mihomo-Rules-Lite-CDN.yaml', label: 'PRO-Lite', hint: 'PRO 精简' },
     { value: 'http://127.0.0.1:8199/ACL4SSR_Online_Full.yaml', label: 'ACL4SSR', hint: '经典' },
