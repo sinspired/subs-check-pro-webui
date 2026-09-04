@@ -1006,9 +1006,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           const stats = parseSubStats(lastLogLines)
           if (stats) {
             let parts = []
-            if (stats.local) parts.push(`本地: <span style="font-weight:600;color:var(--success)">${stats.local}</span>`)
-            if (stats.remote) parts.push(`远程: <span style="font-weight:600;color:var(--success)">${stats.remote}</span>`)
-            if (stats.history) parts.push(`历史: <span style="font-weight:600;color:var(--success)">${stats.history}</span>`)
+            if (stats.local) parts.push(`本地: <span style="font-size:10px,font-weight:600;color:var(--success)">${stats.local}</span>`)
+            if (stats.remote) parts.push(`远程: <span style="font-size:10px,font-weight:600;color:var(--success)">${stats.remote}</span>`)
+            if (stats.history) parts.push(`历史: <span style="font-size:10px,font-weight:600;color:var(--success)">${stats.history}</span>`)
 
             // 后缀判断
             if (stats.total) {
@@ -1021,16 +1021,16 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
               if (dupCount) {
                 parts.push(
-                  `总计: <span style="font-weight:600;color:var(--success)">${stats.total}</span>` +
-                  ` | <span style="font-weight:500;color:var(--muted);">已去重: ${dupCount}</span>`
+                  `总计: <span style="font-size:10px,font-weight:600;color:var(--success)">${stats.total}</span>` +
+                  ` | <span style="font-size:9px,font-weight:500;color:var(--muted);">已去重: ${dupCount}</span>`
                 )
               } else {
-                parts.push(`总计: <span style="font-weight:600;color:var(--success)">${stats.total}</span>`)
+                parts.push(`总计: <span style="font-size:10px,font-weight:600;color:var(--success)">${stats.total}</span>`)
               }
             }
             if (parts.length > 0) {
               if (els.statusEl) {
-                els.statusEl.innerHTML = `${checking_SPINNER}<span>正在${d.stepName || '获取'} 丨${parts.join(' | ')}</span>`
+                els.statusEl.innerHTML = `${checking_SPINNER}<span>${d.stepName || '获取'} 丨${parts.join(' | ')}</span>`
                 els.statusEl.className = 'muted status-label status-prepare'
               }
             }
@@ -1260,7 +1260,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           if (els.progressPercentTitle) els.progressPercentTitle.textContent = stepName
           els.progressPercent.textContent = ''
           els.progressPercent.style.display = ''
-          els.statusEl.innerHTML = `<span>${stepName}...</span>`
+          // els.statusEl.innerHTML = `<span>${stepName}...</span>`
           els.statusEl.className = 'muted status-label status-process'
         } else if (etaText) {
           els.statusEl.innerHTML = `${checking_SPINNER}<span>运行中, 预计剩余: ${etaText}</span>`
@@ -3040,9 +3040,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           if (els.statusEl) {
             // 如果 STATUS_SPINNER 变量在作用域内可用
             if (typeof STATUS_SPINNER !== 'undefined') {
-              els.statusEl.innerHTML = `<span>正在启动任务...</span>`
+              els.statusEl.innerHTML = `<span>初始化...</span>`
             } else {
-              els.statusEl.textContent = '正在启动任务...'
+              els.statusEl.textContent = '初始化...'
             }
             els.statusEl.className = 'muted status-label status-prepare'
           }
