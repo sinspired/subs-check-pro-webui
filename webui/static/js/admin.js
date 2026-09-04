@@ -918,15 +918,14 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const checking = !!d.checking
       const fetching = !!d.fetching
 
-      const forceClose = !!d.forceClose // 获取后端返回的 forceClose 状态
-      const successlimited = !!d.successlimited // 获取数量限制标志
-      const processResults = !!d.processResults // 正在处理结果阶段
+      const forceClose = !!d.forceClose
+      const successlimited = !!d.successlimited
+      const processResults = !!d.processResults
 
       let realStartTime = null
       if (checking && lastLogLines && lastLogLines.length > 0) {
         realStartTime = findActiveTaskStartTime(lastLogLines)
       }
-      // 如果日志里没找到（比如日志被截断），但内存里有记录（checkStartTime），则用内存的
       if (!realStartTime && checkStartTime) {
         realStartTime = checkStartTime
       }
@@ -944,6 +943,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       if (checking) {
         const processed = d.progress || 0
+        const total = d.proxyCount || 0
+
         if (forceClose) {
           if (successlimited || processResults) {
             updateToggleUI('stopping')
@@ -961,13 +962,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         }
 
         // ==================== 阶段 1: 准备阶段 (Progress = 0 且非 fetching) ====================
-        if (
-          processed === 0 &&
-          !forceClose &&
-          !successlimited &&
-          !processResults &&
-          !fetching
-        ) {
+        const isPreparingPhase = processed === 0 && !forceClose && !successlimited && !processResults && !fetching;
+
+        if (isPreparingPhase) {
           switchUIState('preparing')
           showProgressUI(false) // 隐藏进度条，保留 History 面板
           restoreHistoryTitle() // 确保清理掉可能残留的界面影响
@@ -978,11 +975,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           showProgressUI(true) // 隐藏 History 面板，显示进度条
           restoreHistoryTitle() // 恢复原有的卡片视图
 
-          // updateProgress 会接管 StatusEl 的倒计时显示
+          // 渲染进度条与基础文本
           updateProgress(
             d.stepName || "进度",
-            d.proxyCount || 0,
-            d.progress || 0,
+            total,
+            processed,
             d.available || 0,
             d.processed || 0,
             true,
@@ -994,65 +991,67 @@ import { initQuickPreview } from './cfg-quickpreview.js';
             processResults,
             d.eta ?? 0
           )
-
           hideLastCheckResult() // 确保检测时 History 隐藏
-
-          // 确保内存变量同步，防止下次循环丢失
-          if (realStartTime && !checkStartTime) checkStartTime = realStartTime
         }
 
-        // 如果处于订阅拉取或准备阶段，将统计数值补充到日志顶部的任务状态栏
+        // === 用缓存解决日志滚动导致的状态栏闪烁与冲突 ===
         if (fetching || processed === 0) {
-          const stats = parseSubStats(lastLogLines)
+          let stats = parseSubStats(lastLogLines)
+
+          // 如果解析到了新数据，更新缓存；否则尝试读取缓存 (防止日志超100行被截断引发覆盖冲突)
+          if (stats) {
+            loadStatus.cachedStats = stats;
+          } else {
+            stats = loadStatus.cachedStats;
+          }
+
           if (stats) {
             let parts = []
-            if (stats.local) parts.push(`本地: <span style="font-size:10px,font-weight:600;color:var(--success)">${stats.local}</span>`)
-            if (stats.remote) parts.push(`远程: <span style="font-size:10px,font-weight:600;color:var(--success)">${stats.remote}</span>`)
-            if (stats.history) parts.push(`历史: <span style="font-size:10px,font-weight:600;color:var(--success)">${stats.history}</span>`)
+            if (stats.local) parts.push(`本地: <span class="history-subs-info">${stats.local}</span>`)
+            if (stats.remote) parts.push(`远程: <span class="history-subs-info">${stats.remote}</span>`)
+            if (stats.history) parts.push(`历史: <span class="history-subs-info">${stats.history}</span>`)
 
-            // 后缀判断
             if (stats.total) {
-              const total = Number(stats.total) || 0
+              const sumTotal = Number(stats.total) || 0
               const sum = ['local', 'remote', 'history']
                 .map(key => Number(stats[key]) || 0)
                 .reduce((a, b) => a + b, 0)
-
-              const dupCount = sum > total ? sum - total : 0
+              const dupCount = sum > sumTotal ? sum - sumTotal : 0
 
               if (dupCount) {
                 parts.push(
-                  `总计: <span style="font-size:10px,font-weight:600;color:var(--success)">${stats.total}</span>` +
-                  ` | <span style="font-size:9px,font-weight:500;color:var(--muted);">已去重: ${dupCount}</span>`
+                  `总计: <span class="history-subs-info">${stats.total}</span>` +
+                  ` | <span class="history-subs-info-muted">已去重: ${dupCount}</span>`
                 )
               } else {
-                parts.push(`总计: <span style="font-size:10px,font-weight:600;color:var(--success)">${stats.total}</span>`)
+                parts.push(`总计: <span class="history-subs-info">${stats.total}</span>`)
               }
             }
-            if (parts.length > 0) {
-              if (els.statusEl) {
-                els.statusEl.innerHTML = `${checking_SPINNER}<span>${d.stepName || '获取'} 丨${parts.join(' | ')}</span>`
-                els.statusEl.className = 'muted status-label status-prepare'
-              }
+            // 安全覆盖 statusEl
+            if (parts.length > 0 && els.statusEl) {
+              els.statusEl.innerHTML = `${checking_SPINNER}<span>${d.stepName || '获取'} 丨 ${parts.join(' | ')}</span>`
+              els.statusEl.className = 'muted status-label status-prepare'
             }
+          } else if (isPreparingPhase && els.statusEl) {
+            // 纯准备且还没有日志数据兜底时的显示
+            els.statusEl.innerHTML = `${checking_SPINNER}<span>${d.stepName || '准备中'}...</span>`
+            els.statusEl.className = 'muted status-label status-prepare'
           }
         }
 
-        if (!checkStartTime) checkStartTime = Date.now()
+        if (realStartTime && !checkStartTime) checkStartTime = realStartTime
+
       } else {
         // ==================== 空闲状态 ====================
+        loadStatus.cachedStats = null; // 检测结束时清空状态缓存
+
         showProgressUI(false)
         switchUIState('idle')
         updateToggleUI('idle')
-
-        // 恢复标题
         restoreHistoryTitle()
 
-        // 限制分析报告的刷新频率
         const now = Date.now()
-        // 定义一个静态变量记录上次强制刷新的时间
         if (!loadStatus.lastReportFetchTime) loadStatus.lastReportFetchTime = 0
-
-        // 如果任务刚结束 (checkStartTime还存在) 或者 距离上次抓取超过 3 秒，才去拉取
         if (checkStartTime || now - loadStatus.lastReportFetchTime > 3000) {
           await syncHistoryFromYaml()
           loadStatus.lastReportFetchTime = now
@@ -1074,16 +1073,13 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           0
         )
 
-        // 如果是刚启动尚未有数据，清空进度条
         if (els.progressBar && (d.progress === 0 || d.proxyCount === 0)) {
           els.progressBar.value = 0
         }
 
-        // 显示真正的历史记录
         if (lastChecked || checkStartTime) {
           checkStartTime = null
         } else if (!lastCheckInfo) {
-          // syncHistoryFromYaml 尚未拿到数据时，才由此兜底显示空状态
           showLastCheckResult(null)
         }
       }
@@ -1260,7 +1256,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           if (els.progressPercentTitle) els.progressPercentTitle.textContent = stepName
           els.progressPercent.textContent = ''
           els.progressPercent.style.display = ''
-          // els.statusEl.innerHTML = `<span>${stepName}...</span>`
+          els.statusEl.innerHTML = `<span>${stepName}...</span>`
           els.statusEl.className = 'muted status-label status-process'
         } else if (etaText) {
           els.statusEl.innerHTML = `${checking_SPINNER}<span>运行中, 预计剩余: ${etaText}</span>`

@@ -1537,6 +1537,18 @@ img.link-icon {
   user-select: text;
 }
 
+.history-subs-info {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.history-subs-info-muted {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
 /* ==================== 交互式分析摘要 ==================== */
 
 .analysis-feather-tip {
