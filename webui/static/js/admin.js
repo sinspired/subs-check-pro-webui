@@ -77,6 +77,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     versionBadge: $('#version-badge'),
     versionLogin: $(`#version-login`),
     toggleBtn: $('#btnToggleCheck'),
+    clearLogsBtn: $(`#clearLogsBtn`),
     refreshLogsBtn: $('#refreshLogs'),
     saveCfgBtn: $('#saveCfg'),
     reloadCfgBtn: $('#reloadCfg'),
@@ -201,6 +202,59 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   );
 
   // ==================== 核心工具函数 ====================
+
+  /**
+   * 自定义风格的确认弹窗 (替代默认 confirm)
+   * @param {string} msg 提示文本
+   * @param {string} type 弹窗类型: 'warn' | 'info'
+   * @returns {Promise<boolean>}
+   */
+  function showConfirm(msg, type = 'warn') {
+    return new Promise((resolve) => {
+      const existing = document.getElementById('customConfirmOverlay');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'customConfirmOverlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.25s ease;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);';
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.cssText = 'width:88%;max-width:320px;padding:24px 24px 20px;position:relative;transform:translateY(15px) scale(0.95);transition:all 0.3s cubic-bezier(0.16, 1, 0.3, 1);display:flex;flex-direction:column;gap:18px;box-shadow:var(--glass-shadow);border:1px solid var(--border);background:var(--card);text-align:center;';
+
+      const iconColor = type === 'warn' ? 'var(--warning)' : 'var(--accent)';
+      const iconSvg = type === 'warn'
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;margin:0 auto;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px;margin:0 auto;"><circle cx="12" cy="12" r="10"></circle><path d="M9 12l2 2 4-4"></path></svg>`;
+
+      card.innerHTML = `
+        ${iconSvg}
+        <div style="font-size:15px;font-weight:600;color:var(--fg);letter-spacing:0.5px;line-height:1.5;">${msg}</div>
+        <div style="display:flex;gap:12px;justify-content:center;margin-top:6px;">
+          <button id="confirmCancelBtn" class="btn" style="flex:1;background:var(--input-bg);color:var(--muted);border:none;">取消</button>
+          <button id="confirmOkBtn" class="btn" style="flex:1;background:var(--accent);color:#fff;border:none;">确定</button>
+        </div>
+      `;
+
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+
+      requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
+        card.style.transform = 'translateY(0) scale(1)';
+      });
+
+      const close = (result) => {
+        overlay.style.opacity = '0';
+        card.style.transform = 'translateY(10px) scale(0.95)';
+        setTimeout(() => overlay.remove(), 250);
+        resolve(result);
+      };
+
+      card.querySelector('#confirmCancelBtn').onclick = () => close(false);
+      card.querySelector('#confirmOkBtn').onclick = () => close(true);
+    });
+  }
 
   /**
  * 切换表单 / YAML 编辑器视图
@@ -2253,6 +2307,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     }
     ;[
       els.toggleBtn,
+      els.clearLogsBtn,
       els.refreshLogsBtn,
       els.saveCfgBtn,
       els.searchBtn,
@@ -3013,6 +3068,28 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       }
     })
 
+    els.clearLogsBtn?.addEventListener('click', async () => {
+      // 替换原有的 confirm
+      if (!(await showConfirm('确定要清空全部日志记录吗？', 'warn'))) return;
+
+      showToast('正在清空日志...', 'info');
+      try {
+        const res = await sfetch('/api/logs/clear', { method: 'POST' });
+        if (res.ok) {
+          showToast(res.payload?.message || '日志已清空', 'success');
+          if (els.logContainer) {
+            els.logContainer.innerHTML = '<div class="muted" style="font-family: system-ui; padding: 6px;">日志已清空...</div>';
+          }
+          lastLogLines = [];
+          setTimeout(() => loadLogsIncremental(false), 300);
+        } else {
+          showToast(res.payload?.error || '清理失败', 'error');
+        }
+      } catch (err) {
+        showToast('清空日志失败：' + err, 'error');
+      }
+    });
+
     els.refreshLogsBtn?.addEventListener('click', () => {
       showToast('正在刷新日志...', 'info')
       loadLogsIncremental(false)
@@ -3099,15 +3176,15 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       }
     })
 
-    const logoutHandler = () => {
-      // 在 Wails GUI 环境中，"退出登录" 返回登录窗口而非显示登录框
+    const logoutHandler = async () => {
       if (window.__WAILS_GUI?.baseURL) {
-        // 调用 Wails binding 切回登录小窗
         fetch('/gui/back-to-login').catch(() => { })
       } else {
-        if (confirm('确定退出？')) doLogout()
+        // 替换原有的 confirm
+        if (await showConfirm('确定要退出登录吗？', 'info')) doLogout()
       }
     }
+
     if (window.__WAILS_GUI?.baseURL) {
       // 调用 Wails binding 切回登录小窗
       // 设置按钮文本
