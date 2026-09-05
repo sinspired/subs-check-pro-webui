@@ -1,819 +1,967 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="theme-color"
-      content="#ffffff"
-      media="(prefers-color-scheme: light)"
-    />
-    <meta
-      name="theme-color"
-      content="#121316"
-      media="(prefers-color-scheme: dark)"
-    />
-    <title>文件服务 - Subs-Check-PRO</title>
-    <link rel="icon" type="image/svg+xml" href="/static/icon/favicon.svg" />
-    <link rel="stylesheet" href="/static/css/admin.css?v20260324" />
-    <style>
-      body {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
-        padding: 0 16px;
-        box-sizing: border-box;
-        overflow-x: hidden;
-      }
 
-      /* card-wrapper 占据所有剩余空间，内部垂直居中卡片 */
-      .card-wrapper {
-        flex: 1;
-        /* 撑满 body 除 footer 外的全部高度 */
-        display: flex;
-        align-items: center;
-        /* 卡片在此区域内垂直居中 */
-        justify-content: center;
-        width: 100%;
-        max-width: 520px;
-        padding-top: 50px;
-        /* 上下留白，防止卡片贴边 */
-        box-sizing: border-box;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#121316" media="(prefers-color-scheme: dark)" />
+  <title>文件服务 - Subs-Check-PRO</title>
+  <link rel="icon" type="image/svg+xml" href="/static/icon/favicon.svg" />
+  <link rel="stylesheet" href="/static/css/admin.css?v20260324" />
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      /* 引入安全区适配 (刘海屏/小白条) */
+      padding: env(safe-area-inset-top, 0) max(16px, env(safe-area-inset-right, 0)) env(safe-area-inset-bottom, 0) max(16px, env(safe-area-inset-left, 0));
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
 
-      /* 主题切换按钮（右上角固定，与 share.html 一致） */
-      .theme-wrapper {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10;
-      }
+    /* card-wrapper 占据所有剩余空间，内部垂直居中卡片 */
+    .card-wrapper {
+      flex: 1;
+      /* 撑满 body 除 footer 外的全部高度 */
+      display: flex;
+      align-items: flex-start;
+      /* 卡片在此区域内垂直居中 */
+      justify-content: center;
+      width: 100%;
+      max-width: 520px;
+      padding-top: 50px;
+      padding-bottom: 20px;
+      /* 上下留白，防止卡片贴边 */
+      box-sizing: border-box;
+    }
 
-      /* 卡片 */
-      .card {
-        border-radius: 16px;
-        padding: 28px 32px;
-        width: 100%;
-        max-width: 520px;
-        box-shadow: var(--glass-shadow);
-        animation: slideIn 0.35s ease-out;
-        position: relative;
-        box-sizing: border-box;
-        flex-shrink: 0;
-      }
+    /* 主题切换按钮（右上角固定，与 share.html 一致） */
+    .theme-wrapper {
+      position: fixed;
+      top: max(20px, env(safe-area-inset-top, 20px));
+      right: max(20px, env(safe-area-inset-right, 20px));
+      z-index: 10;
+    }
 
-      /* 状态徽章 */
-      .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 3px 10px;
-        border-radius: 99px;
-        font-size: 10px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        margin-bottom: 18px;
-        border: 1px solid var(--border);
-        color: var(--idle);
-      }
+    /* 卡片 */
+    .card {
+      border-radius: 16px;
+      padding: 28px 32px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: var(--glass-shadow);
+      animation: slideIn 0.35s ease-out;
+      position: relative;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      transition: max-width 0.35s cubic-bezier(0.25, 1, 0.5, 1), padding 0.35s ease;
+      margin: auto 0;
+    }
 
-      h1 {
-        font-size: 20px;
-        /* 原 20px，降至与 desc 接近的尺寸 */
-        font-weight: 700;
-        /* 原 700 */
-        margin: 0 0 6px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--fg);
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
-        /* 全大写强化"标签感"，与下方卡片文字形成质感区分 */
-      }
+    /* 默认单栏布局 */
+    .card-columns {
+      display: block;
+    }
 
-      h1 svg {
-        width: 22px;
-        height: 2px;
-        flex-shrink: 0;
-        color: var(--accent);
-        display: none;
-      }
+    /* 状态徽章 */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 18px;
+      border: 1px solid var(--border);
+      color: var(--idle);
+    }
 
-      .desc {
-        font-size: 13px;
-        color: var(--muted);
-        line-height: 1.6;
-        margin: 0 0 22px;
-      }
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--fg);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      /* 全大写强化"标签感"，与下方卡片文字形成质感区分 */
+    }
 
-      /* ── 分享入口区域 ── */
-      .share-entries {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-bottom: 22px;
-      }
+    h1 svg {
+      width: 22px;
+      height: 2px;
+      flex-shrink: 0;
+      color: var(--accent);
+      display: none;
+    }
 
-      .share-entry {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 14px 16px;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        text-decoration: none;
-        color: inherit;
-        background: var(--glass-bg);
-        transition:
-          background 0.15s,
-          transform 0.12s,
-          box-shadow 0.15s;
-        cursor: pointer;
-      }
+    .desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0 0 22px;
+    }
 
+    /* ── 分享入口区域 ── */
+    .share-entries {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .share-entry {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      text-decoration: none;
+      color: inherit;
+      background: var(--glass-bg);
+      transition:
+        background 0.15s,
+        transform 0.12s,
+        box-shadow 0.15s;
+      cursor: pointer;
+    }
+
+    @media (hover: hover) {
       .share-entry.active:hover {
         background: var(--input-bg);
         transform: translateY(-2px);
         box-shadow: var(--glass-shadow);
       }
+    }
 
-      .share-entry.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        pointer-events: none;
-      }
+    /* 触屏设备的点击反馈 */
+    .share-entry.active:active {
+      transform: scale(0.98);
+      background: var(--input-bg);
+    }
 
-      /* 左侧图标圆角方块 */
-      .entry-icon-wrap {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
+    .share-entry.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
 
-      .entry-icon-wrap svg {
-        width: 20px;
-        height: 20px;
-      }
+    /* 左侧图标圆角方块 */
+    .entry-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
 
-      .icon-accent {
-        background: color-mix(in srgb, var(--accent) 12%, transparent);
-        color: var(--accent);
-      }
+    .entry-icon-wrap svg {
+      width: 20px;
+      height: 20px;
+    }
 
-      .icon-warning {
-        background: color-mix(in srgb, var(--warning) 12%, transparent);
-        color: var(--warning);
-      }
+    .icon-accent {
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      color: var(--accent);
+    }
 
-      .icon-muted {
-        background: color-mix(in srgb, var(--muted) 12%, transparent);
-        color: var(--muted);
-      }
+    .icon-warning {
+      background: color-mix(in srgb, var(--warning) 12%, transparent);
+      color: var(--warning);
+    }
 
-      /* 中间文字区 */
-      .entry-body {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        overflow: hidden;
-      }
+    .icon-muted {
+      background: color-mix(in srgb, var(--muted) 12%, transparent);
+      color: var(--muted);
+    }
 
-      .entry-title {
-        font-size: 14px;
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
+    /* 中间文字区 */
+    .entry-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
 
-      .entry-sub {
-        font-size: 11px;
-        color: var(--muted);
-      }
+    .entry-title {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-      /* 右侧状态徽章 */
-      .entry-tag {
-        flex-shrink: 0;
-        padding: 2px 8px;
-        border-radius: 99px;
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        border: 1px solid var(--border);
-      }
+    .entry-sub {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.45;
+      white-space: normal;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
 
-      .tag-success {
-        color: var(--success);
-      }
+    /* 右侧状态徽章 */
+    .entry-tag {
+      flex-shrink: 0;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border: 1px solid var(--border);
+    }
 
-      .tag-danger {
-        color: var(--danger);
-      }
+    .tag-success {
+      color: var(--success);
+    }
 
-      .tag-warning {
-        color: var(--warning);
-      }
+    .tag-danger {
+      color: var(--danger);
+    }
 
-      /* ── 分割线 + 区块标题 ── */
-      .section-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 10px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: var(--muted);
-      }
+    .tag-warning {
+      color: var(--warning);
+    }
 
-      .section-header::after {
-        content: "";
-        flex: 1;
-        height: 1px;
-        background: var(--border);
-      }
+    /* ── 分割线 + 区块标题 ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+    }
 
-      /* ── 文件列表（复用 share.html 风格） ── */
-      .file-list {
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        overflow: hidden;
-        background: var(--glass-bg);
-        margin-bottom: 20px;
-      }
+    .section-header::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
 
-      .file-item {
-        display: flex;
-        align-items: center;
-        padding: 9px 12px;
-        border-bottom: 1px solid var(--border);
-        gap: 8px;
-        transition: background 0.15s;
-      }
+    /* ── 文件列表（复用 share.html 风格） ── */
+    .file-list {
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: var(--glass-bg);
+      margin-bottom: 0;
+    }
 
-      .file-item:last-child {
-        border-bottom: none;
-      }
+    .file-item {
+      display: flex;
+      align-items: center;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+      transition: background 0.15s, color 0.15s;
+    }
 
-      .file-item:hover {
+    .file-item:last-child {
+      border-bottom: none;
+    }
+
+    @media (hover: hover) {
+      .file-item:not(.empty-state):hover {
         background: var(--input-bg);
       }
+    }
 
-      .file-icon {
-        color: var(--muted);
-        display: flex;
-        flex-shrink: 0;
-      }
+    .file-item:not(.empty-state):active {
+      background: var(--input-bg);
+    }
 
-      .file-icon svg,
-      .file-icon img {
-        width: 14px;
-        height: 14px;
-        object-fit: contain;
-        filter: invert(var(--invert));
-      }
+    .file-icon {
+      color: var(--muted);
+      display: flex;
+      flex-shrink: 0;
+    }
 
-      .file-link {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-        color: inherit;
-        overflow: hidden;
-        gap: 8px;
-      }
+    .file-icon svg,
+    .file-icon img {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+      filter: invert(var(--invert));
+    }
 
-      .file-name {
-        flex: 1;
-        font-size: 13px;
-        font-weight: 500;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
+    .file-link {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      /* 确保文件名和路径分列两端 */
+      text-decoration: none;
+      color: inherit;
+      overflow: hidden;
+      gap: 12px;
+    }
 
-      .file-path {
-        font-size: 11px;
-        color: var(--muted);
-        white-space: nowrap;
-        flex-shrink: 0;
-        font-family: var(--font-mono, monospace);
-      }
+    .file-name {
+      flex: 1 1 auto;
+      min-width: 20%;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-      /* 复制按钮 */
-      .copy-btn {
-        flex-shrink: 0;
-        background: transparent;
-        border: 1px solid var(--border);
-        color: var(--muted);
-        cursor: pointer;
-        padding: 5px;
-        border-radius: 7px;
-        transition:
-          color 0.15s,
-          background 0.15s,
-          transform 0.1s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
+    .file-path {
+      flex: 0 0 auto;
+      /* 拒绝收缩：强制确保路径文本完整显示 */
+      max-width: 75%;
+      /* 兜底机制：路径若极端长，最多占75%以保护左侧文件名 */
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: var(--font-mono, monospace);
+      text-align: right;
+    }
 
+    /* 复制按钮 */
+    .copy-btn {
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 7px;
+      transition:
+        color 0.15s,
+        background 0.15s,
+        transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (hover: hover) {
       .copy-btn:hover {
         color: var(--accent);
         background: var(--glass-bg);
         transform: translateY(-1px);
       }
+    }
 
-      .copy-btn svg {
-        width: 14px;
-        height: 14px;
+    .copy-btn:active {
+      transform: scale(0.9);
+      background: var(--glass-bg);
+    }
+
+    .copy-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* =========================================
+       空状态占位与异步刷新动画
+       ========================================= */
+    .empty-state {
+      justify-content: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 16px 12px;
+      cursor: pointer;
+    }
+
+    .empty-state svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    @media (hover: hover) {
+      .empty-state:hover {
+        color: var(--fg);
+        background: var(--input-bg);
+      }
+    }
+
+    .empty-state:active {
+      background: var(--input-bg);
+      transform: scale(0.99);
+    }
+
+    .empty-state.loading {
+      cursor: wait;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+      transform-origin: center;
+    }
+
+    /* 页脚（与 share.html 完全一致） */
+    .card-footer {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-info {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .brand-info img {
+      width: 16px;
+      height: 16px;
+    }
+
+    .footer-meta {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    code {
+      font-family: var(--font-mono, monospace);
+      background: var(--placehoder-bg, rgba(0, 0, 0, 0.06));
+      color: var(--danger);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
       }
 
-      /* 页脚（与 share.html 完全一致） */
-      .card-footer {
-        margin-top: 40px;
-        padding-top: 16px;
-        border-top: 1px solid var(--border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
+    }
 
-      .brand-info {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--muted);
-        text-decoration: none;
-      }
+    /* footer 不参与撑高，自然沉底 */
+    .footer-outsie {
+      width: 100%;
+      max-width: 520px;
+      padding: 12px 0 max(24px, env(safe-area-inset-bottom, 0));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      transition: max-width 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    }
 
-      .brand-info img {
-        width: 16px;
-        height: 16px;
-      }
+    .footer-icons {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
 
-      .footer-meta {
-        font-size: 10px;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
+    .footer-icon {
+      width: 15px;
+      height: 15px;
+      opacity: 0.6;
+      transition: opacity 0.15s, transform 0.15s;
+      display: block;
+      filter: invert(var(--invert));
+    }
 
-      code {
-        font-family: var(--font-mono, monospace);
-        background: var(--placehoder-bg, rgba(0, 0, 0, 0.06));
-        color: var(--danger);
-        padding: 1px 5px;
-        border-radius: 4px;
-        font-size: 11px;
-      }
-
-      @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateY(12px);
-        }
-
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      /* footer 不参与撑高，自然沉底 */
-      .footer-outsie {
-        width: 100%;
-        max-width: 520px;
-        padding: 12px 0 24px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-        flex-shrink: 0;
-      }
-
-      .footer-icons {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-      }
-
-      .footer-icon {
-        width: 15px;
-        height: 15px;
-        opacity: 0.6;
-        transition: opacity 0.15s;
-        display: block;
-        filter: invert(var(--invert));
-      }
-
+    @media (hover: hover) {
       .footer-icons a:hover .footer-icon {
         opacity: 0.85;
-      }
-
-      .footer-icon:hover {
         transform: scale(1.15);
       }
+    }
 
-      .footer-copy {
-        font-size: 11px;
-        color: var(--muted);
-        text-align: center;
-        line-height: 1.6;
-      }
+    .footer-copy {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
 
-      .footer-copy a {
-        color: var(--muted);
-        text-decoration: none;
-      }
+    .footer-copy a {
+      color: var(--muted);
+      text-decoration: none;
+    }
 
+    @media (hover: hover) {
       .footer-copy a:hover {
         color: var(--accent);
       }
+    }
 
-      /* 小屏左右留白，防止卡片贴边 */
-      @media (max-width: 560px) {
-        body {
-          padding: 0 12px;
-        }
+    /* =========================================
+         大屏幕双栏自适应优化 (MinWidth: 860px)
+         ========================================= */
+    @media (min-width: 860px) {
 
-        .card-wrapper {
-          padding-top: 20px 12px;
-        }
-
-        .theme-wrapper {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-        }
-
-        .card {
-          position: relative;
-          padding: 14px 14px;
-        }
-
-        .footer-outsie {
-          padding: 40px 0 80px;
-        }
+      .card-wrapper,
+      .card,
+      .footer-outsie {
+        max-width: 1024px;
       }
-    </style>
-  </head>
 
-  <body>
-    {{/* ── 主卡片 ── */}}
-    <div class="card-wrapper">
-      <div class="card">
-        {{/* ── 主题切换按钮（与 share.html 完全一致） ── */}}
-        <div class="theme-wrapper">
-          <div
-            class="theme-toggle"
-            role="group"
-            aria-label="主题切换"
-            style="display: flex; align-items: center"
-          >
-            <button
-              id="themeToggle"
-              class="icon-btn"
-              aria-pressed="false"
-              aria-label="切换主题"
-              title="切换主题"
-            >
-              <svg
-                class="icon"
-                id="iconMoon"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                style="display: none"
-              >
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
-              <svg
-                class="icon"
-                id="iconSun"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            </button>
-          </div>
+      .card-wrapper {
+        padding-top: 70px;
+      }
+
+      .card {
+        padding: 40px 48px;
+      }
+
+      /* 大屏增加四周呼吸感 */
+
+      .card-columns {
+        display: grid;
+        /* 左侧宽度从 280px 提升至 340px，完美容纳长描述文字 */
+        grid-template-columns: 340px minmax(0, 1fr);
+        gap: 48px;
+        align-items: start;
+      }
+
+      .share-entries {
+        margin-bottom: 0;
+      }
+
+      .section-header {
+        margin-bottom: 20px;
+      }
+
+      /* 清除作为右侧推挤用的 margin */
+      .card-footer {
+        margin-top: 36px;
+      }
+
+      /* 加大底栏距离 */
+    }
+
+    /* 小屏左右留白，防止卡片贴边 */
+    @media (max-width: 560px) {
+      body {
+        /* 小屏幕左右保持极窄边距 */
+        padding-left: max(12px, env(safe-area-inset-left, 0));
+        padding-right: max(12px, env(safe-area-inset-right, 0));
+      }
+
+      .card-wrapper {
+        padding-top: 20px;
+      }
+
+      .theme-wrapper {
+        position: absolute;
+        top: 12px;
+        right: max(12px, env(safe-area-inset-right, 12px));
+      }
+
+      .card {
+        padding: 24px 20px;
+        /* 稍微加大原有小屏幕 padding，避免手指点按误触 */
+      }
+
+      h1 {
+        font-size: 18px;
+      }
+
+      .share-entry {
+        padding: 12px;
+        /* 减小内边距 */
+        gap: 10px;
+        /* 减小间距 */
+      }
+
+      .entry-icon-wrap {
+        width: 36px;
+        height: 36px;
+      }
+
+      /* 图标框等比缩放 */
+      .entry-title {
+        font-size: 13px;
+      }
+
+      .entry-tag {
+        font-size: 9px;
+        padding: 2px 6px;
+      }
+
+      /* 核心逻辑：当屏幕非常小时，文件列表信息改为上下堆叠布局 */
+      .file-link {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        justify-content: center;
+      }
+
+      .file-name {
+        max-width: 100%;
+        font-size: 13px;
+      }
+
+      .file-path {
+        max-width: 100%;
+        text-align: left;
+        font-size: 10px;
+        margin-left: 0;
+      }
+
+
+      .card-footer {
+        margin-top: 24px;
+      }
+
+      .footer-outsie {
+        padding: 20px 0 max(24px, env(safe-area-inset-bottom, 24px));
+      }
+    }
+  </style>
+</head>
+
+<body>
+  {{/* ── 主卡片 ── */}}
+  <div class="card-wrapper">
+    <div class="card">
+      {{/* ── 主题切换按钮（与 share.html 完全一致） ── */}}
+      <div class="theme-wrapper">
+        <div class="theme-toggle" role="group" aria-label="主题切换" style="display: flex; align-items: center">
+          <button id="themeToggle" class="icon-btn" aria-pressed="false" aria-label="切换主题" title="切换主题">
+            <svg class="icon" id="iconMoon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" style="display: none">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+            <svg class="icon" id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          </button>
         </div>
-        <div class="status-badge">File Hub</div>
+      </div>
 
-        <h1>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
-          内置文件服务
-        </h1>
-        <p class="desc">
-          所有对外分享的订阅访问入口，加密分享需配置
-          <code>share-password</code>。
-        </p>
+      {{/* ── 内容分栏容器 ── */}}
+      <div class="card-columns">
 
-        {{/* ── 分享入口区 ── */}}
-        <div class="share-entries">
-          {{/* 加密分享：根据是否配置密码动态切换状态 */}} {{ if .HasPassword }}
-          <a
-            class="share-entry active"
-            href="/sub/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div class="entry-icon-wrap icon-accent">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <circle cx="12" cy="11" r="2" />
-                <line x1="12" y1="13" x2="12" y2="16" />
-              </svg>
+        {{/* ── 左侧：介绍与入口 ── */}}
+        <div class="card-col-left">
+          <div class="status-badge">File Hub</div>
+
+          <h1>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
+            内置文件服务
+          </h1>
+          <p class="desc">
+            所有对外分享的订阅访问入口，加密分享需配置
+            <code>share-password</code>。
+          </p>
+
+          {{/* ── 分享入口区 ── */}}
+          <div class="share-entries">
+            {{/* 加密分享：根据是否配置密码动态切换状态 */}}
+            {{ if .HasPassword }}
+            <a class="share-entry active" href="/sub/" target="_blank" rel="noopener noreferrer">
+              <div class="entry-icon-wrap icon-accent">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <circle cx="12" cy="11" r="2" />
+                  <line x1="12" y1="13" x2="12" y2="16" />
+                </svg>
+              </div>
+              <div class="entry-body">
+                <span class="entry-title">加密订阅分享</span>
+                <span class="entry-sub">访问路径 /sub/ · 需要分享码</span>
+              </div>
+              <span class="entry-tag tag-success">已启用</span>
+            </a>
+            {{ else }}
+            <div class="share-entry disabled">
+              <div class="entry-icon-wrap icon-muted">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <rect x="9" y="11" width="6" height="5" rx="1" />
+                  <path d="M10 11V9a2 2 0 0 1 4 0v2" />
+                  <line x1="8" y1="15" x2="16" y2="19" stroke-dasharray="2 2" />
+                </svg>
+              </div>
+              <div class="entry-body">
+                <span class="entry-title">加密订阅分享</span>
+                <span class="entry-sub">未配置 share-password，功能已关闭</span>
+              </div>
+              <span class="entry-tag tag-danger">未启用</span>
             </div>
-            <div class="entry-body">
-              <span class="entry-title">加密订阅分享</span>
-              <span class="entry-sub">访问路径 /sub/ · 需要分享码</span>
-            </div>
-            <span class="entry-tag tag-success">已启用</span>
-          </a>
-          {{ else }}
-          <div class="share-entry disabled">
-            <div class="entry-icon-wrap icon-muted">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <rect x="9" y="11" width="6" height="5" rx="1" />
-                <path d="M10 11V9a2 2 0 0 1 4 0v2" />
-                <line x1="8" y1="15" x2="16" y2="19" stroke-dasharray="2 2" />
-              </svg>
-            </div>
-            <div class="entry-body">
-              <span class="entry-title">加密订阅分享</span>
-              <span class="entry-sub">未配置 share-password，功能已关闭</span>
-            </div>
-            <span class="entry-tag tag-danger">未启用</span>
+            {{ end }}
+            {{/* 公开分享：始终可用 */}}
+            <a class="share-entry active" href="/more/" target="_blank" rel="noopener noreferrer">
+              <div class="entry-icon-wrap icon-warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <div class="entry-body">
+                <span class="entry-title">公开资源目录</span>
+                <span class="entry-sub">访问路径 /more/ · 无需鉴权，文件列表已隐匿</span>
+              </div>
+              <span class="entry-tag tag-warning">公开</span>
+            </a>
           </div>
-          {{ end }} {{/* 公开分享：始终可用 */}}
-          <a
-            class="share-entry active"
-            href="/more/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div class="entry-icon-wrap icon-warning">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path
-                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                />
-              </svg>
-            </div>
-            <div class="entry-body">
-              <span class="entry-title">公开资源目录</span>
-              <span class="entry-sub"
-                >访问路径 /more/ · 无需鉴权，文件列表已隐匿</span
-              >
-            </div>
-            <span class="entry-tag tag-warning">公开</span>
-          </a>
         </div>
 
         {{/* ── 公共规则文件区 ── */}}
-        <div class="section-header">公共规则文件</div>
-        <div class="file-list">
-          {{ range .PublicFiles }}
-          <div class="file-item">
-            <span class="file-icon">
-              <img src="/static/icon/{{ .IconName }}" alt="icon" />
-            </span>
-            <a
-              class="file-link"
-              href="{{ .Route }}"
-              target="_blank"
-              title="{{ .Route }}"
-            >
-              <span class="file-name">{{ .Name }}</span>
-              <span class="file-path">{{ .Route }}</span>
-            </a>
-            <button
-              class="copy-btn"
-              title="复制链接"
-              data-route="{{ .Route }}"
-              onclick="copyRoute(this)"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path
-                  d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-                />
+        <div class="card-col-right">
+          <div class="section-header">公共规则文件</div>
+
+          {{/* id="fileListContainer" 供 JS 异步替换 */}}
+          <div class="file-list" id="fileListContainer">
+            {{ if .PublicFiles }}
+            {{ range .PublicFiles }}
+            <div class="file-item">
+              <span class="file-icon">
+                <img src="/static/icon/{{ .IconName }}" alt="icon" />
+              </span>
+              <a class="file-link" href="{{ .Route }}" target="_blank" title="{{ .Route }}">
+                <span class="file-name">{{ .Name }}</span>
+                <span class="file-path">{{ .Route }}</span>
+              </a>
+              <button class="copy-btn" title="复制链接" data-route="{{ .Route }}" onclick="copyRoute(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              </button>
+            </div>
+            {{ end }}
+            {{ else }}
+            {{/* 空状态，点击触发异步获取 */}}
+            <div class="file-item empty-state" onclick="asyncRefreshFiles(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
               </svg>
-            </button>
+              <span>未读取到文件，点击获取</span>
+            </div>
+            {{ end }}
           </div>
-          {{ end }}
-        </div>
-
-        {{/* 页脚（与 share.html 完全一致） */}}
-        <div class="card-footer">
-          <a class="brand-info" href="/admin">
-            <img src="/static/icon/favicon.svg" alt="logo" />
-            Subs-Check-PRO
-          </a>
-          <div class="footer-meta">File Hub</div>
         </div>
       </div>
-    </div>
-
-    <div class="footer-outsie">
-      <div class="footer-icons">
-        <a href="https://github.com/sinspired/subs-check-pro" title="GitHub"
-          ><img src="/static/icon/github.svg" alt="GitHub" class="footer-icon"
-        /></a>
-        <a
-          href="https://hub.docker.com/r/sinspired/subs-check-pro"
-          title="Docker"
-          ><img src="/static/icon/docker.svg" alt="Docker" class="footer-icon"
-        /></a>
-        <a href="https://t.me/subs_check_pro" title="Telegram"
-          ><img
-            src="/static/icon/telegram.svg"
-            alt="Telegram"
-            class="footer-icon"
-        /></a>
-      </div>
-      <div class="footer-copy">
-        © 2025
-        <a href="https://github.com/sinspired" target="_blank" rel="noopener"
-          >sinspired</a
-        >
-        ·
-        <a
-          href="https://www.gnu.org/licenses/gpl-3.0.html"
-          target="_blank"
-          rel="noopener"
-          >GPL-3.0 License</a
-        >
+      {{/* 页脚（与 share.html 完全一致） */}}
+      <div class="card-footer">
+        <a class="brand-info" href="/admin">
+          <img src="/static/icon/favicon.svg" alt="logo" />
+          Subs-Check-PRO
+        </a>
+        <div class="footer-meta">File Hub</div>
       </div>
     </div>
+  </div>
 
-    <script>
-      // ── 主题切换（与 share.html 完全一致） ────────────────────
-      const html = document.documentElement;
-      const toggleBtn = document.getElementById("themeToggle");
-      const iconMoon = document.getElementById("iconMoon");
-      const iconSun = document.getElementById("iconSun");
+  <div class="footer-outsie">
+    <div class="footer-icons">
+      <a href="https://github.com/sinspired/subs-check-pro" title="GitHub"><img src="/static/icon/github.svg"
+          alt="GitHub" class="footer-icon" /></a>
+      <a href="https://hub.docker.com/r/sinspired/subs-check-pro" title="Docker"><img src="/static/icon/docker.svg"
+          alt="Docker" class="footer-icon" /></a>
+      <a href="https://t.me/subs_check_pro" title="Telegram"><img src="/static/icon/telegram.svg" alt="Telegram"
+          class="footer-icon" /></a>
+    </div>
+    <div class="footer-copy">
+      © 2025
+      <a href="https://github.com/sinspired" target="_blank" rel="noopener">sinspired</a>
+      ·
+      <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPL-3.0 License</a>
+    </div>
+  </div>
 
-      function resolveTheme(t) {
-        if (t === "auto" || !t) {
-          return window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light";
-        }
-        return t;
+  <script>
+    // ── 主题切换（与 share.html 完全一致） ────────────────────
+    const html = document.documentElement;
+    const toggleBtn = document.getElementById("themeToggle");
+    const iconMoon = document.getElementById("iconMoon");
+    const iconSun = document.getElementById("iconSun");
+
+    function resolveTheme(t) {
+      if (t === "auto" || !t) {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
       }
-      function applyTheme(theme) {
-        html.setAttribute("data-theme", theme);
-        const isDark = theme === "dark";
-        iconMoon.style.display = isDark ? "block" : "none";
-        iconSun.style.display = isDark ? "none" : "block";
-        toggleBtn.setAttribute("aria-pressed", String(isDark));
-      }
-      function saveTheme(t) {
-        fetch("/admin/theme", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ theme: t }),
-        }).catch(() => {});
-      }
+      return t;
+    }
+    function applyTheme(theme) {
+      html.setAttribute("data-theme", theme);
+      const isDark = theme === "dark";
+      iconMoon.style.display = isDark ? "block" : "none";
+      iconSun.style.display = isDark ? "none" : "block";
+      toggleBtn.setAttribute("aria-pressed", String(isDark));
+    }
+    function saveTheme(t) {
+      fetch("/admin/theme", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme: t }),
+      }).catch(() => { });
+    }
 
-      // 初始化：从服务端读取
-      fetch("/admin/theme")
-        .then((r) => r.json())
-        .then((d) => applyTheme(resolveTheme(d.theme)))
-        .catch(() => applyTheme(resolveTheme("auto")));
+    // 初始化：从服务端读取
+    fetch("/admin/theme")
+      .then((r) => r.json())
+      .then((d) => applyTheme(resolveTheme(d.theme)))
+      .catch(() => applyTheme(resolveTheme("auto")));
 
-      toggleBtn.addEventListener("click", () => {
-        const next =
-          html.getAttribute("data-theme") === "dark" ? "light" : "dark";
-        applyTheme(next);
-        saveTheme(next);
-      });
+    toggleBtn.addEventListener("click", () => {
+      const next =
+        html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      applyTheme(next);
+      saveTheme(next);
+    });
 
-      toggleBtn.addEventListener("dblclick", () => {
-        saveTheme("auto");
-        applyTheme(resolveTheme("auto"));
-      });
+    toggleBtn.addEventListener("dblclick", () => {
+      saveTheme("auto");
+      applyTheme(resolveTheme("auto"));
+    });
 
-      // ── 复制公共文件直链 ──────────────────────────────────────
-      function copyRoute(btn) {
-        const route = btn.dataset.route;
-        const url = window.location.origin + route;
+    // 异步刷新文件列表逻辑
+    async function asyncRefreshFiles(btn) {
+      if (btn.classList.contains('loading')) return; // 防止重复点击
 
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard
-            .writeText(url)
-            .then(() => {
-              showSuccess(btn);
-            })
-            .catch(() => {
-              fallbackCopy(url, btn);
-            });
+      const icon = btn.querySelector('svg');
+      const textSpan = btn.querySelector('span');
+
+      // 1. 切换为加载中 UI 状态
+      btn.classList.add('loading');
+      icon.classList.add('spin');
+      textSpan.textContent = "正在获取最新文件...";
+
+      try {
+        // 2. 无刷新获取当前页面的最新 HTML (带 no-store 防止拿旧缓存)
+        const res = await fetch(window.location.href, { cache: 'no-store' });
+        const htmlText = await res.text();
+
+        // 3. 将返回的内容转成 DOM 节点，提取里面的列表部分
+        const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+        const newList = doc.getElementById('fileListContainer');
+
+        if (newList) {
+          // 4. 将提取到的新列表替换当前列表
+          document.getElementById('fileListContainer').innerHTML = newList.innerHTML;
         } else {
-          fallbackCopy(url, btn);
+          throw new Error("解析异常");
         }
+      } catch (err) {
+        // 如果依然失败，恢复按钮状态并提示
+        btn.classList.remove('loading');
+        icon.classList.remove('spin');
+        textSpan.textContent = "获取失败，点击重试";
       }
+    }
 
-      function fallbackCopy(text, btn) {
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.style.position = "fixed"; // 避免滚动影响
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-        try {
-          document.execCommand("copy");
-          showSuccess(btn);
-        } catch (err) {
-          prompt("请手动复制链接：", text);
-        }
-        document.body.removeChild(textarea);
+    // ── 复制公共文件直链 ──────────────────────────────────────
+    function copyRoute(btn) {
+      const route = btn.dataset.route;
+      const url = window.location.origin + route;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard
+          .writeText(url)
+          .then(() => {
+            showSuccess(btn);
+          })
+          .catch(() => {
+            fallbackCopy(url, btn);
+          });
+      } else {
+        fallbackCopy(url, btn);
       }
+    }
 
-      function showSuccess(btn) {
-        const original = btn.innerHTML;
-        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    function fallbackCopy(text, btn) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed"; // 避免滚动影响
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        showSuccess(btn);
+      } catch (err) {
+        prompt("请手动复制链接：", text);
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function showSuccess(btn) {
+      const original = btn.innerHTML;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="20 6 9 17 4 12"/>
     </svg>`;
-        btn.style.color = "var(--success)";
-        setTimeout(() => {
-          btn.innerHTML = original;
-          btn.style.color = "";
-        }, 2000);
-      }
-    </script>
-    <script type="module" src="/static/js/admin.js?v202606082401"></script>
-  </body>
+      btn.style.color = "var(--success)";
+      setTimeout(() => {
+        btn.innerHTML = original;
+        btn.style.color = "";
+      }, 2000);
+    }
+  </script>
+  <script type="module" src="/static/js/admin.js?v202606082401"></script>
+</body>
+
 </html>
