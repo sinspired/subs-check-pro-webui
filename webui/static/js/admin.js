@@ -1253,11 +1253,19 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           els.statusEl.innerHTML = `${checking_SPINNER}<span>已启动, 计算剩余时间...</span>`
           els.statusEl.className = 'muted status-label status-calculating'
         } else if (!etaText) {
-          if (els.progressPercentTitle) els.progressPercentTitle.textContent = stepName
-          els.progressPercent.textContent = ''
-          els.progressPercent.style.display = ''
-          els.statusEl.innerHTML = `<span>${stepName}...</span>`
-          els.statusEl.className = 'muted status-label status-process'
+          if (els.progressPercentTitle) {
+            els.progressPercentTitle.textContent = stepName;
+          }
+
+          const percentValue = parseFloat(els.progressPercent.textContent) || 0;
+          if (percentValue <= 0) {
+            els.progressPercent.textContent = '';
+          }
+
+          els.progressPercent.style.display = '';
+          els.statusEl.innerHTML = `<span>${stepName}...</span>`;
+          els.statusEl.className = 'muted status-label status-process';
+
         } else if (etaText) {
           els.statusEl.innerHTML = `${checking_SPINNER}<span>运行中, 预计剩余: ${etaText}</span>`
           els.statusEl.className = 'muted status-label status-checking'
