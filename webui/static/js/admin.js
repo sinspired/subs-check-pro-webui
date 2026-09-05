@@ -1258,7 +1258,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           }
 
           const percentValue = parseFloat(els.progressPercent.textContent) || 0;
-          if (percentValue <= 0) {
+          if (stepName.includes("代理")) {
             els.progressPercent.textContent = '';
           }
 
