@@ -1911,6 +1911,10 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   function renderLogLines(lines, IntervalRun) {
     if (!els.logContainer) return
+
+    // 当真实日志准备渲染时，移除 loading 状态
+    els.logContainer.classList.remove('loading')
+
     if (isUserSelectingOrHovering() && IntervalRun) {
       els.logContainer.title = '暂停自动刷新'
       return
@@ -3075,16 +3079,27 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     })
 
     els.clearLogsBtn?.addEventListener('click', async () => {
-      // 替换原有的 confirm
       if (!(await showConfirm('确定要清空全部日志记录吗？', 'warn'))) return;
-
       showToast('正在清空日志...', 'info');
       try {
         const res = await sfetch('/api/logs/clear', { method: 'POST' });
         if (res.ok) {
           showToast(res.payload?.message || '日志已清空', 'success');
           if (els.logContainer) {
-            els.logContainer.innerHTML = '<div class="muted" style="font-family: system-ui; padding: 6px;">日志已清空...</div>';
+            els.logContainer.innerHTML = `
+          <div class="log-skeleton">
+            <div class="sk-header">
+              <svg class="sk-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+              </svg>
+              <span>正在等待日志输出...</span>
+            </div>
+            <div class="sk-line" style="width: 35%"></div>
+            <div class="sk-line" style="width: 65%"></div>
+            <div class="sk-line" style="width: 50%"></div>
+          </div>
+        `;
+            els.logContainer.classList.add('loading');
           }
           lastLogLines = [];
           setTimeout(() => loadLogsIncremental(false), 300);
@@ -3650,9 +3665,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   /**
- * 小屏日志区折叠/展开逻辑
- * 点击 #toggleLogsBtn 切换 .logs-wrapper 的显隐
- */
+  * 小屏日志区折叠/展开逻辑
+  * 点击 #toggleLogsBtn 切换 .logs-wrapper 的显隐
+  */
   function initLogsCollapseBtn() {
     const STORAGE_KEY = 'logs_collapsed';
 

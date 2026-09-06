@@ -2250,6 +2250,84 @@ img.link-icon {
   opacity: 1;
 }
 
+/* 骨架屏主容器 */
+.log-skeleton {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.logs-wrapper.loading .log-skeleton {
+  display: flex;
+  /* 骨架屏出现时的柔和淡入 */
+  animation: logFadeIn 0.3s ease-out;
+}
+
+/* 顶部状态提示：Spinner + 文字 */
+.sk-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 6px;
+  opacity: 0.8;
+}
+
+/* 旋转小图标 */
+.sk-spinner {
+  width: 14px;
+  height: 14px;
+  animation: skSpin 1s linear infinite;
+}
+
+@keyframes skSpin {
+  100% { transform: rotate(360deg); }
+}
+
+/* 骨架单行 */
+.sk-line {
+  height: 12px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+
+.sk-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--fg) 6%, transparent),
+    transparent
+  );
+  animation: logShimmer 1.5s infinite ease-in-out;
+}
+
+@keyframes logShimmer {
+  100% { transform: translateX(100%); }
+}
+
+.logs-wrapper:not(.loading) > div {
+  animation: logEnter 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes logEnter {
+  0% { 
+    opacity: 0; 
+    transform: translateY(6px); /* 微微从下方浮上来 */
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
 /* 日志颜色样式 */
 .log-info {
   color: #28a745;
