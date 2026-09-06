@@ -2594,6 +2594,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         return false;
       };
 
+      showToast("检查管理&分享状态", "info", 5000)
+
       const [scpOk, legacyOk] = await Promise.all([
         probe(scpUrl),
         probe(legacyUrl)
@@ -2603,7 +2605,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         getBaseUrl._cachedHostname = scpHost;
         getBaseUrl._routeStatus = { status: 'ok', path, port };
         getBaseUrl._cacheExpire = Infinity; // 探测成功，永久缓存（当前页面生命周期内）
-        showToast("订阅管理&链接-域名状态正常", "success", 5000)
+        showToast("订阅管理&分享状态正常", "success", 5000)
         return scpUrl;
       }
 
@@ -2611,7 +2613,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         getBaseUrl._cachedHostname = legacyHost;
         getBaseUrl._routeStatus = { status: 'legacy', path, port };
         getBaseUrl._cacheExpire = Infinity; // 探测成功，永久缓存
-        showToast("订阅管理&链接-域名包含下划线，建议及时替换为 scp-store", "info")
+        showToast("订阅管理&分享-域名包含下划线，建议及时替换为 scp-store", "warn")
         return legacyUrl;
       }
 
@@ -2621,7 +2623,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       getBaseUrl._cachedHostname = fallbackHost;
       getBaseUrl._routeStatus = { status: 'warn', path, port };
       getBaseUrl._cacheExpire = now + 10000; // 失败状态 TTL = 10s
-      showToast("未检测到可用订阅管理&链接-域名，可能是网络原因，请及时设置路由或稍后重试", "warn")
+      showToast("未检测到可用订阅管理&分享-域名，可能是网络原因，请及时设置路由或稍后重试", "warn")
       return fallbackUrl;
 
     } catch (e) {
@@ -2629,7 +2631,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       getBaseUrl._cachedHostname = fallbackHost;
       getBaseUrl._routeStatus = { status: 'warn', path, port };
       getBaseUrl._cacheExpire = now + 10000;
-      console.error("检测订阅管理&链接-域名出错：", e);
+      console.error("检测订阅管理&分享-域名出错：", e);
       // 提取可读的错误信息
       const detail =
         e?.message ||
@@ -2637,7 +2639,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         '未知错误';
 
       // Toast 显示简化后的错误内容
-      showToast(`检测订阅管理&链接-域名出错：${detail}`, 'warn');
+      showToast(`检测订阅管理&分享-域名出错：${detail}`, 'error');
       return fallbackUrl;
     }
   }
