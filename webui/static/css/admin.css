@@ -2258,6 +2258,12 @@ img.link-icon {
   gap: 12px;
   margin-top: 0px;
   opacity: 0.7; /* 整体柔和一点 */
+  width: 100%; /* 确保横向撑满 */
+}
+
+/* 加载中时隐藏外层容器的滚动条，防止骨架屏溢出时很难看 */
+.logs-wrapper.loading {
+  overflow: hidden;
 }
 
 .logs-wrapper.loading .log-skeleton {
@@ -2269,30 +2275,32 @@ img.link-icon {
 /* 模拟单行真实的日志结构 (左侧标签 + 右侧内容) */
 .sk-row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   width: 100%;
 }
 
-/* 模拟前面的标签/时间戳 (颜色稍微深一点点) */
-.sk-tag {
+/* 确保色块不会被 flex-shrink 强行压缩 */
+.sk-tag,
+.sk-line {
   height: 12px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--fg) 10%, transparent);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* 模拟前面的标签/时间戳 (颜色稍微深一点点) */
+.sk-tag {
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
 }
 
 /* 模拟后面的日志文本线 */
 .sk-line {
-  height: 12px;
-  border-radius: 4px;
   background: color-mix(in srgb, var(--fg) 5%, transparent);
-  position: relative;
-  overflow: hidden;
 }
 
-/* 统一的扫光动画 */
+/* 扫光动画核心 */
 .sk-tag::after,
 .sk-line::after {
   content: "";
@@ -2308,21 +2316,54 @@ img.link-icon {
   animation: logShimmer 1.5s infinite ease-in-out;
 }
 
+/* 12 行阶梯延时：形成海浪般自上而下的扫描感 */
+.sk-row:nth-child(1) .sk-tag::after,
+.sk-row:nth-child(1) .sk-line::after {
+  animation-delay: 0s;
+}
 .sk-row:nth-child(2) .sk-tag::after,
 .sk-row:nth-child(2) .sk-line::after {
-  animation-delay: 0.15s;
+  animation-delay: 0.1s;
 }
 .sk-row:nth-child(3) .sk-tag::after,
 .sk-row:nth-child(3) .sk-line::after {
-  animation-delay: 0.3s;
+  animation-delay: 0.2s;
 }
 .sk-row:nth-child(4) .sk-tag::after,
 .sk-row:nth-child(4) .sk-line::after {
-  animation-delay: 0.45s;
+  animation-delay: 0.3s;
 }
 .sk-row:nth-child(5) .sk-tag::after,
 .sk-row:nth-child(5) .sk-line::after {
+  animation-delay: 0.4s;
+}
+.sk-row:nth-child(6) .sk-tag::after,
+.sk-row:nth-child(6) .sk-line::after {
+  animation-delay: 0.5s;
+}
+.sk-row:nth-child(7) .sk-tag::after,
+.sk-row:nth-child(7) .sk-line::after {
   animation-delay: 0.6s;
+}
+.sk-row:nth-child(8) .sk-tag::after,
+.sk-row:nth-child(8) .sk-line::after {
+  animation-delay: 0.7s;
+}
+.sk-row:nth-child(9) .sk-tag::after,
+.sk-row:nth-child(9) .sk-line::after {
+  animation-delay: 0.8s;
+}
+.sk-row:nth-child(10) .sk-tag::after,
+.sk-row:nth-child(10) .sk-line::after {
+  animation-delay: 0.9s;
+}
+.sk-row:nth-child(11) .sk-tag::after,
+.sk-row:nth-child(11) .sk-line::after {
+  animation-delay: 1s;
+}
+.sk-row:nth-child(12) .sk-tag::after,
+.sk-row:nth-child(12) .sk-line::after {
+  animation-delay: 1.1s;
 }
 
 @keyframes logShimmer {

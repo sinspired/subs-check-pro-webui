@@ -3128,13 +3128,20 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           showToast(res.payload?.message || '日志已清空', 'success');
           if (els.logContainer) {
             els.logContainer.innerHTML = `
-              <div class="log-skeleton">
-                <div class="sk-row"><div class="sk-tag" style="width: 18%"></div><div class="sk-line" style="width: 60%"></div></div>
-                <div class="sk-row"><div class="sk-tag" style="width: 15%"></div><div class="sk-line" style="width: 75%"></div></div>
-                <div class="sk-row"><div class="sk-tag" style="width: 22%"></div><div class="sk-line" style="width: 45%"></div></div>
-                <div class="sk-row"><div class="sk-tag" style="width: 14%"></div><div class="sk-line" style="width: 80%"></div></div>
-                <div class="sk-row"><div class="sk-tag" style="width: 20%"></div><div class="sk-line" style="width: 50%"></div></div>
-              </div>
+            <div class="log-skeleton">
+              <div class="sk-row"><div class="sk-tag" style="width: 18%"></div><div class="sk-line" style="width: 60%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 15%"></div><div class="sk-line" style="width: 75%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 22%"></div><div class="sk-line" style="width: 45%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 14%"></div><div class="sk-line" style="width: 80%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 20%"></div><div class="sk-line" style="width: 50%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 16%"></div><div class="sk-line" style="width: 68%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 19%"></div><div class="sk-line" style="width: 55%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 15%"></div><div class="sk-line" style="width: 82%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 21%"></div><div class="sk-line" style="width: 40%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 17%"></div><div class="sk-line" style="width: 70%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 14%"></div><div class="sk-line" style="width: 60%"></div></div>
+              <div class="sk-row"><div class="sk-tag" style="width: 18%"></div><div class="sk-line" style="width: 50%"></div></div>
+            </div>
             `;
             els.logContainer.classList.add('loading');
 
