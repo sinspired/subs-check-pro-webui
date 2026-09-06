@@ -2256,7 +2256,8 @@ img.link-icon {
   display: none;
   flex-direction: column;
   gap: 12px;
-  margin-top: 4px;
+  margin-top: 0px;
+  opacity: 0.7; /* 整体柔和一点 */
 }
 
 .logs-wrapper.loading .log-skeleton {
@@ -2265,39 +2266,34 @@ img.link-icon {
   animation: logFadeIn 0.3s ease-out;
 }
 
-/* 顶部状态提示：Spinner + 文字 */
-.sk-header {
+/* 模拟单行真实的日志结构 (左侧标签 + 右侧内容) */
+.sk-row {
   display: flex;
+  gap: 10px;
   align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 6px;
-  opacity: 0.8;
+  width: 100%;
 }
 
-/* 旋转小图标 */
-.sk-spinner {
-  width: 14px;
-  height: 14px;
-  animation: skSpin 1s linear infinite;
-}
-
-@keyframes skSpin {
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* 骨架单行 */
-.sk-line {
+/* 模拟前面的标签/时间戳 (颜色稍微深一点点) */
+.sk-tag {
   height: 12px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
   position: relative;
   overflow: hidden;
 }
 
+/* 模拟后面的日志文本线 */
+.sk-line {
+  height: 12px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--fg) 5%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 统一的扫光动画 */
+.sk-tag::after,
 .sk-line::after {
   content: "";
   position: absolute;
@@ -2306,10 +2302,27 @@ img.link-icon {
   background: linear-gradient(
     90deg,
     transparent,
-    color-mix(in srgb, var(--fg) 6%, transparent),
+    color-mix(in srgb, var(--fg) 7%, transparent),
     transparent
   );
   animation: logShimmer 1.5s infinite ease-in-out;
+}
+
+.sk-row:nth-child(2) .sk-tag::after,
+.sk-row:nth-child(2) .sk-line::after {
+  animation-delay: 0.15s;
+}
+.sk-row:nth-child(3) .sk-tag::after,
+.sk-row:nth-child(3) .sk-line::after {
+  animation-delay: 0.3s;
+}
+.sk-row:nth-child(4) .sk-tag::after,
+.sk-row:nth-child(4) .sk-line::after {
+  animation-delay: 0.45s;
+}
+.sk-row:nth-child(5) .sk-tag::after,
+.sk-row:nth-child(5) .sk-line::after {
+  animation-delay: 0.6s;
 }
 
 @keyframes logShimmer {
@@ -2341,7 +2354,6 @@ img.link-icon {
   left: 50%;
   transform: translateX(-50%) translateY(16px) scale(0.95);
 
-  /* ✨ 完美融入你的主题：借用 card 背景和 border ✨ */
   background: color-mix(in srgb, var(--card) 85%, transparent);
   color: var(--muted);
   border: 1px solid var(--border);
@@ -2350,7 +2362,8 @@ img.link-icon {
   border-radius: 99px;
   font-size: 12px;
   font-weight: 600;
-  /* 借用你现成的阴影颜色变量，产生轻微悬浮感 */
+  border-color: var(--border);
+  /* 产生轻微悬浮感 */
   box-shadow: 0 4px 12px color-mix(in srgb, var(--card-shadow) 20%, transparent);
   cursor: pointer;
   display: flex;
@@ -2368,28 +2381,40 @@ img.link-icon {
   z-index: 100;
 }
 
+/* 山下缓慢跳动呼吸动画 */
+@keyframes badge-breath {
+  0% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) translateY(4px) scale(0.985);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
 /* 激活状态 */
 .log-scroll-badge.visible {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(-50%) translateY(0) scale(1);
+
+  /* animation: badge-breath 2.8s ease-in-out infinite; */
 }
 
-/* 悬停状态：与你系统里的菜单/按钮 hover 风格统一 */
+/* 悬停状态*/
 .log-scroll-badge:hover {
   color: var(--accent);
-  background: color-mix(in srgb, var(--card) 95%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-  transform: translateX(-50%) translateY(-2px) scale(1.02);
+  /* background: color-mix(in srgb, var(--card) 95%, transparent); */
+  border-color: color-mix(in srgb, var(--accent) 5%, transparent);
+  transform: translateX(-50%) scale(1.01);
   box-shadow: 0 6px 16px color-mix(in srgb, var(--card-shadow) 30%, transparent);
 }
 
 /* 额外交互小细节：图标在 hover 时有个轻微向下的跳动感，暗示“回到底部” */
 .log-scroll-badge svg {
   transition: transform 0.3s ease;
-}
-.log-scroll-badge:hover svg {
-  transform: translateY(2px);
 }
 
 /* 日志颜色样式 */
