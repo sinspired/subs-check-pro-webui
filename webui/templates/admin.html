@@ -572,7 +572,7 @@
               </div>
             </div>
             <div class="card-tip muted">
-              点击日志暂停刷新，点击其他区域恢复滚动
+              向上滚动暂停刷新，点击空白处恢复滚动
             </div>
           </div>
           <!-- 日志容器 -->
@@ -589,6 +589,16 @@
               <div class="sk-line" style="width: 65%"></div>
               <div class="sk-line" style="width: 50%"></div>
             </div>
+          </div>
+
+          <!-- 回到底部的悬浮胶囊 -->
+          <div id="logScrollBadge" class="log-scroll-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14"></path>
+              <polyline points="19 12 12 19 5 12"></polyline>
+            </svg>
+            <span>已暂停滚动 · 回到底部</span>
           </div>
         </div>
       </section>

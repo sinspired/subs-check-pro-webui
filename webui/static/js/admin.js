@@ -1896,70 +1896,111 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   // ==================== 日志渲染 ====================
+  let autoScrollLog = true; // 是否处于自动滚动到底部状态
 
-  let isMouseInsideLog = false
-  if (els.logContainer) {
-    els.logContainer.addEventListener(
-      'mouseenter',
-      () => (isMouseInsideLog = true)
-    )
-    els.logContainer.addEventListener(
-      'mouseleave',
-      () => (isMouseInsideLog = false)
-    )
-  }
+  // 监听用户手动滚动
+  els.logContainer?.addEventListener('scroll', () => {
+    // 容差 30px (如果距离底部小于 30px，认为是在底部)
+    const isAtBottom = els.logContainer.scrollHeight - els.logContainer.clientHeight <= els.logContainer.scrollTop + 30;
+    autoScrollLog = isAtBottom;
+
+    const badge = document.getElementById('logScrollBadge');
+    if (badge) {
+      if (!autoScrollLog) {
+        badge.classList.add('visible'); // 向上滚动，显示胶囊
+      } else {
+        badge.classList.remove('visible'); // 回到底部，隐藏胶囊
+      }
+    }
+  }, { passive: true });
+
+  // 胶囊点击事件：强制回到底部并恢复自动滚动
+  document.getElementById('logScrollBadge')?.addEventListener('click', () => {
+    autoScrollLog = true;
+    els.logContainer.scrollTo({
+      top: els.logContainer.scrollHeight,
+      behavior: 'smooth'
+    });
+    document.getElementById('logScrollBadge').classList.remove('visible');
+  });
 
   function renderLogLines(lines, IntervalRun) {
-    if (!els.logContainer) return
+    if (!els.logContainer) return;
+    els.logContainer.classList.remove('loading');
 
-    // 当真实日志准备渲染时，移除 loading 状态
-    els.logContainer.classList.remove('loading')
+    // 仅当用户正在用鼠标框选文本时，暂停刷新 (防打断)
+    if (window.getSelection()?.toString().length > 0 && IntervalRun) return;
 
-    if (isUserSelectingOrHovering() && IntervalRun) {
-      els.logContainer.title = '暂停自动刷新'
-      return
-    }
-    els.logContainer.title = ''
-    els.logContainer.innerHTML = lines
-      .map(l => '<div>' + colorize(l) + '</div>')
-      .join('')
-    scrollToBottomSafe()
+    // 全量替换时，不加 .log-line-new，防止所有行同时闪烁
+    els.logContainer.innerHTML = lines.map(l => `<div>${colorize(l)}</div>`).join('');
+    scrollToBottomSafe();
   }
 
   function appendLogLines(linesToAdd) {
-    if (!els.logContainer || !linesToAdd?.length) return
-    const frag = document.createDocumentFragment()
+    if (!els.logContainer || !linesToAdd?.length) return;
+    els.logContainer.classList.remove('loading');
+
+    const frag = document.createDocumentFragment();
     linesToAdd.forEach(l => {
-      const d = document.createElement('div')
-      d.innerHTML = colorize(l)
-      frag.appendChild(d)
-    })
-    els.logContainer.appendChild(frag)
+      const d = document.createElement('div');
+      d.className = 'log-line-new'; // 👇 灵魂：只给新增的行加上滑进场动画
+      d.innerHTML = colorize(l);
+      frag.appendChild(d);
+    });
+    els.logContainer.appendChild(frag);
 
     while (els.logContainer.children.length > MAX_LOG_LINES) {
-      els.logContainer.removeChild(els.logContainer.firstChild)
+      els.logContainer.removeChild(els.logContainer.firstChild);
     }
-    scrollToBottomSafe()
+    scrollToBottomSafe();
   }
 
   function scrollToBottomSafe() {
-    requestAnimationFrame(() => {
-      if (!isMouseInsideLog) {
-        els.logContainer.scrollTop = els.logContainer.scrollHeight
-      } else {
-        const isScrolledToBottom =
-          els.logContainer.scrollHeight - els.logContainer.clientHeight <=
-          els.logContainer.scrollTop + 50
-        if (isScrolledToBottom)
-          els.logContainer.scrollTop = els.logContainer.scrollHeight
-      }
-    })
+    // 只有在允许自动滚动时，才执行下滑
+    if (autoScrollLog) {
+      requestAnimationFrame(() => {
+        els.logContainer.scrollTop = els.logContainer.scrollHeight;
+      });
+    }
   }
 
-  function isUserSelectingOrHovering() {
-    const sel = window.getSelection()
-    return (sel && sel.toString().length > 0) || isMouseInsideLog
-  }
+  // 胶囊点击事件：强制回到底部并恢复自动滚动
+  document.getElementById('logScrollBadge')?.addEventListener('click', () => {
+    autoScrollLog = true;
+    els.logContainer.scrollTo({
+      top: els.logContainer.scrollHeight,
+      behavior: 'smooth'
+    });
+    document.getElementById('logScrollBadge').classList.remove('visible');
+  });
+
+  // 监听全局点击，点击非日志区域时恢复自动滚动
+  document.addEventListener('click', (e) => {
+    // 1. 如果已经在自动滚动，或者日志容器还没初始化，无需处理
+    if (autoScrollLog || !els.logContainer) return;
+
+    // 2. 检查点击的是否是日志区域内部
+    const isInsideLog = els.logContainer.contains(e.target);
+
+    // 3. 检查点击的是否是悬浮的“回到底部”胶囊按钮（胶囊按钮有自己的事件，这里排除掉）
+    const badge = document.getElementById('logScrollBadge');
+    const isClickBadge = badge?.contains(e.target);
+
+    // 4. 只有当点击发生在【非日志区域】，才触发恢复滚动
+    if (!isInsideLog) {
+
+      // 如果用户刚在页面其他地方拖拽框选了文字，不要触发
+      if (window.getSelection()?.toString().length > 0) return;
+
+      // 执行恢复滚动逻辑
+      autoScrollLog = true;
+      els.logContainer.scrollTo({
+        top: els.logContainer.scrollHeight,
+        behavior: 'smooth'
+      });
+      badge?.classList.remove('visible');
+    }
+  });
 
   /**
    * 解析日志并格式化
@@ -3100,6 +3141,10 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           </div>
         `;
             els.logContainer.classList.add('loading');
+
+            // 清空后恢复自动滚动状态，隐藏提示胶囊
+            autoScrollLog = true;
+            document.getElementById('logScrollBadge')?.classList.remove('visible');
           }
           lastLogLines = [];
           setTimeout(() => loadLogsIncremental(false), 300);
