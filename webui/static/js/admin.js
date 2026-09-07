@@ -2455,7 +2455,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
     let baseUrl;
     if (wailsBase) {
-      // 替换端口为 sub-store 端口（如果有）
+      // 替换端口为 Sub-Store 端口（如果有）
       if (cleanPort) {
         try {
           const u = new URL(wailsBase); u.port = cleanPort; baseUrl = u.origin;
@@ -2532,7 +2532,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
       </svg>
       <h3 id="status-text" style="font-weight:600;margin:0 0 6px">正在跳转...</h3>
-      <p style="color:#666;font-size:13px;margin:0">正在解析 sub-store 配置并构建连接，请稍候。</p>
+      <p style="color:#666;font-size:13px;margin:0">正在解析 Sub-Store 配置并构建连接，请稍候。</p>
     </div>
   `;
 
@@ -2639,7 +2639,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         return false;
       };
 
-      showToast("检查管理&分享状态", "info", 5000)
+      showToast("检查订阅管理&分享状态", "info", 3000)
 
       const [scpOk, legacyOk] = await Promise.all([
         probe(scpUrl),
@@ -2650,7 +2650,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         getBaseUrl._cachedHostname = scpHost;
         getBaseUrl._routeStatus = { status: 'ok', path, port };
         getBaseUrl._cacheExpire = Infinity; // 探测成功，永久缓存（当前页面生命周期内）
-        showToast("订阅管理&分享状态正常", "success", 5000)
+        showToast("订阅管理&分享状态正常", "success", 3000)
         return scpUrl;
       }
 
@@ -2821,7 +2821,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       if (r.payload?.substore_syncing) {
         const timeout = r.payload.substore_need_ghproxy ? 18000 : 3000
-        showToast('已触发 sub-store 后台更新', 'info', timeout)
+        showToast('已触发 Sub-Store 后台同步', 'info', timeout)
         // 启动轮询，监听同步结束
         pollSubStoreSyncStatus()
       }
@@ -2841,7 +2841,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           setTimeout(pollSubStoreSyncStatus, 1000)
         } else {
           // 同步状态变为 false，说明同步结束，显示成功提示
-          showToast('sub-store 后台更新完成', 'success', 5000)
+          showToast('Sub-Store 后台同步完成', 'success', 5000)
         }
       }
     } catch (e) {
