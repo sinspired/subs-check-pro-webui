@@ -1,4 +1,13 @@
 // admin.js
+
+/**
+ * @typedef {Object} WindowWithSfetch
+ * @property {(input: RequestInfo, init?: RequestInit) => Promise<Response>} sfetch
+ */
+
+/** @type {Window & WindowWithSfetch} */
+const w = window;
+
 import { initConfigForm, renderConfigForm, collectConfigForm } from './config-form.js';
 import { initQuickPreview } from './cfg-quickpreview.js';
 
@@ -3926,11 +3935,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     initConfigForm()
     switchEditorMode('form')
     initLogsCollapseBtn();
-    window.sfetch = sfetch;
-    window.showToast = showToast
-    window.saveConfigWithValidation = saveConfigWithValidation
-    window.loadConfigValidated = loadConfigValidated
-    window.openInternalURL = openInternalURL
+    w.sfetch = sfetch;
+    w.showToast = showToast
+    w.saveConfigWithValidation = saveConfigWithValidation
+    w.loadConfigValidated = loadConfigValidated
+    w.openInternalURL = openInternalURL
 
   })();
 })()

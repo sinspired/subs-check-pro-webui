@@ -15,6 +15,13 @@
  *   · 内部通过点击隐藏的 [data-mode] 按钮，保持与 admin.js 的兼容性
  *   · MutationObserver 监听 editorContainer class 变化，同步按钮外观
  */
+/**
+ * @typedef {Object} WindowWithSfetch
+ * @property {(input: RequestInfo, init?: RequestInit) => Promise<Response>} sfetch
+ */
+
+/** @type {Window & WindowWithSfetch} */
+const w = window;
 
 /* ═══════════════════════════ 模块级共享状态 ═══════════════════════════ */
 let _cfg = {};
@@ -991,6 +998,7 @@ const SCHEMA = [
       {
         title: 'Sub-Store',
         fields: [
+          { key: 'sub-store-update-notify', label: 'Sub-Store 更新通知', type: 'toggle', fullWidth: false, hint: 'Sub-Store 前后端资源更新通知开关' },
           { key: 'sub-store-update-cron', label: '定时更新计划', type: 'cron', placeholder: '14 13 * * 5', hint: 'Sub-Store 前后端资源自动更新任务' },
           { key: 'sub-store-port', label: '监听端口', type: 'text', placeholder: ':8299', hint: 'Sub-Store 的启动端口，为空则不启动sub-store' },
           { key: 'sub-store-path', label: '访问路径', type: 'text', placeholder: '/sub-store-path', hint: '建议设置以避免泄露；留空自动生成随机路径' },
@@ -1036,6 +1044,7 @@ const SCHEMA = [
       {
         title: '其他',
         fields: [
+          { key: 'maxmind-db-update-notify', label: 'MaxMind DB 更新通知', type: 'toggle', fullWidth: false, hint: 'MaxMind 地理数据库每周自动更新通知开关' },
           { key: 'maxmind-db-path', label: 'MaxMind DB 路径', type: 'text', fullWidth: true, placeholder: '/data/GeoLite2-City.mmdb', hint: '留空则使用内置数据库' },
           { key: 'callback-script', label: '回调脚本路径', type: 'text', fullWidth: true, placeholder: '/data/scripts/notify.sh', hint: '检测完成后执行的回调脚本路径', },
         ],
@@ -2557,7 +2566,7 @@ function _mkProxyTestBtn(getProxyVal) {
     const proxyVal = getProxyVal(); // 空值 = 自动检测，具体地址 = 直接检测
     setState('loading');
 
-    const result = await window.sfetch('/api/proxy/check', {
+    const result = await w.sfetch('/api/proxy/check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ proxy: proxyVal }),
@@ -2585,6 +2594,77 @@ function _mkProxyTestBtn(getProxyVal) {
   });
 
   return wrap;
+}
+
+// _mkSubStoreUpdateBtn Sub-Store 立即更新按钮
+function _mkSubStoreUpdateBtn() {
+  const btn = el('button', {
+    type: 'button',
+    class: 'cfg-proxy-test-btn',
+    title: '立即触发 Sub-Store 资源更新',
+  });
+
+  const _SVG_UPDATE = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a9 9 0 1 1-2.12-9.36l-3.22 3.22"/></svg>`;
+  const originalHTML = `${_SVG_UPDATE}<span>立即更新</span>`;
+  btn.innerHTML = originalHTML;
+
+  // 轮询检查更新状态
+  async function pollUpdateStatus() {
+    try {
+      const res = await w.sfetch('/api/status');
+      if (res.ok) {
+        if (res.payload.subStoreUpdating) {
+          // 仍在更新中，继续轮询
+          setTimeout(pollUpdateStatus, 1500);
+        } else {
+          // 状态变为 false，说明后端流程走完，去读取携带的更新消息
+          const msg = res.payload.subStoreUpdateMsg || 'Sub-Store 检查更新完毕';
+          // 根据后端返回的文本，简单判断弹窗颜色
+          const isError = msg.includes('失败');
+
+          window.showToast?.(msg, isError ? 'error' : 'success', 5000);
+
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+        }
+      } else {
+        setTimeout(pollUpdateStatus, 2000);
+      }
+    } catch (e) {
+      setTimeout(pollUpdateStatus, 2000);
+    }
+  }
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.innerHTML = `${typeof _SVG_SPIN !== 'undefined' ? _SVG_SPIN : '⏳'}<span>更新中…</span>`;
+
+    try {
+      const result = await w.sfetch('/api/substore/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!result?.ok) {
+        const msg = result?.payload?.error ?? result?.error ?? '触发失败';
+        window.showToast?.(msg, 'warn', 3000);
+        // 失败直接恢复原状
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      } else {
+        // 成功触发后给出提示，并开始轮询状态
+        const msg = result?.payload?.message ?? '已在后台启动更新流程';
+        window.showToast?.(msg, 'info', 3000);
+        pollUpdateStatus();
+      }
+    } catch (err) {
+      window.showToast?.('网络请求异常', 'error', 3000);
+      btn.disabled = false;
+      btn.innerHTML = originalHTML;
+    }
+  });
+
+  return btn;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2623,6 +2703,12 @@ function mkField(fieldDef, value) {
         return inp?.value?.trim() ?? '';
       });
       labelRow.appendChild(testBtn);
+    }
+
+    // 插入立即更新按钮
+    if (fieldDef.key === 'sub-store-update-cron') {
+      const updateBtn = _mkSubStoreUpdateBtn();
+      labelRow.appendChild(updateBtn);
     }
 
     row.appendChild(labelRow);
@@ -2705,7 +2791,7 @@ function mkField(fieldDef, value) {
         testBtn.disabled = true;
         testBtn.innerHTML = `${_SVG_SPIN}<span>发送中…</span>`;
 
-        const result = await window.sfetch('/api/notify/test', {
+        const result = await w.sfetch('/api/notify/test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ recipients }),
