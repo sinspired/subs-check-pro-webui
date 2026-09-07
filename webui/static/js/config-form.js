@@ -477,13 +477,13 @@ const SCHEMA = [
           {
             key: 'subs-parse-batch',
             label: '解析批次',
-            type: 'number', min: 0, max: 100000, placeholder: '3000',
+            type: 'number', min: 0, max: 100000, placeholder: '3000', default: 3000,
             hint: '解析到该数量节点后进入一次去重队列，小内存设备建议 500–3000'
           },
           {
             key: 'subs-dedupe-batch',
             label: '去重阈值',
-            type: 'number', min: 0, max: 500000, placeholder: '30000',
+            type: 'number', min: 0, max: 500000, placeholder: '100000', default: 100000,
             hint: '获取到该数量的节点就进行一次去重，释放内存'
           },
           {
@@ -526,6 +526,7 @@ const SCHEMA = [
               { value: '0.50', label: '0.50 - 二级域 - CIDR /16' },
               { value: '0.25', label: '0.25 - 顶级域 - CIDR /8' },
             ],
+            default: 0.75,
             links: [{ label: '机制说明', miniInfo: 'threshold', icon: 'docs' }],
           },
         ],
@@ -585,7 +586,7 @@ const SCHEMA = [
           },
           { key: 'min-speed', label: '最低速度 (KB/s)', type: 'number', min: 0, placeholder: '128', hint: '低于此值的节点将被丢弃，0 = 不过滤' },
           { key: 'download-timeout', label: '下载超时 (s)', type: 'number', min: 0, max: 30, placeholder: '10', hint: '测速单节点超时，建议 10s' },
-          { key: 'download-mb', label: '单节点上限 (MB)', type: 'number', min: 0, max: 100, placeholder: '20', hint: '每节点最大下载量，0 = 不限' },
+          { key: 'download-mb', label: '单节点上限 (MB)', type: 'number', min: 0, max: 100, placeholder: '20', default: 20, hint: '每节点最大下载量，0 = 不限' },
           { key: 'total-speed-limit', label: '总带宽 (MB/s)', type: 'number', min: 0, max: 2000, placeholder: '0', hint: '全局测速带宽上限，0 = 不限' },
         ],
       },
@@ -603,7 +604,8 @@ const SCHEMA = [
             hintExamples: [
               "iprisk: 0%",
               "openai: GPT", "gemini: GM", "copilot: CP", "Youtube: YT", "tiktok: TK", "netflix: NF", "Disney: D+", "X: Twitter"
-            ]
+            ],
+            default: ['iprisk', 'openai', 'gemini', 'youtube'],
           },
         ],
       },
@@ -669,7 +671,7 @@ const SCHEMA = [
         title: 'ISP 检测',
         fields: [
           { key: 'isp-check', label: 'ISP 类型检测', type: 'toggle', hint: '比如: [原生|住宅]、[广播|机房]等' },
-          { key: 'isp-timeout', label: 'ISP 检测超时 (秒)', type: 'number', min: 1, max: 15, placeholder: '5', hint: '最高 15s' },
+          { key: 'isp-timeout', label: 'ISP 检测超时 (秒)', type: 'number', min: 1, max: 15, placeholder: '5', default: 5, hint: '最高 15s' },
           {
             key: 'isp-check-api-key-ipapi', label: 'ipapi.is API', type: 'password', fullWidth: true, placeholder: 'IPAPI_TOKEN', hint: '免费额度：注册后每天 1000 次',
             links: [
@@ -768,7 +770,7 @@ const SCHEMA = [
       {
         title: '覆写规则 (Sub-Store)',
         fields: [
-          { key: 'mihomo-overwrite-url', label: 'Mihomo 覆写 URL', type: 'text', fullWidth: true, placeholder: 'http://127.0.0.1:8199/Mihomo-Rules-CDN.yaml', hint: '用于生成带指定规则的 mihomo/clash.meta 订阅链接，包含分组、分流等；自定义规则使用内置文件服务', links: [{ label: '内置文件服务', href: '/files', icon: 'files' }], },
+          { key: 'mihomo-overwrite-url', label: 'Mihomo 覆写 URL', type: 'text', fullWidth: true, placeholder: 'http://127.0.0.1:8199/Mihomo-Rules-CDN.yaml', default: 'http://127.0.0.1:8199/Mihomo-Rules-CDN.yaml', hint: '用于生成带指定规则的 mihomo/clash.meta 订阅链接，包含分组、分流等；自定义规则使用内置文件服务', links: [{ label: '内置文件服务', href: '/files', icon: 'files' }], },
         ],
       },
       {
@@ -778,6 +780,7 @@ const SCHEMA = [
             key: 'sub-process.regex-filter-keep',
             label: '筛选模式',
             type: 'select',
+            default: true,
             hint: '白名单=仅保留匹配节点；黑名单=丢弃匹配节点',
             options: [
               { value: 'true', label: '白名单丨保留模式' },
@@ -837,6 +840,7 @@ const SCHEMA = [
             key: 'sub-process.resolve-domain.enable',
             label: '启用 DNS 解析',
             type: 'toggle',
+            default: false,
             hint: '解析节点域名为 IP',
           },
           {
@@ -844,6 +848,7 @@ const SCHEMA = [
             label: 'DNS 提供商',
             hint: '可由节点字段 "_no-resolve" 控制',
             type: 'select',
+            default: 'Ali',
             options: [
               { value: 'Ali', label: '阿里' },
               { value: 'Tencent', label: '腾讯' },
@@ -865,6 +870,7 @@ const SCHEMA = [
             type: 'number',
             min: 1,
             max: 100,
+            default: 10,
           },
           {
             key: 'sub-process.resolve-domain.timeout',
@@ -873,11 +879,13 @@ const SCHEMA = [
             type: 'number',
             min: 3000,
             max: 30000,
+            default: 8000,
           },
           {
             key: 'sub-process.resolve-domain.type',
             label: '解析类型',
             type: 'select',
+            default: 'IPv4',
             hint: '选择使用 IPv4 或 IPv6 进行域名解析，IPv6 兼容 IP4P ',
             options: [
               { value: 'IPv4', label: 'IPv4' },
@@ -889,6 +897,7 @@ const SCHEMA = [
             label: '缓存策略',
             hint: '是否启用 DNS 解析结果缓存',
             type: 'select',
+            default: 'enabled',
             options: [
               { value: 'enabled', label: '启用' },
               { value: 'disabled', label: '禁用' },
@@ -900,6 +909,7 @@ const SCHEMA = [
             hint: 'DNS 解析结果的缓存时长，默认 3600 秒（1 小时）',
             type: 'number',
             min: 0,
+            default: 3600,
           },
         ],
       },
@@ -937,6 +947,7 @@ const SCHEMA = [
           {
             key: 'notify-title', label: '通知标题', type: 'text', fullWidth: true, placeholder: '🔔 节点状态更新',
             hint: '自定义检测完成后发送可用节点数量的通知标题',
+            default: '🔔 节点状态更新',
             links: [
               { label: '通知预览', miniInfo: 'notify-title', icon: 'docs' }
             ],
@@ -967,7 +978,7 @@ const SCHEMA = [
       {
         title: 'WebUI',
         fields: [
-          { key: 'listen-port', label: '监听端口', type: 'text', placeholder: ':8199', hint: '监听端口，用于 WebUI，直接返回节点信息等' },
+          { key: 'listen-port', label: '监听端口', type: 'text', placeholder: ':8199', default: ':8199', hint: '监听端口，用于 WebUI，直接返回节点信息等' },
           { key: 'enable-web-ui', label: '启用 Web 控制面板', type: 'toggle' },
           { key: 'api-key', label: 'API 密钥', type: 'password', placeholder: '留空自动生成', hint: '留空则启动时自动生成，需在终端查看' },
           {
@@ -979,10 +990,10 @@ const SCHEMA = [
       {
         title: '自动更新',
         fields: [
-          { key: 'update', label: '自动更新', type: 'toggle', hint: '关闭时仅提醒新版本' },
+          { key: 'update', label: '自动更新', type: 'toggle', default: true, hint: '关闭时仅提醒新版本' },
           { key: 'update-on-startup', label: '启动时检查更新', type: 'toggle' },
           { key: 'prerelease', label: '使用预发布版本', type: 'toggle', hint: '包含 beta / rc 版本' },
-          { key: 'cron-check-update', label: '检查更新 Cron', type: 'cron', fullWidth: true, placeholder: '0 9,21 * * *', hint: '# 定时检查版本更新' },
+          { key: 'cron-check-update', label: '检查更新 Cron', type: 'cron', fullWidth: true, placeholder: '0 9,21 * * *', default: '0 0,9,21 * * *', hint: '# 定时检查版本更新' },
           { key: 'update-timeout', label: '下载超时 (分钟)', type: 'number', min: 1, placeholder: '2', hint: '下载更新文件的最大时间，如更新失败或网络环境恶劣，可适当调大' },
         ],
       },
@@ -990,7 +1001,7 @@ const SCHEMA = [
         title: '内存优化',
         fields: [
           {
-            key: 'gc-threshold', label: '主动内存回收阈值', type: 'number', min: 10000, placeholder: '50000',
+            key: 'gc-threshold', label: '主动内存回收阈值', type: 'number', min: 10000, placeholder: '50000', default: 20000,
             hint: '每处理一定数量节点立即降低内存'
           },
         ],
@@ -998,8 +1009,8 @@ const SCHEMA = [
       {
         title: 'Sub-Store',
         fields: [
-          { key: 'sub-store-update-notify', label: 'Sub-Store 更新通知', type: 'toggle', fullWidth: false, hint: 'Sub-Store 前后端资源更新通知开关' },
-          { key: 'sub-store-update-cron', label: '定时更新计划', type: 'cron', placeholder: '14 13 * * 5', hint: 'Sub-Store 前后端资源自动更新任务' },
+          { key: 'sub-store-update-notify', label: 'Sub-Store 更新通知', type: 'toggle', fullWidth: false, default: true, hint: 'Sub-Store 前后端资源更新通知开关' },
+          { key: 'sub-store-update-cron', label: '定时更新计划', type: 'cron', placeholder: '14 13 * * 5', default: '14 13 * * 5', hint: 'Sub-Store 前后端资源自动更新任务' },
           { key: 'sub-store-port', label: '监听端口', type: 'text', placeholder: ':8299', hint: 'Sub-Store 的启动端口，为空则不启动sub-store' },
           { key: 'sub-store-path', label: '访问路径', type: 'text', placeholder: '/sub-store-path', hint: '建议设置以避免泄露；留空自动生成随机路径' },
           { key: 'sub-store-sync-cron', label: '同步 Gist Cron', type: 'cron', fullWidth: true, placeholder: '55 5-23/2 * * *', hint: '定时将订阅/文件上传到私有 Gist. 在前端, 叫做 同步 或 同步配置.', },
@@ -2671,9 +2682,21 @@ function _mkSubStoreUpdateBtn() {
    字段行构建
 ═══════════════════════════════════════════════════════════════ */
 function mkField(fieldDef, value) {
+  let rawValue = value;
+
+  // 如果值不存在、或为空字符串，且该字段定义了 default 默认值，则进行回填
+  if ((rawValue === undefined || rawValue === null || rawValue === '') && 'default' in fieldDef) {
+    rawValue = fieldDef.default;
+  }
+
+  // 对于数组类型（如 chips, url-list），如果初始不存在，使用 default 数组
+  if ((value === undefined || value === null) && Array.isArray(fieldDef.default)) {
+    rawValue = fieldDef.default;
+  }
+
   /* 应用加载时的值变换（如 success-rate ×100） */
   const xf = VALUE_TRANSFORM[fieldDef.key];
-  const displayValue = xf ? xf.load(value) : value;
+  const displayValue = xf ? xf.load(rawValue) : rawValue;
 
   const isFull = ['url-list', 'chips', 'cron'].includes(fieldDef.type) || !!fieldDef.fullWidth;
   const row = el('div', { class: `cfg-field${isFull ? ' full-width' : ''}${fieldDef.type === 'toggle' ? ' cfg-field--toggle' : ''}`, 'data-key': fieldDef.key });
