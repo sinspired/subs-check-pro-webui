@@ -1009,8 +1009,8 @@ const SCHEMA = [
       {
         title: 'Sub-Store',
         fields: [
+          { key: 'sub-store-update-cron', label: '定时更新任务', type: 'cron', placeholder: '14 13 * * 5', default: '14 13 * * 5', hint: 'Sub-Store 前后端资源自动更新任务' },
           { key: 'sub-store-update-notify', label: 'Sub-Store 更新通知', type: 'toggle', fullWidth: false, default: true, hint: 'Sub-Store 前后端资源更新通知开关' },
-          { key: 'sub-store-update-cron', label: '定时更新计划', type: 'cron', placeholder: '14 13 * * 5', default: '14 13 * * 5', hint: 'Sub-Store 前后端资源自动更新任务' },
           { key: 'sub-store-port', label: '监听端口', type: 'text', placeholder: ':8299', hint: 'Sub-Store 的启动端口，为空则不启动sub-store' },
           { key: 'sub-store-path', label: '访问路径', type: 'text', placeholder: '/sub-store-path', hint: '建议设置以避免泄露；留空自动生成随机路径' },
           { key: 'sub-store-sync-cron', label: '同步 Gist Cron', type: 'cron', fullWidth: true, placeholder: '55 5-23/2 * * *', hint: '定时将订阅/文件上传到私有 Gist. 在前端, 叫做 同步 或 同步配置.', },
@@ -1055,8 +1055,8 @@ const SCHEMA = [
       {
         title: '其他',
         fields: [
-          { key: 'maxmind-db-update-notify', label: 'MaxMind DB 更新通知', type: 'toggle', fullWidth: false, hint: 'MaxMind 地理数据库每周自动更新通知开关' },
           { key: 'maxmind-db-path', label: 'MaxMind DB 路径', type: 'text', fullWidth: true, placeholder: '/data/GeoLite2-City.mmdb', hint: '留空则使用内置数据库' },
+          { key: 'maxmind-db-update-notify', label: 'MaxMind DB 更新通知', type: 'toggle', fullWidth: false, hint: 'MaxMind 地理数据库每周自动更新通知开关' },
           { key: 'callback-script', label: '回调脚本路径', type: 'text', fullWidth: true, placeholder: '/data/scripts/notify.sh', hint: '检测完成后执行的回调脚本路径', },
         ],
       },
