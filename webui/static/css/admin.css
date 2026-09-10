@@ -413,17 +413,58 @@ header.card {
   opacity: 0.8;
 }
 
-/* 发现新版本 (稳定版) */
-.version.new-version {
-  background: rgba(0, 200, 210, 0.1);
-  /* 青色透明背景 */
-  color: var(--accent);
-  border: 1px solid rgba(0, 200, 210, 0.2);
-  font-weight: 500;
+.version.is-pre::after {
+  font-style: normal;
+  content: "PRE";
+  position: absolute;
+  top: -1.4em;
+  /* 上移一点 */
+  right: 0;
+  /* 右对齐 */
+  font-size: 0.6em;
+  color: var(--muted);
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.version.new-version .version.is-pre::after {
+  display: none;
+}
+
+.version.new-version::after {
+  position: absolute;
+  top: -1.4em;
+  right: 0;
+  color: #fff;
+  font-size: 0.6em;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 4px;
+  /* 稍微方一点更有标签感 */
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 状态 1：正式版更新 - 红色 NEW */
+.version.new-version::after {
+  content: "NEW";
+  background: #e53935;
 }
 
 /* 发现新版本 (预览版) */
 .version.new-version.pre-release {
+  background: rgba(255, 152, 0, 0.1);
+  /* 橙色背景 */
+  color: #ff9800;
+  border: 1px dashed rgba(255, 152, 0, 0.4);
+}
+
+/* 发现新版本 (预览版) */
+.version.new-version.pre-release::after {
+  content: "NEW";
   background: rgba(255, 152, 0, 0.1);
   /* 橙色背景 */
   color: #ff9800;
@@ -2257,8 +2298,10 @@ img.link-icon {
   flex-direction: column;
   gap: 12px;
   margin-top: 0px;
-  opacity: 0.7; /* 整体柔和一点 */
-  width: 100%; /* 确保横向撑满 */
+  opacity: 0.7;
+  /* 整体柔和一点 */
+  width: 100%;
+  /* 确保横向撑满 */
 }
 
 /* 加载中时隐藏外层容器的滚动条，防止骨架屏溢出时很难看 */
@@ -2321,46 +2364,57 @@ img.link-icon {
 .sk-row:nth-child(1) .sk-line::after {
   animation-delay: 0s;
 }
+
 .sk-row:nth-child(2) .sk-tag::after,
 .sk-row:nth-child(2) .sk-line::after {
   animation-delay: 0.1s;
 }
+
 .sk-row:nth-child(3) .sk-tag::after,
 .sk-row:nth-child(3) .sk-line::after {
   animation-delay: 0.2s;
 }
+
 .sk-row:nth-child(4) .sk-tag::after,
 .sk-row:nth-child(4) .sk-line::after {
   animation-delay: 0.3s;
 }
+
 .sk-row:nth-child(5) .sk-tag::after,
 .sk-row:nth-child(5) .sk-line::after {
   animation-delay: 0.4s;
 }
+
 .sk-row:nth-child(6) .sk-tag::after,
 .sk-row:nth-child(6) .sk-line::after {
   animation-delay: 0.5s;
 }
+
 .sk-row:nth-child(7) .sk-tag::after,
 .sk-row:nth-child(7) .sk-line::after {
   animation-delay: 0.6s;
 }
+
 .sk-row:nth-child(8) .sk-tag::after,
 .sk-row:nth-child(8) .sk-line::after {
   animation-delay: 0.7s;
 }
+
 .sk-row:nth-child(9) .sk-tag::after,
 .sk-row:nth-child(9) .sk-line::after {
   animation-delay: 0.8s;
 }
+
 .sk-row:nth-child(10) .sk-tag::after,
 .sk-row:nth-child(10) .sk-line::after {
   animation-delay: 0.9s;
 }
+
 .sk-row:nth-child(11) .sk-tag::after,
 .sk-row:nth-child(11) .sk-line::after {
   animation-delay: 1s;
 }
+
 .sk-row:nth-child(12) .sk-tag::after,
 .sk-row:nth-child(12) .sk-line::after {
   animation-delay: 1.1s;
@@ -2382,6 +2436,7 @@ img.link-icon {
     opacity: 0;
     transform: translateY(6px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -2427,9 +2482,11 @@ img.link-icon {
   0% {
     transform: translateX(-50%) translateY(0) scale(1);
   }
+
   50% {
     transform: translateX(-50%) translateY(4px) scale(0.985);
   }
+
   100% {
     transform: translateX(-50%) translateY(0) scale(1);
   }
@@ -2586,7 +2643,7 @@ img.link-icon {
 }
 
 .cm-lineNumbers {
-  color: var(----muted) !important;
+  color: var(--muted) !important;
   font-size: 12px !important;
   /* 小字体 */
   font-weight: 500;
@@ -2937,7 +2994,7 @@ img.link-icon {
   bottom: 2.2em;
   left: 100%;
   /* 起点在文字末尾 */
-  margin-left: 0px;
+  /* margin-left: 0px; */
   /* 固定间距 */
   color: var(--muted);
   font-size: 13px;
@@ -2952,31 +3009,44 @@ img.link-icon {
 }
 
 .version-badge.is-pre {
-  right: -3.5em;
-  margin-left: -3em;
+  right: -3.6em;
+  margin-left: -3.6em;
   /* 固定间距 */
 }
 
 /* 当前版本是预览版时的表现 */
 #version-login.is-pre {
   font-style: italic;
+  right: 1em;
 }
 
-/* 发现新版本时的通用样式 (有动效提醒) */
-.new-version {
-  background: rgba(0, 200, 210, 0.1);
-  box-shadow: 0 0 4px rgba(0, 200, 210, 0.4);
-  color: var(--accent) !important;
-  animation: version-pulse 2s infinite;
+#version-login.is-pre::after {
+  font-style: normal;
+  content: "PRE";
+  position: absolute;
+  top: -1.8em;
+  /* 上移一点 */
+  right: -4px;
+  /* 右对齐 */
+  font-size: 0.6em;
+  color: var(--muted);
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.new-version #version-login.is-pre::after {
+  display: none;
 }
 
 /* 发现更新时的通用角标（NEW/PRE） */
 .new-version::after {
   position: absolute;
-  top: -1.3em;
+  top: -1.8em;
   right: 0;
   color: #fff;
-  font-size: 9px;
+  font-size: 0.6em;
   font-weight: bold;
   padding: 2px 4px;
   border-radius: 4px;
@@ -3012,8 +3082,9 @@ img.link-icon {
 
 /* 悬停效果 */
 .new-version:hover {
-  background: rgba(0, 200, 210, 0.2);
-  transform: scale(1.05);
+  border-radius: 0;
+  border-bottom: 1px solid var(--accent);
+  transform: scale(1.02);
 }
 
 .new-version.pre-release:hover {
@@ -3036,6 +3107,26 @@ img.link-icon {
 }
 
 /* ── 侧边栏版本更新提示（.sb-status-row 专用） ── */
+.sb-status-row.is-pre::after {
+  content: "PRE";
+  position: absolute;
+  top: -6px;
+  right: 20px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 700;
+  padding: 3px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sb-status-row.sb-has-update .sb-status-row.is-pre::after {
+  display: none;
+}
+
 .sb-status-row.sb-has-update {
   cursor: pointer;
   background: color-mix(in srgb, var(--accent) 0%, var(--input-bg));
@@ -3052,14 +3143,14 @@ img.link-icon {
 .sb-status-row.sb-has-update::after {
   content: "NEW";
   position: absolute;
-  top: -8px;
-  right: 10px;
+  top: -6px;
+  right: 20px;
   color: #fff;
   font-size: 8px;
   font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
-  line-height: 1.5;
+  padding: 3px 5px;
+  border-radius: 4px;
+  line-height: 1;
   white-space: nowrap;
   background: #e53935;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);

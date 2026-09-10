@@ -2892,8 +2892,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       // span 只负责文字
       applyToSidebarVersionEls(el => {
+        const row = el.closest('.sb-status-row')
         el.textContent = 'Core ' + currentV
-        if (isPre(currentV)) el.classList.add('is-pre')
+        if (isPre(currentV)) row.classList.add('is-pre')
       })
 
       if (latestV && currentV !== latestV) {
