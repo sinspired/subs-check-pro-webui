@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Subs Check · 登录</title>
+  <link rel="icon" type="image/svg+xml" href="/static/icon/favicon.svg" />
+  <link rel="stylesheet" href="/static/css/admin.css">
+  <style>
+    body, html { margin: 0; padding: 0; height: 100vh; overflow: hidden; background: var(--bg); }
+    .login-modal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1; }
+  </style>
+</head>
+<body>
+  <div id="loginModal" class="login-modal" role="dialog" aria-modal="true">
+    <canvas id="login-cv"></canvas>
+    
+    <button id="loginThemeToggle" class="login-theme-btn icon-btn" style="position: absolute; top: 20px; right: 20px; z-index: 2;" title="切换主题">
+      <svg id="loginIconMoon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      <svg id="loginIconSun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
+
+    <div class="login-card">
+      <div class="login-logo"><img src="/static/icon/favicon.svg" alt="logo" style="width:100px;height:100px" /></div>
+      <h3 class="login-title">Subs-Check<span class="pro-plus-golden login-plus">⁺</span> <span class="login-text">登录</span>
+        <a href="https://github.com/sinspired/subs-check-pro" class="version-badge" id="version-badge">
+          <span id="version-login">-</span>
+        </a>
+      </h3>
+
+      <div class="input-wrapper">
+        <input id="apiKeyInput" class="login-input" type="password" placeholder="请输入 API 密钥" />
+        <button type="button" id="show-apikey" class="show-apikey">显示</button>
+      </div>
+
+      <div class="remember-wrapper">
+        <label class="remember-row" style="display:flex;align-items:center;gap:4px">
+          <input id="rememberKey" type="checkbox" checked /> 记住密钥
+        </label>
+      </div>
+
+      <div class="login-actions">
+        <button id="login-button" class="btn">进入管理界面</button>
+      </div>
+      <div id="loginError" style="color: var(--danger); font-size: 13px; text-align: center; margin-top: 10px; display: none;"></div>
+    </div>
+  </div>
+  <script src="/static/js/login.js"></script>
+</body>
+</html>

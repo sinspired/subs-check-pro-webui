@@ -76,11 +76,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     Object.values(sidebarVersionEls).forEach(el => { if (el) action(el) })
   }
   const els = {
-    apiKeyInput: $('#apiKeyInput'),
-    showApikeyBtn: $('#show-apikey'),
-    loginBtn: $('#login-button'),
-    rememberKey: $('#rememberKey'),
-    loginModal: $('#loginModal'),
     statusEl: $('#status'),
     logContainer: $('#logContainer'),
     versionBadge: $('#version-badge'),
@@ -115,14 +110,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     siderBarCheckupdate: $('#siderBarCheckupdate'),
     openEditorBtn: $('#openEditor'),
     themeToggleBtn: $('#mainThemeToggle'),
-    loginThemeToggle: $('#loginThemeToggle'),
     sidebarThemeToggle: $('#sidebarThemeToggle'),
     iconMoon: $('#iconMoon'),
     iconSun: $('#iconSun'),
     sidebarIconMoon: $('#sidebarIconMoon'),
     sidebarIconSun: $('#sidebarIconSun'),
-    loginIconMoon: $('#loginIconMoon'),
-    loginIconSun: $('#loginIconSun'),
     projectMenu: $('#projectMenu'),
     githubMenuBtn: $('#githubMenuBtn'),
     dockerMenuBtn: $('#dockerMenuBtn'),
@@ -150,6 +142,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   // ==================== 全局状态 ====================
   let sessionKey = null
+  let logoutInProgress = false
   let timers = { logs: null, status: null }
 
   // 动态间隔控制
@@ -319,6 +312,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     document.body.appendChild(c)
     return c
   }
+
 
   /**
    * 安全操作 localStorage (读/写/删)
@@ -2264,98 +2258,24 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   // ==================== 认证与交互 ====================
-
-  /**
-   *登录按钮事件
-   *
-   * @return {*}
-   */
-  async function onLoginBtnClick() {
-    const k = els.apiKeyInput?.value?.trim()
-    if (!k) {
-      showToast('请输入 API 密钥', 'warn')
-      els.apiKeyInput?.focus()
-      return
-    }
-    els.loginBtn.disabled = true
-    els.loginBtn.textContent = '验证中…'
-    try {
-      const resp = await fetch(API.status, { headers: { 'X-API-Key': k } })
-      if (resp.status === 401) {
-        showToast('API 密钥错误', 'error')
-        return
-      }
-      if (!resp.ok) {
-        showToast('验证失败，HTTP ' + resp.status, 'error')
-        return
-      }
-      sessionKey = k
-      if (els.rememberKey?.checked) safeLS('subscheck_api_key', k)
-      showLogin(false)
-      document.activeElement?.blur()
-      setAuthUI(true)
-      await loadAll()
-      startPollers()
-      showToast('密钥验证通过', 'success')
-
-      // 初始化配置快速预览
-      const qp = initQuickPreview(
-        () => sessionKey,
-        () => {
-          if (editorMode === 'form') {
-            return collectConfigForm();           // 读取表单当前值
-          } else {
-            const src = codeMirrorView?.state.doc.toString() || _rawConfigYaml;
-            try { return window.YAML.parse(src); } catch (e) { return null; }
-          }
-        }
-      );
-      qp?.enable();
-    } catch (e) {
-      console.error('网络错误或服务器未响应：', e)
-      showToast(`网络错误或服务器未响应：${e?.message || e}`, 'error')
-    } finally {
-      els.loginBtn.disabled = false
-      els.loginBtn.textContent = '进入管理界面'
-    }
-  }
-
   function doLogout(reason = '已退出登录') {
-    stopPollers()
-    sessionKey = null
-    safeLS('subscheck_api_key', null)
-    setAuthUI(false)
-    if (els.logContainer)
-      els.logContainer.innerHTML =
-        '<div class="muted" style="font-family: system-ui;">已退出登录。</div>'
-    if (els.configEditor && codeMirrorView) setEditorContent('')
-    resetApiFailures()
-    showProgressUI(false)
-    showLogin(true)
-    showToast(reason, 'info')
-  }
+    if (logoutInProgress) return
+    logoutInProgress = true
+    stopPollers();
+    sessionKey = null;
+    safeLS('subscheck_api_key', null);
+    try { sessionStorage.removeItem('subscheck_session_key') } catch { }
 
-  function showLogin(show) {
-    getPublicVersion()
-    const isWails = !!window.__WAILS_GUI?.baseURL
+    // 👇 新增：让服务端的鉴权 Cookie 立即失效
+    document.cookie = `scp_api_key=; path=/; max-age=0`;
 
-    // 动态获取 DOM，防止页面初始化过快 els.loginModal 还没挂载
-    const modal = els.loginModal || document.getElementById('loginModal')
-    if (modal) modal.classList.toggle('login-hidden', !show || isWails)
-
-    if (show) {
-      if (isWails) {
-        // 调用 Wails binding 切回登录小窗
-        fetch('/gui/back-to-login').catch(() => {
-          // 如果桌面端通知切换失败，降级显示网页内的登录框，避免卡死在管理页
-          if (modal) modal.classList.remove('login-hidden')
-        })
-      } else {
-        const input = els.apiKeyInput || document.getElementById('apiKeyInput')
-        input?.focus()
-      }
+    if (window.__WAILS_GUI?.baseURL) {
+      fetch('/gui/back-to-login').catch(() => { });
+    } else {
+      window.location.replace('/login');
     }
   }
+
 
   function setAuthUI(ok) {
     if (els.statusEl) {
@@ -3075,7 +2995,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       }, true)  // useCapture=true，在冒泡前拦截，防止被其他 handler 先消费
     }
 
-    els.loginBtn?.addEventListener('click', onLoginBtnClick)
     els.subStoreBtn?.addEventListener('click', handleOpenSubStore)
     els.subStoreBtnMobile?.addEventListener('click', handleOpenSubStore)
 
@@ -3257,7 +3176,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
     const logoutHandler = async () => {
       if (window.__WAILS_GUI?.baseURL) {
-        fetch('/gui/back-to-login').catch(() => { })
+        doLogout()
       } else {
         // 替换原有的 confirm
         if (await showConfirm('确定要退出登录吗？', 'info')) doLogout()
@@ -3278,25 +3197,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     els.logoutBtn?.addEventListener('click', logoutHandler)
     els.logoutBtnMobile?.addEventListener('click', logoutHandler)
 
-    els.apiKeyInput?.addEventListener('keydown', e => {
-      if (e.key === 'Enter') onLoginBtnClick()
-    })
-
-    if (els.showApikeyBtn) {
-      els.apiKeyInput.addEventListener('input', () =>
-        els.showApikeyBtn.classList.toggle(
-          'visible',
-          els.apiKeyInput.value.length > 0
-        )
-      )
-      els.showApikeyBtn.addEventListener('click', () => {
-        const isPwd = els.apiKeyInput.type === 'password'
-        els.apiKeyInput.type = isPwd ? 'text' : 'password'
-        els.showApikeyBtn.textContent = isPwd ? '隐藏' : '显示'
-        els.showApikeyBtn.classList.toggle('active', isPwd)
-      })
-    }
-
     const applyTheme = t => {
       document.documentElement.setAttribute('data-theme', t)
       if (els.iconMoon) els.iconMoon.style.display = t === 'dark' ? '' : 'none'
@@ -3305,9 +3205,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       if (els.sidebarIconMoon) els.sidebarIconMoon.style.display = t === 'dark' ? '' : 'none'
       if (els.sidebarIconSun) els.sidebarIconSun.style.display = t === 'light' ? '' : 'none'
 
-      if (els.loginIconMoon) els.loginIconMoon.style.display = t === 'dark' ? '' : 'none'
-      if (els.loginIconSun) els.loginIconSun.style.display = t === 'light' ? '' : 'none'
-
       if (els.themeToggleBtn) {
         els.themeToggleBtn.title =
           t === 'dark' ? '切换到浅色模式' : '切换到深色模式'
@@ -3315,11 +3212,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       if (els.sidebarThemeToggle) {
         els.sidebarThemeToggle.title =
-          t === 'dark' ? '切换到浅色模式' : '切换到深色模式'
-      }
-
-      if (els.loginThemeToggle) {
-        els.loginThemeToggle.title =
           t === 'dark' ? '切换到浅色模式' : '切换到深色模式'
       }
 
@@ -3383,20 +3275,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
 
     els.sidebarThemeToggle?.addEventListener('dblclick', () => {
-      saveTheme('auto')
-      const sys = resolveTheme('auto')
-      applyTheme(sys)
-      showToast('主题已重置为系统默认', 'info')
-    })
-
-    els.loginThemeToggle?.addEventListener('click', () => {
-      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-      applyTheme(next)
-      saveTheme(next)
-    })
-
-
-    els.loginThemeToggle?.addEventListener('dblclick', () => {
       saveTheme('auto')
       const sys = resolveTheme('auto')
       applyTheme(sys)
@@ -3769,178 +3647,64 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     });
   }
 
-  // === 1. 封装星际连线粒子动画 ===
-  function initLoginAnimation() {
-    const modal = document.getElementById('loginModal');
-    const cv = document.getElementById('login-cv');
-    const ctx = cv?.getContext('2d');
-
-    if (!cv || !ctx || !modal) return;
-
-    let W = 0, H = 0, P = [];
-    const N = 40, MD = 120; // 稍微增加粒子数量和连线阈值
-    let animFrameId = null;
-
-    const THEME_RGB = "14, 165, 160";
-
-    function initP() {
-      P = Array.from({ length: N }, () => ({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        vx: (Math.random() - .5) * .3, // 微调飘移速度
-        vy: (Math.random() - .5) * .3,
-        r: Math.random() * 2.0 + 1.5,   // 放大粒子半径，使其更明显
-        ba: Math.random() * 0.3 + 0.3, // 提升基础透明度至 20%~45% (原本只有 7%)
-        ph: Math.random() * Math.PI * 2
-      }));
-    }
-
-    function drawC(now, br) {
-      ctx.clearRect(0, 0, W, H);
-      const gb = .8 + .2 * br;
-
-      for (const p of P) {
-        p.x = ((p.x + p.vx) + W) % W;
-        p.y = ((p.y + p.vy) + H) % H;
-      }
-
-      ctx.lineWidth = 0.4; // 稍微加粗连线
-      for (let i = 0; i < N; i++) {
-        for (let j = i + 1; j < N; j++) {
-          const dx = P[i].x - P[j].x, dy = P[i].y - P[j].y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < MD) {
-            // 提升连线透明度最高到约 45%
-            ctx.strokeStyle = `rgba(${THEME_RGB}, ${(.9 * (1 - d / MD) * gb).toFixed(3)})`;
-            ctx.beginPath();
-            ctx.moveTo(P[i].x, P[i].y);
-            ctx.lineTo(P[j].x, P[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-
-      for (const p of P) {
-        // 独立呼吸闪烁效果
-        const pa = p.ba * (.72 + .28 * Math.sin(now * .0011 + p.ph)) * gb;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${THEME_RGB}, ${pa.toFixed(2)})`;
-        ctx.fill();
-      }
-    }
-
-    const BREATH = 5000;
-    let t0 = null;
-
-    function loop(ts) {
-      // 性能优化：如果登录框隐藏，则跳过绘制但保持循环
-      if (modal.classList.contains('login-hidden') || modal.style.display === 'none') {
-        animFrameId = requestAnimationFrame(loop);
-        return;
-      }
-
-      if (!t0) t0 = ts;
-      const e = ts - t0;
-      const br = .5 - .5 * Math.cos(2 * Math.PI * e / BREATH);
-
-      drawC(e, br);
-      animFrameId = requestAnimationFrame(loop);
-    }
-
-    function resize() {
-      // 获取尺寸，防止隐藏时 offsetWidth 为 0，采用 innerWidth 兜底
-      W = cv.width = modal.offsetWidth || window.innerWidth;
-      H = cv.height = modal.offsetHeight || window.innerHeight;
-      initP();
-    }
-
-    // 暴露一个全局方法，以便验证失败重新显示 loginModal 时可唤醒重新计算宽高
-    window.wakeUpLoginAnimation = resize;
-
-    // 立即执行一次尺寸计算与循环
-    resize();
-    if (!animFrameId) {
-      animFrameId = requestAnimationFrame(loop);
-    }
-    window.addEventListener('resize', resize);
-  }
-
   // 启动事件
+  // 替换最底部的 bootstrap 闭包
   ; (async function bootstrap() {
-    // 稳妥的初始化方式：兼容 module 延迟加载和正常加载
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initLoginAnimation);
-    } else {
-      initLoginAnimation();
+    const sessionSaved = (() => { try { return sessionStorage.getItem('subscheck_session_key') } catch { return null } })();
+    const localSaved = safeLS('subscheck_api_key');
+    const guiSaved = window.__WAILS_GUI?.apiKey || null;
+    const saved = guiSaved || sessionSaved || localSaved;
+
+    // 如果没找到凭证，直接踢回登录页
+    if (!saved) {
+      window.location.replace('/login');
+      return;
     }
 
-    // === 2. 原有的登录与认证核心逻辑 ===
-    const wailsKey = window.__WAILS_GUI?.apiKey || null
-    const sessionSaved = (() => { try { return sessionStorage.getItem('subscheck_session_key') } catch { return null } })()
-    const localSaved = safeLS('subscheck_api_key')
-    const saved = wailsKey || sessionSaved || localSaved
-
-    const apiKeyInput = document.getElementById('apiKeyInput');
-    if (saved && apiKeyInput) apiKeyInput.value = saved
-
-    bindControls()
-    initGuiUpdateBridge()
+    sessionKey = saved;
+    bindControls();
+    initGuiUpdateBridge();
 
     try {
-      if (saved) {
-        sessionKey = saved
-        const r = await sfetch(API.status)
-        if (r.ok) {
-          showLogin(false)
-          setAuthUI(true)
-          await loadAll()
-          startPollers()
-          showToast('自动登录成功', 'success')
-
-          const qp = initQuickPreview(
-            () => sessionKey,
-            () => {
-              if (editorMode === 'form') {
-                return collectConfigForm();
-              } else {
-                const src = codeMirrorView?.state.doc.toString() || _rawConfigYaml;
-                try { return window.YAML.parse(src); } catch (e) { return null; }
-              }
-            }
-          );
-          qp?.enable();
-        } else {
-          throw new Error('auth failed')
-        }
-      } else {
-        throw new Error('no key')
+      // 验证 Key 有效性，如果失效就走到 catch 里退出
+      const r = await sfetch(API.status);
+      if (!r.ok) {
+        throw new Error('API Key invalid');
       }
+
+      setAuthUI(true);
+      await loadAll();
+      startPollers();
+
+      const qp = initQuickPreview(() => sessionKey, () => {
+        if (editorMode === 'form') {
+          return collectConfigForm();
+        } else {
+          const src = codeMirrorView?.state.doc.toString() || _rawConfigYaml;
+          try { return window.YAML.parse(src); } catch (e) { return null; }
+        }
+      });
+      qp?.enable();
+
     } catch (e) {
-      sessionKey = null
-      safeLS('subscheck_api_key', null)
-      try { sessionStorage.removeItem('subscheck_session_key') } catch { }
-
-      showLogin(true)
-      setAuthUI(false)
-
-      // 认证失败，登录框显示出来后，强制唤醒一次粒子动画计算宽高
-      if (window.wakeUpLoginAnimation) window.wakeUpLoginAnimation();
+      console.error('状态获取失败，重定向到登录:', e);
+      doLogout();
     }
 
     window.addEventListener('beforeunload', () => {
-      stopPollers()
-      if (codeMirrorView) codeMirrorView.destroy()
-    })
+      stopPollers();
+      if (codeMirrorView) codeMirrorView.destroy();
+    });
 
-    initConfigForm()
-    switchEditorMode('form')
+    initConfigForm();
+    switchEditorMode('form');
     initLogsCollapseBtn();
-    w.sfetch = sfetch;
-    w.showToast = showToast
-    w.saveConfigWithValidation = saveConfigWithValidation
-    w.loadConfigValidated = loadConfigValidated
-    w.openInternalURL = openInternalURL
 
+    w.sfetch = sfetch;
+    w.showToast = showToast;
+    w.saveConfigWithValidation = saveConfigWithValidation;
+    w.loadConfigValidated = loadConfigValidated;
+    w.openInternalURL = openInternalURL;
   })();
+
 })()
