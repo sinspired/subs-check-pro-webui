@@ -3175,12 +3175,24 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     })
 
     const logoutHandler = async () => {
-      if (window.__WAILS_GUI?.baseURL) {
-        doLogout()
-      } else {
-        // 替换原有的 confirm
-        if (await showConfirm('确定要退出登录吗？', 'info')) doLogout()
+      // 无论你在哪里，只要访问下面这个接口，
+      // GuiApp 就会收到信号并把 WebView 的 URL 切回 "/"
+      try {
+        await fetch('/gui/back-to-home');
+      } catch (err) {
+        console.warn("未处于 GUI 环境或后端接口未注册");
+        // 降级：如果是在浏览器里运行的，就退到网页登录页
+        document.cookie = `scp_api_key=; path=/; max-age=0`;
+        window.location.replace('/login');
       }
+    };
+
+    els.logoutBtn?.addEventListener('click', logoutHandler);
+    els.logoutBtnMobile?.addEventListener('click', logoutHandler);
+
+    // 顺便把按钮文案改成更适合 App 的文案
+    if (window.__WAILS_GUI?.baseURL) {
+      if (els.logoutText) els.logoutText.textContent = "返回 App 首页";
     }
 
     if (window.__WAILS_GUI?.baseURL) {
