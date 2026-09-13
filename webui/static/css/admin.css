@@ -2695,14 +2695,15 @@ img.link-icon {
 /* Toast 通知 */
 #toastContainer {
   position: fixed;
-  top: 8px;
+  top: env(safe-area-inset-top, 8px);
   right: 8px;
   z-index: 100000;
   display: flex;
   flex-direction: column;
   gap: 6px;
   pointer-events: none;
-  /* ✅ 避免挡住页面点击 */
+  /* 避免挡住页面点击 */
+  pointer-events: none;
 }
 
 .toast {
@@ -2733,6 +2734,9 @@ img.link-icon {
   border-radius: 6px;
   border-left: 6px solid transparent;
   /* 默认透明，后面按类型覆盖 */
+
+  user-select: text;
+  pointer-events: auto; 
 }
 
 .toast .progress-bar {
@@ -3404,6 +3408,14 @@ img.link-icon {
   html,
   body {
     overflow: auto;
+  }
+
+  /* Respect the iOS safe area (notch, home indicator) */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
   /* .card {

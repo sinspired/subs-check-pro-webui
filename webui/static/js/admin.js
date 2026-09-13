@@ -39,22 +39,31 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   const ACTION_CONFIRM_TIMEOUT_MS = 600000
 
   /**
- * openInternalURL: 在 Wails GUI 环境下通过 /gui/popup 打开 Gin 服务内部页面；
- * 浏览器环境下降级为 window.open。
- * 仅用于相对路径（/files、/analysis 等），外部链接仍用 window.open。
- * @param {string} path   相对路径，如 '/files'
- * @param {string} [size] 窗口尺寸：tiny/small/medium/large/extraLarge/wide，默认 medium
- */
+   * openInternalURL: 桌面端通过 /gui/popup 打开内部页面；
+   * 安卓端直接跳转 fullURL；
+   * 浏览器环境用 window.open。
+   * @param {string} path   相对路径，如 '/files'
+   * @param {string} [size] 窗口尺寸：tiny/small/medium/large/extraLarge/wide，默认 medium
+   */
   function openInternalURL(path, size) {
     const theme = document.documentElement.getAttribute('data-theme') || 'light'
     const separator = path.includes('?') ? '&' : '?'
     const pathWithTheme = path + separator + 'theme=' + theme
+
     if (window.__WAILS_GUI?.baseURL) {
-      const fullURL = window.__WAILS_GUI.baseURL + pathWithTheme
-      let qs = '/gui/popup?url=' + encodeURIComponent(fullURL)
-      if (size) qs += '&size=' + encodeURIComponent(size)
-      fetch(qs).catch(() => { })
+      const fullURL = window.__WAILS_GUI.baseURL.replace(/\/$/, '') + pathWithTheme
+
+      if (window.__WAILS_ANDROID_GUI) {
+        // 安卓环境：直接拼接 wails.localhost
+        window.open(pathWithTheme, '_blank', 'noopener,noreferrer')
+      } else {
+        // 桌面环境：走 /gui/popup
+        let qs = '/gui/popup?url=' + encodeURIComponent(fullURL)
+        qs += '&size=' + encodeURIComponent(size || 'medium')
+        fetch(qs).catch(() => { })
+      }
     } else {
+      // 普通浏览器环境
       window.open(pathWithTheme, '_blank', 'noopener,noreferrer')
     }
   }
@@ -791,6 +800,35 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   // ==================== API 通信 ====================
 
   /**
+ * 通用安全解析函数
+ * @param {string|Object} input 原始数据
+ * @returns {Object|string} 解析后的对象或原始字符串
+ */
+  function safeParse(input) {
+    if (typeof input !== 'string') return input
+
+    const clean = input.replace(/^\uFEFF/, '').trim()
+
+    // 如果看起来是 JSON，直接用 JSON.parse（更快）
+    if (/^[\[{]/.test(clean)) {
+      try {
+        return JSON.parse(clean)
+      } catch (e) {
+        console.warn("JSON 解析失败，尝试 YAML", e)
+      }
+    }
+
+    // 否则尝试 YAML
+    try {
+      return window.YAML.parse(clean)
+    } catch (e) {
+      console.warn("YAML 解析失败，返回原始字符串", e)
+      showToast(`API 返回数据解析失败，返回原始文本`, "error")
+      return clean
+    }
+  }
+
+  /**
    * 安全请求封装
    * @param {string} url   请求地址
    * @param {Object} [opts] fetch 配置项
@@ -806,7 +844,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const r = await fetch(url, opts)
       const ct = r.headers.get('content-type') || ''
       const text = await r.text()
-      let payload = ct.includes('application/json') ? JSON.parse(text) : text
+      const payload = safeParse(text)
 
       if (r.status === 401) {
         doLogout('未授权：API Key 错误或已失效')
@@ -2266,11 +2304,19 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     safeLS('subscheck_api_key', null);
     try { sessionStorage.removeItem('subscheck_session_key') } catch { }
 
-    // 👇 新增：让服务端的鉴权 Cookie 立即失效
+    // 让服务端的鉴权 Cookie 立即失效
     document.cookie = `scp_api_key=; path=/; max-age=0`;
 
     if (window.__WAILS_GUI?.baseURL) {
-      fetch('/gui/back-to-login').catch(() => { });
+      if (window.__WAILS_ANDROID_GUI) {
+        try {
+          fetch('/gui/back-to-home');
+        } catch (err) {
+          console.warn("退出登录失败：", err);
+        }
+      } else {
+        fetch('/gui/back-to-login').catch(() => { });
+      }
     } else {
       window.location.replace('/login');
     }
@@ -2431,7 +2477,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     }
 
     // ── Wails GUI 路径：无弹窗拦截问题，先完成所有异步再触发原生窗口 ──────
-    if (window.__WAILS_GUI?.baseURL) {
+    if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) {
       fetch('/gui/open-sub-store').catch(err => showToast('打开订阅管理失败: ' + err.message, 'error'));
       return;
     }
@@ -2663,10 +2709,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     const r = await sfetch(API.config)
     if (!r.ok) return showToast('读取配置失败', 'warn')
 
-    const raw =
-      typeof r.payload?.content === 'string'
-        ? r.payload.content
-        : String(r.payload || '')
+    let configPayload = r.payload
+
+    const raw = typeof configPayload?.content === 'string'
+      ? configPayload.content
+      : String(configPayload || '')
 
     // ① 保存含注释的原始字符串
     _rawConfigYaml = raw
@@ -2842,65 +2889,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     }
   }
 
-  async function getPublicVersion() {
-    try {
-      const r = await fetch(API.publicVersion)
-      const d = await r.json()
-      if (!d) return
-
-      const currentV = d.version
-      const latestV = d.latest_version
-      const isPre = v => v && v.includes('-')
-
-      // 登录框
-      if (els.versionLogin) {
-        els.versionLogin.textContent = currentV
-        if (isPre(currentV)) {
-          els.versionBadge?.classList.add('is-pre')
-          els.versionLogin.classList.add('is-pre')
-        }
-      }
-
-      // 小屏顶栏（共用绝对角标 A）
-      if (versionInlineMobileEl) {
-        versionInlineMobileEl.textContent = currentV
-        if (isPre(currentV)) versionInlineMobileEl.classList.add('is-pre')
-      }
-
-      if (latestV && currentV !== latestV) {
-        const openLatest = e => {
-          e.preventDefault()
-          window.open('https://github.com/sinspired/subs-check-pro/releases/latest', '_blank')
-        }
-        const isPreLatest = isPre(latestV)
-
-        // version-badge
-        els.versionBadge?.classList.add('new-version')
-        if (isPreLatest) {
-          els.versionBadge?.classList.add('pre-release')
-          if (els.versionBadge) els.versionBadge.title = `发现新预览版 v${latestV}，建议谨慎更新`
-        } else {
-          if (els.versionBadge) els.versionBadge.title = `有新版本 v${latestV}`
-        }
-        if (els.versionBadge) els.versionBadge.onclick = openLatest
-
-        // versionInline-mobile
-        if (versionInlineMobileEl) {
-          versionInlineMobileEl.classList.add('new-version')
-          if (isPreLatest) {
-            versionInlineMobileEl.classList.add('pre-release')
-            versionInlineMobileEl.title = `发现新预览版 v${latestV}，建议谨慎更新`
-          } else {
-            versionInlineMobileEl.title = `有新版本 v${latestV}`
-          }
-          versionInlineMobileEl.onclick = openLatest
-        }
-      }
-    } catch (e) {
-      console.error('Version check failed', e)
-    }
-  }
-
   // ==================== GUI 自身更新检查（Wails 桌面端）====================
   // webUIWin 也是 Wails 管理的窗口，可以用 /wails/runtime.js 监听
   // Go 端 CheckForUpdates() 已经在发的事件，不需要改后端。
@@ -2982,15 +2970,25 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           // 外部绝对链接：直接送给 /gui/popup，不经过 openInternalURL（后者会错误地拼 baseURL）
           const theme = document.documentElement.getAttribute('data-theme') || 'light'
           const externalURL = href + (href.includes('?') ? '&' : '?') + 'theme=' + theme
-          fetch('/gui/popup?url=' + encodeURIComponent(externalURL) + '&size=medium')
-            .catch(() => { })
+          if (window.__WAILS_ANDROID_GUI) {
+            // 安卓环境：直接跳转，不拦截
+            window.location.href = externalURL
+          } else {
+            fetch('/gui/popup?url=' + encodeURIComponent(externalURL) + '&size=medium')
+              .catch(() => { })
+          }
         } else {
           // 内部相对路径：拼上 baseURL 再走 /gui/popup（与 openInternalURL 逻辑一致）
           const theme = document.documentElement.getAttribute('data-theme') || 'light'
           const sep = href.includes('?') ? '&' : '?'
           const fullURL = window.__WAILS_GUI.baseURL.replace(/\/$/, '') + href + sep + 'theme=' + theme
-          fetch('/gui/popup?url=' + encodeURIComponent(fullURL) + '&size=medium')
-            .catch(() => { })
+          if (window.__WAILS_ANDROID_GUI) {
+            // 安卓环境：直接跳转，不拦截
+            window.location.href = externalURL
+          } else {
+            fetch('/gui/popup?url=' + encodeURIComponent(fullURL) + '&size=medium')
+              .catch(() => { })
+          }
         }
       }, true)  // useCapture=true，在冒泡前拦截，防止被其他 handler 先消费
     }
@@ -3030,7 +3028,13 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           checkStartTime = Date.now()
           showToast('启动中...', 'info')
 
-          await sfetch(API.trigger, { method: 'POST' })
+          const triggerResult = await sfetch(API.trigger, { method: 'POST' })
+          if (!triggerResult.ok) {
+            showProgressUI(false)
+            updateToggleUI('idle')
+            showToast(`启动检测失败: ${triggerResult.status || triggerResult.error || '请求失败'}`, 'error', 5000)
+            return
+          }
           const confirm = await waitForBackendChecking(true)
 
           if (confirm.ok) {
@@ -3110,25 +3114,27 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     )
 
     els.fileManagerBtn?.addEventListener('click', () => {
-      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-files').catch(() => { }); return; }
+      if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) {
+        fetch('/gui/open-files').catch(() => { }); return;
+      }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/files', 'small');
     });
 
     els.btnFiles?.addEventListener('click', () => {
-      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-files').catch(() => { }); return; }
+      if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) { fetch('/gui/open-files').catch(() => { }); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/files', 'small');
     });
 
     els.analysisBtn?.addEventListener('click', () => {
-      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-analysis').catch(() => { }); return; }
+      if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) { fetch('/gui/open-analysis').catch(() => { }); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/analysis');
     });
 
     els.btnAnalysis?.addEventListener('click', () => {
-      if (window.__WAILS_GUI?.baseURL) { fetch('/gui/open-analysis').catch(() => { }); return; }
+      if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) { fetch('/gui/open-analysis').catch(() => { }); return; }
       if (sessionKey) safeLS('subscheck_api_key', sessionKey);
       openInternalURL('/analysis');
     });
@@ -3175,24 +3181,12 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     })
 
     const logoutHandler = async () => {
-      // 无论你在哪里，只要访问下面这个接口，
-      // GuiApp 就会收到信号并把 WebView 的 URL 切回 "/"
-      try {
-        await fetch('/gui/back-to-home');
-      } catch (err) {
-        console.warn("未处于 GUI 环境或后端接口未注册");
-        // 降级：如果是在浏览器里运行的，就退到网页登录页
-        document.cookie = `scp_api_key=; path=/; max-age=0`;
-        window.location.replace('/login');
+      if (window.__WAILS_GUI?.baseURL) {
+        doLogout()
+      } else {
+        // 替换原有的 confirm
+        if (await showConfirm('确定要退出登录吗？', 'info')) doLogout()
       }
-    };
-
-    els.logoutBtn?.addEventListener('click', logoutHandler);
-    els.logoutBtnMobile?.addEventListener('click', logoutHandler);
-
-    // 顺便把按钮文案改成更适合 App 的文案
-    if (window.__WAILS_GUI?.baseURL) {
-      if (els.logoutText) els.logoutText.textContent = "返回 App 首页";
     }
 
     if (window.__WAILS_GUI?.baseURL) {
@@ -3301,7 +3295,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         e.preventDefault()
         e.stopPropagation()
 
-        if (window.__WAILS_GUI?.baseURL) {
+        if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) {
           fetch('/gui/open-sub-links').catch(() => { })
           return
         }
@@ -3439,8 +3433,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     })
 
     function openProjectMenu(anchorEl) {
-      const isWails = !!window.__WAILS_GUI?.baseURL
-      if (!isWails) {
+      const isWailsGUI = !!window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI
+      if (!isWailsGUI) {
         const pm = els.projectMenu
         const sm = document.getElementById('shareMenu')
         if (!pm) return
@@ -3679,9 +3673,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
     try {
       // 验证 Key 有效性，如果失效就走到 catch 里退出
-      const r = await sfetch(API.status);
-      if (!r.ok) {
-        throw new Error('API Key invalid');
+      if (!guiSaved) {
+        const r = await sfetch(API.status);
+        if (!r.ok) {
+          throw new Error('API Key invalid');
+        }
       }
 
       setAuthUI(true);
