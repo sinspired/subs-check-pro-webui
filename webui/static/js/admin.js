@@ -54,8 +54,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const fullURL = window.__WAILS_GUI.baseURL.replace(/\/$/, '') + pathWithTheme
 
       if (window.__WAILS_ANDROID_GUI) {
-        // 安卓环境：直接拼接 wails.localhost
-        window.open(pathWithTheme, '_blank', 'noopener,noreferrer')
+        // 安卓单 WebView 没有注册 WebChromeClient/onCreateWindow，window.open()
+        // 会被静默忽略。改为同一 WebView 内原地导航到真实的 127.0.0.1:<port> 地址
+        // （需要 AndroidManifest 里为回环地址放行明文 HTTP，见 network_security_config.xml），
+        // 配合已有的 onBackPressed()（webView.goBack()）可以正常返回。
+        window.location.href = fullURL
       } else {
         // 桌面环境：走 /gui/popup
         let qs = '/gui/popup?url=' + encodeURIComponent(fullURL)
@@ -830,7 +833,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   /**
    * 安全请求封装
-   * @param {string} url   请求地址
+   * @param {string} url   请求地址（相对路径，如 /api/config）
    * @param {Object} [opts] fetch 配置项
    * @returns {Promise<Object>} 包含 ok、status、payload、error
    */
@@ -839,6 +842,40 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       doLogout('未认证：请登录或输入 API 密钥')
       return { ok: false, status: 401, error: '未认证' }
     }
+
+    // ── 安卓 Wails GUI 环境：改走 Go 原生绑定（window.WailsBridge.APIProxy）──
+    // 根因：Android 的 WebResourceRequest API 从未暴露过 POST 请求体，任何经由
+    // shouldInterceptRequest 拦截转发的 POST 请求，到达 Go 侧时 body 必然是空的
+    // （EOF）。window.WailsBridge.APIProxy 是通过 Wails 原生 JS↔Go 桥
+    // （$Call.ByID）直接传参调用的，从始至终不是一次被拦截的网络请求，body 能
+    // 完整送达。桌面端 / 普通浏览器不受此限制影响，继续走原来的 fetch。
+    if (window.__WAILS_ANDROID_GUI && window.WailsBridge?.APIProxy) {
+      try {
+        const method = (opts.method || 'GET').toUpperCase()
+        const body = opts.body
+          ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body))
+          : ''
+        const raw = await window.WailsBridge.APIProxy(method, url, body)
+        const parsed = JSON.parse(raw)
+        const status = parsed.status ?? 0
+        const payload = safeParse(parsed.body ?? '')
+
+        if (status === 401) {
+          doLogout('未授权：API Key 错误或已失效')
+          return { ok: false, status: 401, payload }
+        }
+        if (status >= 200 && status < 300) {
+          resetApiFailures()
+          return { ok: true, status, payload }
+        }
+        handleApiFailure()
+        return { ok: false, status, payload }
+      } catch (e) {
+        handleApiFailure()
+        return { ok: false, error: e }
+      }
+    }
+
     opts.headers = { ...opts.headers, 'X-API-Key': sessionKey }
     try {
       const r = await fetch(url, opts)
@@ -2476,9 +2513,20 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       checkAndShowRouteWarning(info.status, info.path, info.port);
     }
 
-    // ── Wails GUI 路径：无弹窗拦截问题，先完成所有异步再触发原生窗口 ──────
+    // ── Wails GUI 路径（桌面）：无弹窗拦截问题，先完成所有异步再触发原生窗口 ──
     if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) {
       fetch('/gui/open-sub-store').catch(err => showToast('打开订阅管理失败: ' + err.message, 'error'));
+      return;
+    }
+
+    // ── 安卓 Wails GUI 路径：单 WebView，没有 WebChromeClient/onCreateWindow，
+    //    window.open() 会被静默忽略；直接在当前 WebView 内导航到真实的
+    //    127.0.0.1:<SubStorePort> 地址（需要 network_security_config.xml 放行
+    //    回环地址明文 HTTP），配合 onBackPressed()（webView.goBack()）可正常返回。
+    if (window.__WAILS_GUI?.baseURL && window.__WAILS_ANDROID_GUI) {
+      const subStoreBase = window.__WAILS_GUI.baseURL.replace(/\/$/, '')
+      const theme = document.documentElement.getAttribute('data-theme') || 'light'
+      window.location.href = subStoreBase + '/substore?theme=' + theme
       return;
     }
 
@@ -2984,7 +3032,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           const fullURL = window.__WAILS_GUI.baseURL.replace(/\/$/, '') + href + sep + 'theme=' + theme
           if (window.__WAILS_ANDROID_GUI) {
             // 安卓环境：直接跳转，不拦截
-            window.location.href = externalURL
+            window.location.href = fullURL
           } else {
             fetch('/gui/popup?url=' + encodeURIComponent(fullURL) + '&size=medium')
               .catch(() => { })
