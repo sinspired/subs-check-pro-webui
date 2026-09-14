@@ -3376,7 +3376,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         // 读内存状态
         if (window.__scp_subStoreRunning === false) {
           showToast('Sub-Store 服务未运行，无法分享订阅', 'warn')
-          showToast('请修改配置或使用内置文件服务', 'info', 6000)
+          showToast('请等待服务启动，或修改配置以使用内置文件服务', 'info', 6000)
           return
         }
 
