@@ -2962,7 +2962,17 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   async function initGuiUpdateBridge() {
     if (!window.__WAILS_GUI?.baseURL) return
     try {
-      const { Events } = await import('/wails/runtime.js')
+      // const { Events } = await import('/runtime.js')
+      // 桥接注入的 Events
+      const Events = window.WailsBridge?.Events;
+      if (!Events) {
+        console.warn('WailsBridge.Events 未就绪');
+        return;
+      }
+
+      Events.On("test", (msg) => {
+        console.log("收到事件:", msg);
+      });
 
       Events.On('gui:update:toast', e => {
         els.siderBarCheckupdate?.classList.remove('checking-update')
