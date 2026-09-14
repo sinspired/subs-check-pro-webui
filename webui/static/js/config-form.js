@@ -2150,6 +2150,7 @@ function mkUrlList(field, values) {
   }
 
   function _onTouchStart(e, row) {
+    if (!e || !e.target) return;
     // 只响应把手触发的触摸
     if (!e.target.closest('.cfg-url-drag')) return;
     e.preventDefault();

@@ -176,6 +176,11 @@
   --unlock-gemini: #84bb0e;
 }
 
+/* Respect the iOS safe area (notch, home indicator) */
+.safe-area {
+  padding: 44px 5px 16px 5px;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -2736,7 +2741,7 @@ img.link-icon {
   /* 默认透明，后面按类型覆盖 */
 
   user-select: text;
-  pointer-events: auto; 
+  pointer-events: auto;
 }
 
 .toast .progress-bar {
@@ -3409,7 +3414,7 @@ img.link-icon {
   body {
     overflow: auto;
   }
-
+  
   /* Respect the iOS safe area (notch, home indicator) */
   body {
     padding-top: env(safe-area-inset-top);
