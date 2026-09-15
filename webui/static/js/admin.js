@@ -2496,7 +2496,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   async function handleOpenSubStore(e) {
     e.preventDefault();
-    if (!sessionKey) { showLogin(true); return; }
+    if (!sessionKey) { doLogout; return; }
 
     if (getBaseUrl._prefetchPromise) await getBaseUrl._prefetchPromise;
     const info = getBaseUrl._routeStatus;
@@ -3391,7 +3391,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         }
 
         if (!sessionKey) {
-          showLogin(true)
+          doLogout()
           return
         }
 
