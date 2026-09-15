@@ -2517,31 +2517,34 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       checkAndShowRouteWarning(info.status, info.path, info.port);
     }
 
-    // ── Wails GUI 路径（桌面）：无弹窗拦截问题，先完成所有异步再触发原生窗口 ──
-    if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) {
-      fetch('/gui/open-sub-store').catch(err => showToast('打开订阅管理失败: ' + err.message, 'error'));
-      return;
-    }
-
-    // ── 安卓 Wails GUI 路径：单 WebView，没有 WebChromeClient/onCreateWindow，
-    //    window.open() 会被静默忽略；直接在当前 WebView 内导航到真实的
-    //    127.0.0.1:<SubStorePort> 地址（需要 network_security_config.xml 放行
-    //    回环地址明文 HTTP），配合 onBackPressed()（webView.goBack()）可正常返回。
-    if (window.__WAILS_GUI?.baseURL && window.__WAILS_ANDROID_GUI) {
-      const subStoreBase = window.__WAILS_GUI.baseURL.replace(/\/$/, '')
-      const theme = document.documentElement.getAttribute('data-theme') || 'light'
-      window.location.href = subStoreBase + '/substore?theme=' + theme
-      return;
-    }
-
-    // ── 普通浏览器路径：同步开窗（规避 iOS/Safari 弹窗拦截），异步填充内容 ──
-
     // 秒读内存状态
     if (window.__scp_subStoreRunning === false) {
       showToast('Sub-Store 服务未运行', 'warn');
       return;
     }
 
+    // ── Wails GUI 路径（桌面）：无弹窗拦截问题，先完成所有异步再触发原生窗口 ──
+    if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) {
+      fetch('/gui/open-sub-store').catch(err => showToast('打开订阅管理失败: ' + err.message, 'error'));
+      return;
+    }
+
+    // 安卓不存在窗口拦截，但是返回 admin 后 lastSubStorePath 会丢失
+    if (window.__WAILS_GUI?.baseURL && window.__WAILS_ANDROID_GUI) {
+      try {
+        // 零网络请求，直接构造并跳转
+        const result = buildSubStoreUrl();
+        lastSubStorePath = result.subStorePath;
+        Window.location.href = result.url;
+        return
+      } catch (err) {
+        newWindow.close();
+        console.error(err)
+        showToast(err.message || '打开失败', 'error');
+      }
+    }
+
+    // ── 普通浏览器路径：同步开窗（规避 iOS/Safari 弹窗拦截），异步填充内容 ──
     const newWindow = window.open('', '_blank');
     if (!newWindow) { showToast('窗口弹出被拦截', 'warn'); return; }
 
