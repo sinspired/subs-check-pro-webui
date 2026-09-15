@@ -58,7 +58,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         // 会被静默忽略。改为同一 WebView 内原地导航到真实的 127.0.0.1:<port> 地址
         // （需要 AndroidManifest 里为回环地址放行明文 HTTP，见 network_security_config.xml），
         // 配合已有的 onBackPressed()（webView.goBack()）可以正常返回。
-        window.location.href = fullURL
+        window.location.href = path
       } else {
         // 桌面环境：走 /gui/popup
         let qs = '/gui/popup?url=' + encodeURIComponent(fullURL)
@@ -3247,15 +3247,16 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       }
     }
 
+    function setText(el, text) {
+      if (el) el.textContent = text;
+    }
+
     if (window.__WAILS_GUI?.baseURL) {
-      // 调用 Wails binding 切回登录小窗
-      // 设置按钮文本
-      els.logoutText.textContent = "切换配置";
-      els.projectInfoText.textContent = "关于软件"
+      setText(els.logoutText, "切换配置");
+      setText(els.projectInfoText, "关于软件");
     } else {
-      // 设置按钮文本
-      els.logoutText.textContent = "退出登录";
-      els.projectInfoText.textContent = "项目信息"
+      setText(els.logoutText, "退出登录");
+      setText(els.projectInfoText, "项目信息");
     }
 
     els.logoutBtn?.addEventListener('click', logoutHandler)
