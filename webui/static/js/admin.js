@@ -52,21 +52,15 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       path = path + ".html"
     }
     const pathWithTheme = path + separator + 'theme=' + theme
-
     if (window.__WAILS_GUI?.baseURL) {
       const fullURL = window.__WAILS_GUI.baseURL.replace(/\/$/, '') + pathWithTheme
 
       if (window.__WAILS_ANDROID_GUI) {
-        // 安卓单 WebView 没有注册 WebChromeClient/onCreateWindow，window.open()
-        // 会被静默忽略。改为同一 WebView 内原地导航到真实的 127.0.0.1:<port> 地址
-        // （需要 AndroidManifest 里为回环地址放行明文 HTTP，见 network_security_config.xml），
-        // 配合已有的 onBackPressed()（webView.goBack()）可以正常返回。
-        console.log(path)
         window.location.href = path
       } else {
         // 桌面环境：走 /gui/popup
         let qs = '/gui/popup?url=' + encodeURIComponent(fullURL)
-        qs += '&size=' + encodeURIComponent(size || 'medium')
+        if (size) qs += '&size=' + encodeURIComponent(size)
         fetch(qs).catch(() => { })
       }
     } else {
@@ -328,7 +322,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     document.body.appendChild(c)
     return c
   }
-
 
   /**
    * 安全操作 localStorage (读/写/删)
@@ -2944,6 +2937,65 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     }
   }
 
+  async function getPublicVersion() {
+    try {
+      const r = await fetch(API.publicVersion)
+      const d = await r.json()
+      if (!d) return
+
+      const currentV = d.version
+      const latestV = d.latest_version
+      const isPre = v => v && v.includes('-')
+
+      // 登录框
+      if (els.versionLogin) {
+        els.versionLogin.textContent = currentV
+        if (isPre(currentV)) {
+          els.versionBadge?.classList.add('is-pre')
+          els.versionLogin.classList.add('is-pre')
+        }
+      }
+
+      // 小屏顶栏（共用绝对角标 A）
+      if (versionInlineMobileEl) {
+        versionInlineMobileEl.textContent = currentV
+        if (isPre(currentV)) versionInlineMobileEl.classList.add('is-pre')
+      }
+
+      if (latestV && currentV !== latestV) {
+        const openLatest = e => {
+          e.preventDefault()
+          window.open('https://github.com/sinspired/subs-check-pro/releases/latest', '_blank')
+        }
+        const isPreLatest = isPre(latestV)
+
+        // version-badge
+        els.versionBadge?.classList.add('new-version')
+        if (isPreLatest) {
+          els.versionBadge?.classList.add('pre-release')
+          if (els.versionBadge) els.versionBadge.title = `发现新预览版 v${latestV}，建议谨慎更新`
+        } else {
+          if (els.versionBadge) els.versionBadge.title = `有新版本 v${latestV}`
+        }
+        if (els.versionBadge) els.versionBadge.onclick = openLatest
+
+        // versionInline-mobile
+        if (versionInlineMobileEl) {
+          versionInlineMobileEl.classList.add('new-version')
+          if (isPreLatest) {
+            versionInlineMobileEl.classList.add('pre-release')
+            versionInlineMobileEl.title = `发现新预览版 v${latestV}，建议谨慎更新`
+          } else {
+            versionInlineMobileEl.title = `有新版本 v${latestV}`
+          }
+          versionInlineMobileEl.onclick = openLatest
+        }
+      }
+    } catch (e) {
+      console.error('Version check failed', e)
+    }
+  }
+
   // ==================== GUI 自身更新检查（Wails 桌面端）====================
   // webUIWin 也是 Wails 管理的窗口，可以用 /wails/runtime.js 监听
   // Go 端 CheckForUpdates() 已经在发的事件，不需要改后端。
@@ -2977,7 +3029,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         return;
       }
 
-      Events.On("test", (msg) => {
+      Events.On("ApiProxy", (msg) => {
         console.log("收到事件:", msg);
       });
 
@@ -3732,6 +3784,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       window.location.replace('/login');
       return;
     }
+
+    getPublicVersion();
 
     sessionKey = saved;
     bindControls();
