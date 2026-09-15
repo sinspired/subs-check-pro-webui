@@ -48,23 +48,31 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   function openInternalURL(path, size) {
     const theme = document.documentElement.getAttribute('data-theme') || 'light'
     const separator = path.includes('?') ? '&' : '?'
+    const pathWithTheme = path + separator + 'theme=' + theme
+
     if (window.__WAILS_ANDROID_GUI) {
       path = path + ".html"
     }
-    const pathWithTheme = path + separator + 'theme=' + theme
+
     if (window.__WAILS_GUI?.baseURL) {
       const fullURL = window.__WAILS_GUI.baseURL.replace(/\/$/, '') + pathWithTheme
 
       if (window.__WAILS_ANDROID_GUI) {
-        if (path.includes("/files")) {
-          window.location.href = fullURL
-        }
-        window.location.href = path
+        // 延迟执行跳转，方便查看日志
+        setTimeout(() => {
+          if (path.includes("files")) {
+            window.location.href = fullURL
+          } else {
+            window.location.href = path
+          }
+        }, 10)
+        return
       } else {
         // 桌面环境：走 /gui/popup
         let qs = '/gui/popup?url=' + encodeURIComponent(fullURL)
         if (size) qs += '&size=' + encodeURIComponent(size)
         fetch(qs).catch(() => { })
+        return
       }
     } else {
       // 普通浏览器环境
@@ -2439,7 +2447,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         // 零网络请求，直接构造并跳转
         const result = buildSubStoreUrl();
         lastSubStorePath = result.subStorePath;
-        Window.location.href = result.url;
+        window.location.href = result.url;
         return
       } catch (err) {
         console.error(err)
