@@ -657,10 +657,10 @@
 </head>
 
 <body>
-  {{/* ── 主卡片 ── */}}
+  <!-- 主卡片 -->
   <div class="card-wrapper">
     <div class="card">
-      {{/* ── 主题切换按钮（与 share.html 完全一致） ── */}}
+      <!-- 主题切换按钮保持原样 -->
       <div class="theme-wrapper">
         <div class="theme-toggle" role="group" aria-label="主题切换" style="display: flex; align-items: center">
           <button id="themeToggle" class="icon-btn" aria-pressed="false" aria-label="切换主题" title="切换主题">
@@ -684,13 +684,10 @@
         </div>
       </div>
 
-      {{/* ── 内容分栏容器 ── */}}
       <div class="card-columns">
-
-        {{/* ── 左侧：介绍与入口 ── */}}
+        <!-- 左侧：介绍与入口 -->
         <div class="card-col-left">
           <div class="status-badge">File Hub</div>
-
           <h1>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">
@@ -702,110 +699,39 @@
             </svg>
             内置文件服务
           </h1>
-          <p class="desc">
-            所有对外分享的订阅访问入口，加密分享需配置
-            <code>share-password</code>。
-          </p>
+          <p class="desc">所有对外分享的订阅访问入口，加密分享需配置 <code>share-password</code>。</p>
 
-          {{/* ── 分享入口区 ── */}}
-          <div class="share-entries">
-            {{/* 加密分享：根据是否配置密码动态切换状态 */}}
-            {{ if .HasPassword }}
-            <a class="share-entry active" href="/sub/" target="_blank" rel="noopener noreferrer">
-              <div class="entry-icon-wrap icon-accent">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  <circle cx="12" cy="11" r="2" />
-                  <line x1="12" y1="13" x2="12" y2="16" />
-                </svg>
-              </div>
-              <div class="entry-body">
-                <span class="entry-title">加密订阅分享</span>
-                <span class="entry-sub">访问路径 /sub/ · 需要分享码</span>
-              </div>
-              <span class="entry-tag tag-success">已启用</span>
-            </a>
-            {{ else }}
-            <div class="share-entry disabled">
-              <div class="entry-icon-wrap icon-muted">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  <rect x="9" y="11" width="6" height="5" rx="1" />
-                  <path d="M10 11V9a2 2 0 0 1 4 0v2" />
-                  <line x1="8" y1="15" x2="16" y2="19" stroke-dasharray="2 2" />
-                </svg>
-              </div>
-              <div class="entry-body">
-                <span class="entry-title">加密订阅分享</span>
-                <span class="entry-sub">未配置 share-password，功能已关闭</span>
-              </div>
-              <span class="entry-tag tag-danger">未启用</span>
+          <!-- 分享入口区（由 JS 动态渲染） -->
+          <div class="share-entries" id="shareEntriesContainer">
+            <!-- 骨架屏 / 加载提示 -->
+            <div class="share-entry disabled" style="opacity: 0.7;">
+              <div class="entry-body"><span class="entry-sub">加载中...</span></div>
             </div>
-            {{ end }}
-            {{/* 公开分享：始终可用 */}}
-            <a class="share-entry active" href="/more/" target="_blank" rel="noopener noreferrer">
-              <div class="entry-icon-wrap icon-warning">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                </svg>
-              </div>
-              <div class="entry-body">
-                <span class="entry-title">公开资源目录</span>
-                <span class="entry-sub">访问路径 /more/ · 无需鉴权，文件列表已隐匿</span>
-              </div>
-              <span class="entry-tag tag-warning">公开</span>
-            </a>
           </div>
         </div>
 
-        {{/* ── 公共规则文件区 ── */}}
+        <!-- 右侧：公共规则文件区 -->
         <div class="card-col-right">
           <div class="section-header">公共规则文件</div>
-
-          {{/* id="fileListContainer" 供 JS 异步替换 */}}
+          <!-- id="fileListContainer" 供 JS 异步渲染 -->
           <div class="file-list" id="fileListContainer">
-            {{ if .PublicFiles }}
-            {{ range .PublicFiles }}
-            <div class="file-item">
-              <span class="file-icon">
-                <img src="/static/icon/{{ .IconName }}" alt="icon" />
-              </span>
-              <a class="file-link" href="{{ .Route }}" target="_blank" title="{{ .Route }}">
-                <span class="file-name">{{ .Name }}</span>
-                <span class="file-path">{{ .Route }}</span>
-              </a>
-              <button class="copy-btn" title="复制链接" data-route="{{ .Route }}" onclick="copyRoute(this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              </button>
-            </div>
-            {{ end }}
-            {{ else }}
-            {{/* 空状态，点击触发异步获取 */}}
-            <div class="file-item empty-state" onclick="asyncRefreshFiles(this)">
+            <div class="file-item empty-state loading">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round">
+                stroke-linejoin="round" class="spin">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <polyline points="1 20 1 14 7 14"></polyline>
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
               </svg>
-              <span>未读取到文件，点击获取</span>
+              <span>正在加载数据...</span>
             </div>
-            {{ end }}
           </div>
         </div>
       </div>
-      {{/* 页脚（与 share.html 完全一致） */}}
+
+      <!-- 页脚 -->
       <div class="card-footer">
-        <a class="brand-info" href="/admin">
-          <img src="/static/icon/favicon.svg" alt="logo" />
-          Subs-Check-PRO
+        <a class="brand-info" href="/" id="footerLink">
+          <img src="/static/icon/favicon.svg" alt="logo" /> Subs-Check-PRO
         </a>
         <div class="footer-meta">File Hub</div>
       </div>
@@ -822,26 +748,151 @@
           class="footer-icon" /></a>
     </div>
     <div class="footer-copy">
-      © 2025
-      <a href="https://github.com/sinspired" target="_blank" rel="noopener">sinspired</a>
-      ·
-      <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPL-3.0 License</a>
+      © 2025 <a href="https://github.com/sinspired" target="_blank" rel="noopener">sinspired</a> · <a
+        href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPL-3.0 License</a>
     </div>
   </div>
 
   <script>
-    // ── 主题切换（与 share.html 完全一致） ────────────────────
+    // ── 获取鉴权密钥 (兼容 Web Cookie 和 Wails GUI 环境) ──
+    function getAuthKey() {
+      let key = sessionStorage.getItem('subscheck_api_key');
+      if (key) return key;
+      const match = document.cookie.match(/(?:^|;\s*)scp_api_key=([^;]*)/);
+      return match ? match[1] : '';
+    }
+
+    const API_KEY = getAuthKey();
+    const fetchHeaders = { "X-API-Key": API_KEY };
+
+    // 🌟 核心：检测是否在 Wails (Android/桌面客户端) 环境中
+    const isWails = !!window.__WAILS_GUI;
+
+    // ── 页面加载完毕后立即获取数据 ──
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchFilesData();
+    });
+
+    // 异步拉取并渲染数据
+    async function fetchFilesData(btnElement = null) {
+      if (btnElement) {
+        btnElement.classList.add('loading');
+        btnElement.querySelector('svg')?.classList.add('spin');
+        btnElement.querySelector('span').textContent = "正在获取最新文件...";
+      }
+
+      try {
+        const res = await fetch("/api/files-data", { headers: fetchHeaders, cache: "no-store" });
+        if (!res.ok) throw new Error("获取数据失败");
+
+        const data = await res.json();
+
+        renderShareEntries(data.has_password);
+        renderFileList(data.public_files);
+
+      } catch (err) {
+        console.error(err);
+        if (btnElement) {
+          btnElement.classList.remove('loading');
+          btnElement.querySelector('svg')?.classList.remove('spin');
+          btnElement.querySelector('span').textContent = "获取失败，点击重试";
+        } else {
+          document.getElementById('fileListContainer').innerHTML = `
+                <div class="file-item empty-state" onclick="fetchFilesData(this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span>网络或鉴权失败，点击重试</span>
+                </div>`;
+        }
+      }
+    }
+
+    // 渲染左侧入口卡片
+    // 渲染左侧入口卡片
+    function renderShareEntries(hasPassword) {
+      const container = document.getElementById("shareEntriesContainer");
+
+      // 🌟 核心：如果是安卓Wails环境，直接拼接后端真实地址。
+      // 配合 target="_blank"，安卓会跳出 App 拉起外部浏览器，彻底摆脱 Webview 环境限制！
+      const shareLink = isWails ? (window.__WAILS_GUI.baseURL + "/sub/") : "/sub/";
+      const moreLink = isWails ? (window.__WAILS_GUI.baseURL + "/more/") : "/more/";
+
+      let encryptHtml = "";
+      if (hasPassword) {
+        encryptHtml = `
+          <a class="share-entry active" href="${shareLink}" target="_blank" rel="noopener noreferrer">
+            <div class="entry-icon-wrap icon-accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><circle cx="12" cy="11" r="2" /><line x1="12" y1="13" x2="12" y2="16" /></svg>
+            </div>
+            <div class="entry-body">
+              <span class="entry-title">加密订阅分享</span>
+              <span class="entry-sub">访问路径 /sub/ · 需要分享码</span>
+            </div>
+            <span class="entry-tag tag-success">已启用</span>
+          </a>`;
+      } else {
+        encryptHtml = `
+          <div class="share-entry disabled">
+            <div class="entry-icon-wrap icon-muted">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><rect x="9" y="11" width="6" height="5" rx="1" /><path d="M10 11V9a2 2 0 0 1 4 0v2" /><line x1="8" y1="15" x2="16" y2="19" stroke-dasharray="2 2" /></svg>
+            </div>
+            <div class="entry-body">
+              <span class="entry-title">加密订阅分享</span>
+              <span class="entry-sub">未配置 share-password，功能已关闭</span>
+            </div>
+            <span class="entry-tag tag-danger">未启用</span>
+          </div>`;
+      }
+
+      const publicHtml = `
+          <a class="share-entry active" href="${moreLink}" target="_blank" rel="noopener noreferrer">
+            <div class="entry-icon-wrap icon-warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
+            </div>
+            <div class="entry-body">
+              <span class="entry-title">公开资源目录</span>
+              <span class="entry-sub">访问路径 /more/ · 无需鉴权，列表隐匿</span>
+            </div>
+            <span class="entry-tag tag-warning">公开</span>
+          </a>`;
+
+      container.innerHTML = encryptHtml + publicHtml;
+    }
+
+    function renderFileList(files) {
+      const container = document.getElementById("fileListContainer");
+      if (!files || files.length === 0) return;
+
+      let html = "";
+      files.forEach(f => {
+        // 🌟 核心修改：如果是 Wails 环境，直接使用真实的绝对地址；否则使用相对路径
+        const linkUrl = isWails ? window.__WAILS_GUI.baseURL + f.route : f.route;
+
+        html += `
+          <div class="file-item">
+            <span class="file-icon"><img src="/static/icon/${f.iconName}" alt="icon" /></span>
+            <a class="file-link" href="${linkUrl}" target="_blank" title="点击访问：${linkUrl}">
+              <span class="file-name">${f.name}</span>
+              <span class="file-path">${f.route}</span>
+            </a>
+            <button class="copy-btn" title="复制链接" data-route="${f.route}" onclick="copyRoute(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+            </button>
+          </div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    // ── 主题切换逻辑与底部链接 (保持原样) ──
     const html = document.documentElement;
     const toggleBtn = document.getElementById("themeToggle");
     const iconMoon = document.getElementById("iconMoon");
     const iconSun = document.getElementById("iconSun");
 
     function resolveTheme(t) {
-      if (t === "auto" || !t) {
-        return window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
-      }
+      if (t === "auto" || !t) return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
       return t;
     }
     function applyTheme(theme) {
@@ -851,81 +902,26 @@
       iconSun.style.display = isDark ? "none" : "block";
       toggleBtn.setAttribute("aria-pressed", String(isDark));
     }
-    function saveTheme(t) {
-      fetch("/admin/theme", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: t }),
-      }).catch(() => { });
-    }
 
-    // 初始化：从服务端读取
-    fetch("/admin/theme")
-      .then((r) => r.json())
-      .then((d) => applyTheme(resolveTheme(d.theme)))
-      .catch(() => applyTheme(resolveTheme("auto")));
+    // 初始化主题
+    fetch("/admin/theme").then((r) => r.json()).then((d) => applyTheme(resolveTheme(d.theme))).catch(() => applyTheme(resolveTheme("auto")));
 
     toggleBtn.addEventListener("click", () => {
-      const next =
-        html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      const next = html.getAttribute("data-theme") === "dark" ? "light" : "dark";
       applyTheme(next);
-      saveTheme(next);
+      fetch("/admin/theme", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: next }) }).catch(() => { });
     });
 
-    toggleBtn.addEventListener("dblclick", () => {
-      saveTheme("auto");
-      applyTheme(resolveTheme("auto"));
-    });
-
-    // 异步刷新文件列表逻辑
-    async function asyncRefreshFiles(btn) {
-      if (btn.classList.contains('loading')) return; // 防止重复点击
-
-      const icon = btn.querySelector('svg');
-      const textSpan = btn.querySelector('span');
-
-      // 1. 切换为加载中 UI 状态
-      btn.classList.add('loading');
-      icon.classList.add('spin');
-      textSpan.textContent = "正在获取最新文件...";
-
-      try {
-        // 2. 无刷新获取当前页面的最新 HTML (带 no-store 防止拿旧缓存)
-        const res = await fetch(window.location.href, { cache: 'no-store' });
-        const htmlText = await res.text();
-
-        // 3. 将返回的内容转成 DOM 节点，提取里面的列表部分
-        const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-        const newList = doc.getElementById('fileListContainer');
-
-        if (newList) {
-          // 4. 将提取到的新列表替换当前列表
-          document.getElementById('fileListContainer').innerHTML = newList.innerHTML;
-        } else {
-          throw new Error("解析异常");
-        }
-      } catch (err) {
-        // 如果依然失败，恢复按钮状态并提示
-        btn.classList.remove('loading');
-        icon.classList.remove('spin');
-        textSpan.textContent = "获取失败，点击重试";
-      }
-    }
-
-    // ── 复制公共文件直链 ──────────────────────────────────────
+    // ── 复制直链 ──
     function copyRoute(btn) {
       const route = btn.dataset.route;
-      const url = window.location.origin + route;
+
+      // 如果是 Wails 环境，使用注入的真实后端地址 (如 127.0.0.1:8199)；否则使用当前浏览器 origin
+      const baseUrl = isWails ? window.__WAILS_GUI.baseURL : window.location.origin;
+      const url = baseUrl + route;
 
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard
-          .writeText(url)
-          .then(() => {
-            showSuccess(btn);
-          })
-          .catch(() => {
-            fallbackCopy(url, btn);
-          });
+        navigator.clipboard.writeText(url).then(() => showSuccess(btn)).catch(() => fallbackCopy(url, btn));
       } else {
         fallbackCopy(url, btn);
       }
@@ -934,7 +930,7 @@
     function fallbackCopy(text, btn) {
       const textarea = document.createElement("textarea");
       textarea.value = text;
-      textarea.style.position = "fixed"; // 避免滚动影响
+      textarea.style.position = "fixed";
       textarea.style.opacity = "0";
       document.body.appendChild(textarea);
       textarea.focus();
@@ -950,15 +946,9 @@
 
     function showSuccess(btn) {
       const original = btn.innerHTML;
-      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"/>
-    </svg>`;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
       btn.style.color = "var(--success)";
-      setTimeout(() => {
-        btn.innerHTML = original;
-        btn.style.color = "";
-      }, 2000);
+      setTimeout(() => { btn.innerHTML = original; btn.style.color = ""; }, 2000);
     }
   </script>
 </body>

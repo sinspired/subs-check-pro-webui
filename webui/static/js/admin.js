@@ -58,14 +58,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const fullURL = window.__WAILS_GUI.baseURL.replace(/\/$/, '') + pathWithTheme
 
       if (window.__WAILS_ANDROID_GUI) {
-        // 延迟执行跳转，方便查看日志
-        setTimeout(() => {
-          if (path.includes("files")) {
-            window.location.href = fullURL
-          } else {
-            window.location.href = path
-          }
-        }, 10)
+        window.location.href = path
         return
       } else {
         // 桌面环境：走 /gui/popup
