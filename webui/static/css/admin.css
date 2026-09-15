@@ -1354,7 +1354,7 @@ img.link-icon {
 }
 
 .progress-wrapper {
-  display: flex;
+  display: none;
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
@@ -1368,7 +1368,7 @@ img.link-icon {
 }
 
 .progress-bar-wrap {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 8px;
 }
