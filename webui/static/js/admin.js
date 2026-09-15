@@ -48,6 +48,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   function openInternalURL(path, size) {
     const theme = document.documentElement.getAttribute('data-theme') || 'light'
     const separator = path.includes('?') ? '&' : '?'
+    if (window.__WAILS_ANDROID_GUI) {
+      path = path + ".html"
+    }
     const pathWithTheme = path + separator + 'theme=' + theme
 
     if (window.__WAILS_GUI?.baseURL) {
@@ -58,6 +61,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         // 会被静默忽略。改为同一 WebView 内原地导航到真实的 127.0.0.1:<port> 地址
         // （需要 AndroidManifest 里为回环地址放行明文 HTTP，见 network_security_config.xml），
         // 配合已有的 onBackPressed()（webView.goBack()）可以正常返回。
+        console.log(path)
         window.location.href = path
       } else {
         // 桌面环境：走 /gui/popup
