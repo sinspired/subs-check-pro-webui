@@ -55,10 +55,15 @@
                 if (isManual) showError('API 密钥错误');
                 safeLS('subscheck_api_key', null);
                 sessionStorage.removeItem('subscheck_session_key');
+                // 自动聚焦输入框
+                els.apiKeyInput.value = '';
+                els.apiKeyInput.focus()
                 return;
             }
             if (!resp.ok) {
                 if (isManual) showError('服务器错误: ' + resp.status);
+                // 自动聚焦输入框
+                els.apiKeyInput.focus()
                 return;
             }
 
@@ -72,6 +77,8 @@
 
         } catch (e) {
             if (isManual) showError('网络请求失败');
+            // 自动聚焦输入框
+            els.apiKeyInput.focus()
         } finally {
             els.loginBtn.disabled = false;
             els.loginBtn.textContent = '进入管理界面';
@@ -149,6 +156,9 @@
     initTheme();
     initLoginAnimation();
     fetchVersion();
+
+    // 自动聚焦输入框
+    els.apiKeyInput.focus()
 
     // 检查自动登录
     const savedKey = sessionStorage.getItem('subscheck_session_key') || safeLS('subscheck_api_key');
