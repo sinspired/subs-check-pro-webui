@@ -186,18 +186,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   let editorMode = 'form'   // 'form' | 'yaml'  — 当前视图模式
   let _rawConfigYaml = ''     // 保存最近一次加载的原始 YAML 字符串（含注释）
 
-  // Sub-Store 跳转缓存
-  let _cachedSubStoreConfig = null
-  let lastSubStorePath = null
-
-  // 分享按钮缓存
-  let cachedConfigPayload = null
-  let cachedSingboxVersions = null
-
   // 全局状态缓存，用于防止重复渲染详细摘要
   let cachedHistoryData = null
   let cachedSummaryText = null
-  let lastUIState = null // 记录 UI 状态 (idle/preparing/checking)
 
   /* ── 解锁平台品牌色映射 ── */
   const PLATFORM_COLORS = {
@@ -2401,8 +2392,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       baseUrl = window.location.protocol + '//' + targetHost + portToAdd;
     }
 
-    const isFirstTime = lastSubStorePath === null;
-    const isPathChanged = lastSubStorePath !== path;
+    const lastPath = sessionStorage.getItem("scp_lastSubStorePath");
+    const isFirstTime = lastPath === null;
+    const isPathChanged = lastPath !== path;
+
+    sessionStorage.setItem("scp_lastSubStorePath", path);
 
     return {
       url: isFirstTime || isPathChanged ? `${baseUrl}?api=${path}` : baseUrl,
@@ -2441,12 +2435,13 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       return;
     }
 
-    // 安卓不存在窗口拦截，但是返回 admin 后 lastSubStorePath 会丢失
+    // 安卓不存在窗口拦截，但是返回 admin 后 window.__scp_lastSubStorePath 会丢失
     if (window.__WAILS_GUI?.baseURL && window.__WAILS_ANDROID_GUI) {
       try {
         // 零网络请求，直接构造并跳转
         const result = buildSubStoreUrl();
-        lastSubStorePath = result.subStorePath;
+
+        sessionStorage.setItem("scp_lastSubStorePath", result.subStorePath);
         window.location.href = result.url;
         return
       } catch (err) {
@@ -2480,7 +2475,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     try {
       // 零网络请求，直接构造并跳转
       const result = buildSubStoreUrl();
-      lastSubStorePath = result.subStorePath;
+      sessionStorage.setItem("scp_lastSubStorePath", result.subStorePath);
       newWindow.location.href = result.url;
     } catch (err) {
       newWindow.close();
@@ -2758,8 +2753,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
     if (r.ok) {
       showToast(r.payload?.message || '配置已保存', 'success')
-      _cachedSubStoreConfig = null
-      cachedConfigPayload = null
 
       if (r.payload?.substore_syncing) {
         const timeout = r.payload.substore_need_ghproxy ? 18000 : 3000
