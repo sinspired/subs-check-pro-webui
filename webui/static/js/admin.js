@@ -56,6 +56,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const fullURL = window.__WAILS_GUI.baseURL.replace(/\/$/, '') + pathWithTheme
 
       if (window.__WAILS_ANDROID_GUI) {
+        if (path.includes("/files")) {
+          window.location.href = fullURL
+        }
         window.location.href = path
       } else {
         // 桌面环境：走 /gui/popup
@@ -684,98 +687,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   /**
-   * 渲染获取订阅数量
-   * 格式示例：本地:66 | 远程:24 | 历史:2 | 总计:90 [已去重]
-   */
-  function renderPrepareToHistory(stats) {
-    if (!els.historyPlaceholder) return
-
-    // 1. 确保父容器可见
-    els.historyPlaceholder.style.display = ''
-
-    // 2. 修改标题
-    if (els.historyTitle) {
-      // els.historyTitle.innerHTML = `${STATUS_SPINNER} 获取订阅`;
-      // els.historyTitle.innerHTML = `获取订阅`
-    }
-
-    // 3. 隐藏“未发现记录”
-    const notFoundEl = document.getElementById('historyNotFound')
-    if (notFoundEl) notFoundEl.style.display = 'none'
-
-    // 4. 隐藏原有的表格行
-    if (els.historyLine) {
-      els.historyLine.style.display = 'none'
-    }
-
-    // 5. 获取或创建临时的显示行
-    let prepLine = document.getElementById('prepare-line')
-    if (!prepLine) {
-      prepLine = document.createElement('div')
-      prepLine.id = 'prepare-line'
-      // 使用 history-line 原类名
-      prepLine.className = 'history-line muted'
-
-      if (els.historyLine && els.historyLine.parentNode) {
-        els.historyLine.parentNode.insertBefore(
-          prepLine,
-          els.historyLine.nextSibling
-        )
-      } else {
-        els.historyPlaceholder.appendChild(prepLine)
-      }
-    }
-    prepLine.style.display = 'block'
-
-    // 6. 生成内容
-    if (stats) {
-      const items = []
-
-      // 辅助函数: (标签, 值, 后缀)
-      const addItem = (label, val, suffix = '') => {
-        if (val !== null && val !== undefined) {
-          // 在冒号前后加空格，使用 highlight 颜色高亮数值
-          items.push(
-            `<span class="history-line muted">${label}:</span>` +
-            `<span class="available-highlight">${val}</span>` +
-            `<span class="history-line muted"> ${suffix}</span>`
-          )
-        }
-      }
-
-      addItem('本地', stats.local)
-      addItem('远程', stats.remote)
-      addItem('历史', stats.history)
-
-      // 后缀判断
-      if (stats.total) {
-        const total = Number(stats.total) || 0
-        const sum = ['local', 'remote', 'history']
-          .map(key => Number(stats[key]) || 0)
-          .reduce((a, b) => a + b, 0)
-
-        const dupCount = sum > total ? sum - total : 0
-
-        if (dupCount) {
-          addItem('总计', stats.total, `[已去重: ${dupCount}]`, dupCount)
-        } else {
-          addItem('总计', stats.total)
-        }
-      }
-
-      if (items.length > 0) {
-        // 使用 " | " 作为分隔符
-        const separator = '<span class="history-line muted">| </span>'
-        prepLine.innerHTML = items.join(separator)
-      } else {
-        prepLine.innerHTML = '<span class="muted">正在分析日志...</span>'
-      }
-    } else {
-      prepLine.innerHTML = '<span class="muted">等待数据...</span>'
-    }
-  }
-
-  /**
    * 恢复历史区域 UI (当离开 Prepare 阶段时调用)
    * 负责：恢复标题、隐藏准备数据行、显示正常历史数据行
    */
@@ -1378,8 +1289,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         document.querySelector('#mainContent .progress-bar-wrap') ||
         document.querySelector('.progress-bar-wrap')
 
-      if (progWrapper) progWrapper.style.display = v ? '' : 'none'
-      if (progBarWrap) progBarWrap.style.display = v ? '' : 'none'
+      if (progWrapper) progWrapper.style.display = v ? 'flex' : 'none'
+      if (progBarWrap) progBarWrap.style.display = v ? 'flex' : 'none'
       if (els.historyPlaceholder)
         els.historyPlaceholder.style.display = v ? 'none' : ''
       if (els.historyLine) {
@@ -2531,7 +2442,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         Window.location.href = result.url;
         return
       } catch (err) {
-        newWindow.close();
         console.error(err)
         showToast(err.message || '打开失败', 'error');
       }
