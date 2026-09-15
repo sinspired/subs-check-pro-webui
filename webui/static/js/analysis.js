@@ -692,18 +692,127 @@ document.getElementById('themeToggle')?.addEventListener('dblclick', () => {
 const STORAGE_KEY = 'subscheck_api_key';
 function getKey() { try { return localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY) || null; } catch { return null; } }
 
-async function sfetch(url, opts = {}) {
-    const key = getKey();
-    if (!key) return { ok: false, status: 401, error: '未认证' };
-    opts.headers = { ...opts.headers, 'X-API-Key': key };
+let apiFailureCount = 0
+let firstFailureAt = null
+const MAX_FAILURE_DURATION_MS = 10000
+
+function handleApiFailure() {
+    apiFailureCount++
+    if (!firstFailureAt) firstFailureAt = Date.now()
+    if (
+        firstFailureAt &&
+        Date.now() - firstFailureAt >= MAX_FAILURE_DURATION_MS
+    ) {
+        doLogout()
+    }
+}
+
+function resetApiFailures() {
+    apiFailureCount = 0
+    firstFailureAt = null
+}
+
+/**
+* 通用安全解析函数
+* @param {string|Object} input 原始数据
+* @returns {Object|string} 解析后的对象或原始字符串
+*/
+function safeParse(input) {
+    if (typeof input !== 'string') return input
+
+    const clean = input.replace(/^\uFEFF/, '').trim()
+
+    // 如果看起来是 JSON，直接用 JSON.parse（更快）
+    if (/^[\[{]/.test(clean)) {
+        try {
+            return JSON.parse(clean)
+        } catch (e) {
+            console.warn("JSON 解析失败，尝试 YAML", e)
+        }
+    }
+
+    // 否则尝试 YAML
     try {
-        const r = await fetch(url, opts);
-        const ct = r.headers.get('content-type') || '';
-        const text = await r.text();
-        const payload = ct.includes('application/json') ? JSON.parse(text) : text;
-        if (r.status === 401) { try { localStorage.removeItem(STORAGE_KEY); } catch { } showLoginArea('API 密钥已失效，请重新输入。'); return { ok: false, status: 401, payload }; }
-        return r.ok ? { ok: true, status: r.status, payload } : { ok: false, status: r.status, payload };
-    } catch (e) { return { ok: false, error: e.message }; }
+        if (!window.YAML) throw new Error("YAML 库尚未加载完成");
+        return window.YAML.parse(clean)
+    } catch (e) {
+        console.warn("YAML 解析失败，返回原始字符串", e)
+        return clean
+    }
+}
+
+/**
+ * 安全请求封装
+ * @param {string} url   请求地址（相对路径，如 /api/config）
+ * @param {Object} [opts] fetch 配置项
+ * @returns {Promise<Object>} 包含 ok、status、payload、error
+ */
+async function sfetch(url, opts = {}) {
+    const sessionKey = getKey();
+    if (!sessionKey) {
+        doLogout()
+        return { ok: false, status: 401, error: '未认证' }
+    }
+
+    // ── 安卓 Wails GUI 环境：改走 Go 原生绑定（window.WailsBridge.APIProxy）──
+    // 根因：Android 的 WebResourceRequest API 从未暴露过 POST 请求体，任何经由
+    // shouldInterceptRequest 拦截转发的 POST 请求，到达 Go 侧时 body 必然是空的
+    // （EOF）。window.WailsBridge.APIProxy 是通过 Wails 原生 JS↔Go 桥
+    // （$Call.ByID）直接传参调用的，从始至终不是一次被拦截的网络请求，body 能
+    // 完整送达。桌面端 / 普通浏览器不受此限制影响，继续走原来的 fetch。
+    if (window.__WAILS_ANDROID_GUI && window.WailsBridge?.APIProxy) {
+        console.log("当前是安卓环境,使用桥接api")
+        try {
+            const method = (opts.method || 'GET').toUpperCase()
+            const body = opts.body
+                ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body))
+                : ''
+            const raw = await window.WailsBridge.APIProxy(method, url, body)
+            console.log(`准备获取 ${url} with ${method}`)
+            const parsed = JSON.parse(raw)
+            const status = parsed.status ?? 0
+            const payload = safeParse(parsed.body ?? '')
+            console.log(payload)
+
+            if (status === 401) {
+                doLogout()
+                return { ok: false, status: 401, payload }
+            }
+            if (status >= 200 && status < 300) {
+                resetApiFailures()
+                console.log(`获取成功 ${url} with ${method}`)
+                return { ok: true, status, payload }
+            }
+            handleApiFailure()
+            return { ok: false, status, payload }
+        } catch (e) {
+            handleApiFailure()
+            return { ok: false, error: e }
+        }
+    }
+
+    opts.headers = { ...opts.headers, 'X-API-Key': sessionKey }
+    try {
+        const r = await fetch(url, opts)
+        const ct = r.headers.get('content-type') || ''
+        const text = await r.text()
+        const payload = safeParse(text)
+
+        if (r.status === 401) {
+            doLogout()
+            return { ok: false, status: 401, payload }
+        }
+        if (r.ok) {
+            console.log("获取报告成功")
+            resetApiFailures()
+            return { ok: true, status: r.status, payload }
+        }
+        handleApiFailure()
+        return { ok: false, status: r.status, payload }
+    } catch (e) {
+        handleApiFailure()
+        return { ok: false, error: e }
+    }
 }
 
 function showScene(n) { document.getElementById('loginScene').style.display = n === 'login' ? 'flex' : 'none'; document.getElementById('reportScene').style.display = n === 'report' ? 'flex' : 'none'; }
@@ -763,7 +872,23 @@ async function loadReport() {
     } catch (e) { showRetryArea(`报告解析失败：${e.message}`); }
 }
 
-function doLogout() { try { localStorage.removeItem(STORAGE_KEY); } catch { } showLoginArea(); }
+// ==================== 认证与交互 ====================
+function doLogout() {
+    if (window.__WAILS_GUI?.baseURL) {
+        if (window.__WAILS_ANDROID_GUI) {
+            try {
+                fetch('/gui/back-to-home');
+            } catch (err) {
+                console.warn("退出登录失败：", err);
+            }
+        } else {
+            fetch('/gui/back-to-login').catch(() => { });
+        }
+    } else {
+        try { localStorage.removeItem(STORAGE_KEY); } catch { } showLoginArea();
+    }
+}
+
 async function initPage() { if (!getKey()) { showLoginArea(); return; } await loadReport(); }
 window.addEventListener('storage', e => { if (e.key === STORAGE_KEY && !e.newValue) showLoginArea('已在其他页面退出登录，请重新输入。'); });
 
