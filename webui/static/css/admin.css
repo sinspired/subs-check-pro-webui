@@ -186,6 +186,19 @@
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  outline: none;
+}
+
+button,
+.btn,
+input[type="button"],
+input[type="submit"] {
+  outline: none; /* 去掉外部边框 */
+  border: none; /* 去掉默认边框 */
+  background: transparent; /* 去掉默认背景 */
+  -webkit-tap-highlight-color: transparent; /* 去掉点击高亮方块 */
+  -webkit-appearance: none; /* 去掉 WebKit 默认样式 */
+  appearance: none;
 }
 
 html,
@@ -3414,7 +3427,7 @@ img.link-icon {
   body {
     overflow: auto;
   }
-  
+
   /* Respect the iOS safe area (notch, home indicator) */
   body {
     padding-top: env(safe-area-inset-top);
