@@ -1533,24 +1533,57 @@ import { initQuickPreview } from './cfg-quickpreview.js';
             : info.total)
           : (info.total || '0')
 
-        const mapping = {
-          historyLastTime: prettyTime,
-          historyLastDuration: prettyDuration,
-          historyLastTotal: prettyTotal,
-          historyLastAvailable: info.available,
-          historyLastTimeShort: prettyTimeShort,
-          historyLastDurationShort: prettyDurationShort,
-          historyLastTotalShort: prettyTotalShort,
-          historyLastAvailableShort: info.available,
+        // ==================== 由 JS 生成完整历史记录 ====================
+
+        const available = info.available ?? 0
+
+        // 大屏：
+        // 09/16 05:42 用时 15分20秒 | 总数 22.32万 | 可用 121
+        const fullText = `${prettyTime} 用时 ${prettyDuration} | 总数 ${prettyTotal} | 可用 ${available}`
+
+        // 小屏：
+        // 09/16 05:42 用时 15分20秒 | 总数 22.3万 | 可用 121
+        const shortText = `${prettyTimeShort} 用时 ${prettyDurationShort} | 总数 ${prettyTotalShort} | 可用 ${available}`
+
+        const fullEl = document.querySelector('.history-full')
+        const shortEl = document.querySelector('.history-short')
+
+        if (fullEl) {
+          fullEl.textContent = ''
+
+          const time = document.createElement('span')
+          time.textContent = prettyTime
+
+          const duration = document.createTextNode(` 用时 ${prettyDuration} | 总数 ${prettyTotal} | `)
+
+          const availableEl = document.createElement('span')
+          availableEl.style.color = 'var(--success)'
+          availableEl.style.fontWeight = '700'
+          availableEl.textContent = String(available)
+
+          fullEl.appendChild(time)
+          fullEl.appendChild(duration)
+          fullEl.appendChild(document.createTextNode('可用 '))
+          fullEl.appendChild(availableEl)
         }
-        for (const [id, val] of Object.entries(mapping)) {
-          const el = document.getElementById(id)
-          if (el) {
-            const stringVal = String(val || '0')
-            if (el.textContent !== stringVal) {
-              el.textContent = stringVal
-            }
-          }
+
+        if (shortEl) {
+          shortEl.textContent = ''
+
+          const time = document.createElement('span')
+          time.textContent = prettyTimeShort
+
+          const duration = document.createTextNode(` 用时 ${prettyDurationShort} | 总数 ${prettyTotalShort} | `)
+
+          const availableEl = document.createElement('span')
+          availableEl.style.color = 'var(--success)'
+          availableEl.style.fontWeight = '700'
+          availableEl.textContent = String(available)
+
+          shortEl.appendChild(time)
+          shortEl.appendChild(duration)
+          shortEl.appendChild(document.createTextNode('可用 '))
+          shortEl.appendChild(availableEl)
         }
       }
     } catch (e) {
