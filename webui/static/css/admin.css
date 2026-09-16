@@ -58,7 +58,7 @@
   --glass-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
   --glass-blur: 10px;
 
-  --header-height: 60px;
+  --header-height: 80px;
   --mid-progressCard-height: 76px;
   --mobile-subtract: 240px;
   --gap: 8px;
@@ -242,11 +242,12 @@ header {
   padding: 0 8px;
   background: var(--card);
   --wails-draggable: drag;
+  margin-top: var(--gap)
 }
 
 header.card {
   --wails-draggable: drag;
-  border-radius: 0 0 12px 12px;
+  border-radius: 12px 12px;
   border-top: none;
 }
 
