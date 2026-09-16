@@ -375,8 +375,6 @@
         }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
         syncAnaIcons(document.documentElement.getAttribute('data-theme') === 'dark');
       });
-
-      window.WailsBridge?.SetStatusBarAppearance?.(t === 'dark')
     })();
   </script>
 </body>

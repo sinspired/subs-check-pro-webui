@@ -242,7 +242,7 @@ header {
   padding: 0 8px;
   background: var(--card);
   --wails-draggable: drag;
-  margin-top: var(--gap)
+  margin-top: var(--gap);
 }
 
 header.card {
@@ -2725,37 +2725,20 @@ img.link-icon {
   pointer-events: none;
 }
 
-.toast {
-  position: relative;
-  /* ✅ 让进度条定位在内部 */
-  min-width: 50px;
-  max-width: 360px;
+#toastContainer {
+  position: fixed;
+
+  /* 状态栏/刘海安全区 + 8px 间距 */
+  top: calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 8px);
+
+  /* 右侧同样避开安全区 */
+  right: calc(var(--safe-area-right, env(safe-area-inset-right, 0px)) + 8px);
+
+  z-index: 100000;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px 8px 4px;
-
-  color: var(--fg);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.2;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
-  animation: toastIn 0.4s ease;
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-
-  border-radius: 6px;
-  border-left: 6px solid transparent;
-  /* 默认透明，后面按类型覆盖 */
-
-  user-select: text;
-  pointer-events: auto;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
 }
 
 .toast .progress-bar {

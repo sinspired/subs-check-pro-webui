@@ -1876,106 +1876,156 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   // ==================== 日志渲染 ====================
   let autoScrollLog = true; // 是否处于自动滚动到底部状态
 
+  /**
+   * 判断日志区域当前是否处于折叠状态
+   */
+  function isLogCollapsed() {
+    return els.logContainer?.classList.contains('logs-collapsed') === true;
+  }
+
+  /**
+   * 重置日志滚动状态
+   * 折叠日志后，滚动状态没有意义，必须清除“暂停滚动”提示。
+   */
+  function resetLogScrollState() {
+    autoScrollLog = true;
+
+    const badge = document.getElementById('logScrollBadge');
+    if (badge) {
+      badge.classList.remove('visible');
+    }
+  }
+
   // 监听用户手动滚动
   els.logContainer?.addEventListener('scroll', () => {
-    // 容差 30px (如果距离底部小于 30px，认为是在底部)
-    const isAtBottom = els.logContainer.scrollHeight - els.logContainer.clientHeight <= els.logContainer.scrollTop + 30;
+    if (!els.logContainer) return;
+
+    // 日志折叠后，浏览器可能因为布局变化触发 scroll 事件。
+    // 此时不能把它误判为“用户向上滚动”。
+    if (isLogCollapsed()) {
+      resetLogScrollState();
+      return;
+    }
+
+    // 容差 30px：如果距离底部小于 30px，认为是在底部
+    const isAtBottom =
+      els.logContainer.scrollHeight -
+      els.logContainer.clientHeight <=
+      els.logContainer.scrollTop + 30;
+
     autoScrollLog = isAtBottom;
 
     const badge = document.getElementById('logScrollBadge');
     if (badge) {
-      if (!autoScrollLog) {
-        badge.classList.add('visible'); // 向上滚动，显示胶囊
-      } else {
-        badge.classList.remove('visible'); // 回到底部，隐藏胶囊
-      }
+      badge.classList.toggle('visible', !autoScrollLog);
     }
   }, { passive: true });
 
   // 胶囊点击事件：强制回到底部并恢复自动滚动
   document.getElementById('logScrollBadge')?.addEventListener('click', () => {
+    if (!els.logContainer || isLogCollapsed()) {
+      resetLogScrollState();
+      return;
+    }
+
     autoScrollLog = true;
+
     els.logContainer.scrollTo({
       top: els.logContainer.scrollHeight,
       behavior: 'smooth'
     });
-    document.getElementById('logScrollBadge').classList.remove('visible');
+
+    document.getElementById('logScrollBadge')?.classList.remove('visible');
   });
 
   function renderLogLines(lines, IntervalRun) {
     if (!els.logContainer) return;
+
     els.logContainer.classList.remove('loading');
 
-    // 仅当用户正在用鼠标框选文本时，暂停刷新 (防打断)
+    // 仅当用户正在用鼠标框选文本时，暂停刷新，防止打断选择
     if (window.getSelection()?.toString().length > 0 && IntervalRun) return;
 
     // 全量替换时，不加 .log-line-new，防止所有行同时闪烁
-    els.logContainer.innerHTML = lines.map(l => `<div>${colorize(l)}</div>`).join('');
+    els.logContainer.innerHTML = lines
+      .map(l => `<div>${colorize(l)}</div>`)
+      .join('');
+
     scrollToBottomSafe();
   }
 
   function appendLogLines(linesToAdd) {
     if (!els.logContainer || !linesToAdd?.length) return;
+
     els.logContainer.classList.remove('loading');
 
     const frag = document.createDocumentFragment();
+
     linesToAdd.forEach(l => {
       const d = document.createElement('div');
-      d.className = 'log-line-new'; // 👇 灵魂：只给新增的行加上滑进场动画
+      d.className = 'log-line-new';
       d.innerHTML = colorize(l);
       frag.appendChild(d);
     });
+
     els.logContainer.appendChild(frag);
 
     while (els.logContainer.children.length > MAX_LOG_LINES) {
       els.logContainer.removeChild(els.logContainer.firstChild);
     }
+
     scrollToBottomSafe();
   }
 
   function scrollToBottomSafe() {
+    if (!els.logContainer || isLogCollapsed()) return;
+
     // 只有在允许自动滚动时，才执行下滑
     if (autoScrollLog) {
       requestAnimationFrame(() => {
+        // requestAnimationFrame 执行时再次检查，避免此期间用户折叠日志
+        if (!els.logContainer || isLogCollapsed()) return;
+
         els.logContainer.scrollTop = els.logContainer.scrollHeight;
       });
     }
   }
 
-  // 胶囊点击事件：强制回到底部并恢复自动滚动
-  document.getElementById('logScrollBadge')?.addEventListener('click', () => {
-    autoScrollLog = true;
-    els.logContainer.scrollTo({
-      top: els.logContainer.scrollHeight,
-      behavior: 'smooth'
-    });
-    document.getElementById('logScrollBadge').classList.remove('visible');
-  });
-
   // 监听全局点击，点击非日志区域时恢复自动滚动
   document.addEventListener('click', (e) => {
-    // 1. 如果已经在自动滚动，或者日志容器还没初始化，无需处理
-    if (autoScrollLog || !els.logContainer) return;
+    if (!els.logContainer) return;
 
-    // 2. 检查点击的是否是日志区域内部
+    // 折叠状态完全不参与滚动状态处理
+    if (isLogCollapsed()) {
+      resetLogScrollState();
+      return;
+    }
+
+    // 已经是自动滚动状态时无需处理
+    if (autoScrollLog) return;
+
+    // 检查点击的是否是日志区域内部
     const isInsideLog = els.logContainer.contains(e.target);
 
-    // 3. 检查点击的是否是悬浮的“回到底部”胶囊按钮（胶囊按钮有自己的事件，这里排除掉）
+    // 检查点击的是否是悬浮的“回到底部”胶囊按钮
     const badge = document.getElementById('logScrollBadge');
     const isClickBadge = badge?.contains(e.target);
 
-    // 4. 只有当点击发生在【非日志区域】，才触发恢复滚动
-    if (!isInsideLog) {
+    // 保留变量，避免后续逻辑误删；胶囊自身有独立 click 事件
+    void isClickBadge;
 
+    // 只有点击发生在日志区域之外，才恢复自动滚动
+    if (!isInsideLog) {
       // 如果用户刚在页面其他地方拖拽框选了文字，不要触发
       if (window.getSelection()?.toString().length > 0) return;
 
-      // 执行恢复滚动逻辑
       autoScrollLog = true;
+
       els.logContainer.scrollTo({
         top: els.logContainer.scrollHeight,
         behavior: 'smooth'
       });
+
       badge?.classList.remove('visible');
     }
   });
@@ -3634,9 +3684,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   /**
-  * 小屏日志区折叠/展开逻辑
-  * 点击 #toggleLogsBtn 切换 .logs-wrapper 的显隐
-  */
+   * 小屏日志区折叠/展开逻辑
+   * 点击 #toggleLogsBtn 切换 .logs-wrapper 的显隐
+   */
   function initLogsCollapseBtn() {
     const STORAGE_KEY = 'logs_collapsed';
 
@@ -3653,30 +3703,58 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     function collapseLog(persist = true) {
       logsWrapper.classList.add('logs-collapsed');
       logsCard.classList.add('logs-card-collapsed');
+
+      // 折叠后滚动状态无意义，立即清除暂停滚动提示
+      resetLogScrollState();
+
       toggleBtn.setAttribute('aria-expanded', 'false');
       toggleBtn.setAttribute('title', '展开日志');
       toggleBtn.setAttribute('aria-label', '展开日志区域');
-      if (cardTip) cardTip.textContent = collapsedTip;
-      if (persist) safeLS(STORAGE_KEY, '1');
+
+      if (cardTip) {
+        cardTip.textContent = collapsedTip;
+      }
+
+      if (persist) {
+        safeLS(STORAGE_KEY, '1');
+      }
     }
 
     function expandLog(persist = true) {
       logsWrapper.classList.remove('logs-collapsed');
       logsCard.classList.remove('logs-card-collapsed');
+
+      // 展开后重新回到正常自动滚动状态
+      resetLogScrollState();
+
       toggleBtn.setAttribute('aria-expanded', 'true');
       toggleBtn.setAttribute('title', '折叠日志');
       toggleBtn.setAttribute('aria-label', '折叠日志区域');
-      if (cardTip) cardTip.textContent = originalTip;
-      if (persist) safeLS(STORAGE_KEY, '0');
+
+      if (cardTip) {
+        cardTip.textContent = originalTip;
+      }
+
+      if (persist) {
+        safeLS(STORAGE_KEY, '0');
+      }
     }
 
     if (window.innerWidth <= 899) {
-      safeLS(STORAGE_KEY) === '0' ? expandLog(false) : collapseLog(false);
+      safeLS(STORAGE_KEY) === '0'
+        ? expandLog(false)
+        : collapseLog(false);
     }
 
     toggleBtn.addEventListener('click', () => {
-      const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
-      isExpanded ? collapseLog() : expandLog();
+      const isExpanded =
+        toggleBtn.getAttribute('aria-expanded') === 'true';
+
+      if (isExpanded) {
+        collapseLog();
+      } else {
+        expandLog();
+      }
     });
   }
 
@@ -3690,7 +3768,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         if (safeArea) {
           const root = document.documentElement;
           // 注入全局 CSS 变量，供固定定位的元素 (header/footer 等) 使用
-          root.style.setProperty('--safe-area-top', `${safeArea.top}px`);
+          if (safeArea.top > 0) {
+            const maxTop = Math.min(safeArea.top, 44); // 限制最大安全区高度
+            root.style.setProperty('--safe-area-top', `${maxTop}px`);
+          }
+
           root.style.setProperty('--safe-area-bottom', `${safeArea.bottom}px`);
           root.style.setProperty('--safe-area-left', `${safeArea.left}px`);
           root.style.setProperty('--safe-area-right', `${safeArea.right}px`);
