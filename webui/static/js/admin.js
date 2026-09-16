@@ -3243,6 +3243,11 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           t === 'dark' ? '切换到浅色模式' : '切换到深色模式'
       }
 
+      if (window.__WAILS_ANDROID_GUI && window.WailsBridge) {
+        // 同步系统状态栏图标颜色（安卓/iOS 原生调用）
+        window.WailsBridge?.SetStatusBarAppearance?.(t === 'dark')
+      }
+
       // 同步 theme-color
       document.querySelector('meta[name="theme-color"]')
         ?.setAttribute('content', t === 'dark' ? '#18191b' : '#ffffff')

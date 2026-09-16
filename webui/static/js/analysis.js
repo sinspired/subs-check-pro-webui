@@ -651,6 +651,11 @@ function applyTheme(theme) {
     if (sun) sun.style.display = isDark ? 'none' : '';
     if (label) label.textContent = isDark ? '深色' : '浅色';
     if (btn) btn.setAttribute('aria-pressed', String(isDark));
+
+    if (window.__WAILS_ANDROID_GUI && window.WailsBridge) {
+        // 同步系统状态栏图标颜色（安卓/iOS 原生调用）
+        window.WailsBridge?.SetStatusBarAppearance?.(t === 'dark')
+    }
 }
 function resolveTheme(t) {
     if (t === 'auto' || !t) {

@@ -901,6 +901,11 @@
       iconMoon.style.display = isDark ? "block" : "none";
       iconSun.style.display = isDark ? "none" : "block";
       toggleBtn.setAttribute("aria-pressed", String(isDark));
+      if (window.__WAILS_ANDROID_GUI && window.WailsBridge) {
+        // 同步系统状态栏图标颜色（安卓/iOS 原生调用）
+        window.WailsBridge?.SetStatusBarAppearance?.(t === 'dark')
+      }
+
     }
 
     // 初始化主题
