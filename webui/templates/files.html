@@ -756,7 +756,7 @@
   <script>
     // ── 获取鉴权密钥 (兼容 Web Cookie 和 Wails GUI 环境) ──
     function getAuthKey() {
-      let key = sessionStorage.getItem('subscheck_api_key');
+      let key = sessionStorage.getItem('scp_api_key');
       if (key) return key;
       const match = document.cookie.match(/(?:^|;\s*)scp_api_key=([^;]*)/);
       return match ? match[1] : '';

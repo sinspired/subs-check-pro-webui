@@ -694,8 +694,29 @@ document.getElementById('themeToggle')?.addEventListener('dblclick', () => {
     applyTheme(resolveTheme('auto'));
 });
 
-const STORAGE_KEY = 'subscheck_api_key';
-function getKey() { try { return localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY) || null; } catch { return null; } }
+// 不仅存 localStorage，还要存 sessionStorage 和 Cookie
+const STORAGE_KEY = 'scp_api_key';
+function getKey() {
+    try {
+        const guiSaved = window.__WAILS_GUI?.apiKey || null;
+        const sessionSaved = sessionStorage.getItem(STORAGE_KEY);
+        const localSaved = localStorage.getItem(STORAGE_KEY);
+        const cookieSaved = (() => {
+            const match = document.cookie.match(/(?:^|;\s*)scp_api_key=([^;]*)/);
+            return match ? decodeURIComponent(match[1]) : null;
+        })();
+
+        const saved = guiSaved || sessionSaved || localSaved || cookieSaved;
+
+        // 如果是靠 Cookie 进来的，顺手把值补写进 sessionStorage，防止刷新或其他API丢失
+        if (cookieSaved && !sessionSaved) {
+            try { sessionStorage.setItem(STORAGE_KEY, cookieSaved); } catch (e) { }
+        }
+        return saved || null;
+    } catch {
+        return null;
+    }
+}
 
 let apiFailureCount = 0
 let firstFailureAt = null
@@ -840,39 +861,39 @@ function switchTab(name) {
     if (name === 'geo' && _geoMapInstance) { _geoMapInstance.t0 = null; }
 }
 
-  /**
-   * 初始化并应用屏幕安全区域 (适配刘海屏/沉浸式状态栏)
-   */
-  async function initSafeArea() {
+/**
+ * 初始化并应用屏幕安全区域 (适配刘海屏/沉浸式状态栏)
+ */
+async function initSafeArea() {
     if (window.__WAILS_ANDROID_GUI && window.WailsBridge?.GetSafeArea) {
-      try {
-        const safeArea = await window.WailsBridge.GetSafeArea();
-        if (safeArea) {
-          const root = document.documentElement;
-          // 注入全局 CSS 变量，供固定定位的元素 (header/footer 等) 使用
-          root.style.setProperty('--safe-area-top', `${safeArea.top}px`);
-          root.style.setProperty('--safe-area-bottom', `${safeArea.bottom}px`);
-          root.style.setProperty('--safe-area-left', `${safeArea.left}px`);
-          root.style.setProperty('--safe-area-right', `${safeArea.right}px`);
+        try {
+            const safeArea = await window.WailsBridge.GetSafeArea();
+            if (safeArea) {
+                const root = document.documentElement;
+                // 注入全局 CSS 变量，供固定定位的元素 (header/footer 等) 使用
+                root.style.setProperty('--safe-area-top', `${safeArea.top}px`);
+                root.style.setProperty('--safe-area-bottom', `${safeArea.bottom}px`);
+                root.style.setProperty('--safe-area-left', `${safeArea.left}px`);
+                root.style.setProperty('--safe-area-right', `${safeArea.right}px`);
 
-          const body = document.body;
-          body.classList.add('safe-area'); // 确保具有之前挂载的标记类
+                const body = document.body;
+                body.classList.add('safe-area'); // 确保具有之前挂载的标记类
 
-          // 覆盖原本硬编码的样式，直接应用动态获取的 padding (只对正值生效避免破坏正常布局)
-          // 还需真机测试
-          if (safeArea.top > 0) {
-            const maxTop = Math.min(safeArea.top, 44); // 限制最大安全区高度
-            body.style.paddingTop = `${maxTop}px`;
-          }
-          if (safeArea.bottom > 0) body.style.paddingBottom = `${safeArea.bottom}px`;
-          if (safeArea.left > 0) body.style.paddingLeft = `${safeArea.left}px`;
-          if (safeArea.right > 0) body.style.paddingRight = `${safeArea.right}px`;
+                // 覆盖原本硬编码的样式，直接应用动态获取的 padding (只对正值生效避免破坏正常布局)
+                // 还需真机测试
+                if (safeArea.top > 0) {
+                    const maxTop = Math.min(safeArea.top, 44); // 限制最大安全区高度
+                    body.style.paddingTop = `${maxTop}px`;
+                }
+                if (safeArea.bottom > 0) body.style.paddingBottom = `${safeArea.bottom}px`;
+                if (safeArea.left > 0) body.style.paddingLeft = `${safeArea.left}px`;
+                if (safeArea.right > 0) body.style.paddingRight = `${safeArea.right}px`;
+            }
+        } catch (err) {
+            console.warn('获取屏幕安全区域失败:', err);
         }
-      } catch (err) {
-        console.warn('获取屏幕安全区域失败:', err);
-      }
     }
-  }
+}
 
 async function inlineLogin() {
     initSafeArea();
@@ -885,7 +906,14 @@ async function inlineLogin() {
         const resp = await fetch('/api/status', { headers: { 'X-API-Key': k } });
         if (resp.status === 401) { input.classList.add('error'); hintEl.textContent = 'API 密钥无效，请重试'; input.value = ''; input.focus(); return; }
         if (!resp.ok) { showRetryArea(`验证失败（HTTP ${resp.status}），请检查服务状态。`); return; }
-        try { localStorage.setItem(STORAGE_KEY, k); } catch { }
+
+        // 不仅存 localStorage，还要存 sessionStorage 和 Cookie
+        try {
+            localStorage.setItem(STORAGE_KEY, k);
+            sessionStorage.setItem(STORAGE_KEY, k);
+        } catch (e) { }
+        document.cookie = `scp_api_key=${encodeURIComponent(k)}; path=/; max-age=2592000`;
+
         await loadReport();
     } catch (e) { showRetryArea(`网络错误：${e.message}`); }
     finally { btn.disabled = false; }
@@ -925,7 +953,13 @@ function doLogout() {
             fetch('/gui/back-to-login').catch(() => { });
         }
     } else {
-        try { localStorage.removeItem(STORAGE_KEY); } catch { } showLoginArea();
+        // 清理所有的状态，包括 sessionStorage 和 Cookie
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+            sessionStorage.removeItem(STORAGE_KEY);
+        } catch { }
+        document.cookie = 'scp_api_key=; path=/; max-age=0';
+        showLoginArea();
     }
 }
 

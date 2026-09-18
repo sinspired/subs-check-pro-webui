@@ -53,8 +53,8 @@
             const resp = await fetch('/api/status', { headers: { 'X-API-Key': key } });
             if (resp.status === 401) {
                 if (isManual) showError('API 密钥错误');
-                safeLS('subscheck_api_key', null);
-                sessionStorage.removeItem('subscheck_session_key');
+                safeLS('scp_api_key', null);
+                sessionStorage.removeItem('scp_api_key');
                 // 自动聚焦输入框
                 els.apiKeyInput.value = '';
                 els.apiKeyInput.focus()
@@ -68,12 +68,16 @@
             }
 
             // 验证成功，保存 Session 供后续 API 使用
-            sessionStorage.setItem('subscheck_session_key', key);
-            sessionStorage.setItem('subscheck_api_key', key);
-            if (els.rememberKey.checked) safeLS('subscheck_api_key', key);
+            sessionStorage.setItem('scp_api_key', key);
+            sessionStorage.setItem('scp_api_key', key);
+            if (els.rememberKey.checked) safeLS('scp_api_key', key);
 
             document.cookie = `scp_api_key=${encodeURIComponent(key)}; path=/; max-age=2592000`;
-            window.location.replace('/admin');
+
+            // 根据传入参数回到之前的页面
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectTarget = urlParams.get('redirect') || '/admin';
+            window.location.replace(redirectTarget);
 
         } catch (e) {
             if (isManual) showError('网络请求失败');
@@ -166,7 +170,7 @@
     els.apiKeyInput.focus()
 
     // 检查自动登录
-    const savedKey = sessionStorage.getItem('subscheck_session_key') || safeLS('subscheck_api_key');
+    const savedKey = sessionStorage.getItem('scp_api_key') || safeLS('scp_api_key');
     if (savedKey) {
         els.apiKeyInput.value = savedKey;
         doLogin(savedKey, false);

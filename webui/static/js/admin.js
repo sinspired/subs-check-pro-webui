@@ -2321,8 +2321,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     logoutInProgress = true
     stopPollers();
     sessionKey = null;
-    safeLS('subscheck_api_key', null);
-    try { sessionStorage.removeItem('subscheck_session_key') } catch { }
+    safeLS('scp_api_key', null);
+    try { sessionStorage.removeItem('scp_api_key') } catch { }
 
     // 让服务端的鉴权 Cookie 立即失效
     document.cookie = `scp_api_key=; path=/; max-age=0`;
@@ -3221,25 +3221,25 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) {
         fetch('/gui/open-files').catch(() => { }); return;
       }
-      if (sessionKey) safeLS('subscheck_api_key', sessionKey);
+      if (sessionKey) safeLS('scp_api_key', sessionKey);
       openInternalURL('/files', 'small');
     });
 
     els.btnFiles?.addEventListener('click', () => {
       if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) { fetch('/gui/open-files').catch(() => { }); return; }
-      if (sessionKey) safeLS('subscheck_api_key', sessionKey);
+      if (sessionKey) safeLS('scp_api_key', sessionKey);
       openInternalURL('/files', 'small');
     });
 
     els.analysisBtn?.addEventListener('click', () => {
       if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) { fetch('/gui/open-analysis').catch(() => { }); return; }
-      if (sessionKey) safeLS('subscheck_api_key', sessionKey);
+      if (sessionKey) safeLS('scp_api_key', sessionKey);
       openInternalURL('/analysis');
     });
 
     els.btnAnalysis?.addEventListener('click', () => {
       if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) { fetch('/gui/open-analysis').catch(() => { }); return; }
-      if (sessionKey) safeLS('subscheck_api_key', sessionKey);
+      if (sessionKey) safeLS('scp_api_key', sessionKey);
       openInternalURL('/analysis');
     });
 
@@ -3831,14 +3831,29 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   // 启动事件
   ; (async function bootstrap() {
-    const sessionSaved = (() => { try { return sessionStorage.getItem('subscheck_session_key') } catch { return null } })();
-    const localSaved = safeLS('subscheck_api_key');
-    const guiSaved = window.__WAILS_GUI?.apiKey || null;
-    const saved = guiSaved || sessionSaved || localSaved;
+const guiSaved = window.__WAILS_GUI?.apiKey || null;
+    const sessionSaved = (() => { try { return sessionStorage.getItem('scp_api_key') } catch { return null } })();
+    const localSaved = safeLS('scp_api_key');
+    // 增加对 Cookie 的读取
+    const cookieSaved = (() => {
+      const match = document.cookie.match(/(?:^|;\s*)scp_api_key=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : null;
+    })();
 
-    // 如果没找到凭证，直接踢回登录页
+    const saved = guiSaved || sessionSaved || localSaved || cookieSaved;
+
+    // ★ 补充逻辑：如果是靠 Cookie 进来的，补写进 sessionStorage 和 localStorage，防止后续状态丢失
+    if (cookieSaved && !sessionSaved) {
+      try { 
+        sessionStorage.setItem('scp_api_key', cookieSaved); 
+        safeLS('scp_api_key', cookieSaved);
+      } catch (e) { }
+    }
+
+    // 如果没找到凭证，直接踢回登录页，并带上当前路径作为 redirect
     if (!saved) {
-      window.location.replace('/login');
+      const currentPath = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.replace('/login?redirect=' + currentPath);
       return;
     }
 
