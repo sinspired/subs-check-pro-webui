@@ -1,10 +1,9 @@
-
 <p align="center">
 <a href="https://github.com/sinspired/subs-check-pro/releases"><img src="https://img.shields.io/github/v/release/sinspired/subs-check-pro?logo=github&include_prereleases"/></a>
 <a href="https://hub.docker.com/r/sinspired/subs-check-pro"><img src="https://img.shields.io/docker/pulls/sinspired/subs-check-pro?logo=docker" /></a>
 <a href="https://ghcr.io/sinspired/subs-check-pro"><img src="https://img.shields.io/badge/ghcr.io-available-blue?logo=github"/></a>
 <a href="https://github.com/sinspired/subs-check-pro/wiki"><img src="https://img.shields.io/badge/Wiki-Docs-blue?logo=github"/></a>
-<a href="https://github.com/sinspired/subs-check-pro-gui"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/sinspired/subs-check-pro-gui?include_prereleases&display_name=release&style=flat&logo=wails&logoColor=E2434B&label=%E8%B7%A8%E5%B9%B3%E5%8F%B0%E7%8E%B0%E4%BB%A3GUI"></a>
+<a href="https://github.com/sinspired/subs-free"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/sinspired/subs-free?include_prereleases&display_name=release&style=flat&logo=wails&logoColor=E2434B&label=%E8%B7%A8%E5%B9%B3%E5%8F%B0%E7%8E%B0%E4%BB%A3GUI"></a>
 </p>
 
 # ✨ 现代 WebUI 管理界面
@@ -18,14 +17,13 @@
 
 ![GUI](https://github.com/sinspired/subs-check-pro/raw/main/./doc/images/GUI.png)
 
-➡️ 立即前往体验：[subs-check-pro-gui 仓库](https://github.com/sinspired/subs-check-pro-gui)
+➡️ 立即前往体验：[subs-free 仓库](https://github.com/sinspired/subs-free)
 
 # 📊 检测结果分析报告
 
 `http://localhost:8199/analysis`
 
 ![analysis](https://github.com/sinspired/subs-check-pro/raw/main/./doc/images/analysis.png)
-
 
 # 📣 交流反馈
 
