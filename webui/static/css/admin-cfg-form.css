@@ -419,7 +419,7 @@
 }
 
 .cfg-section::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   bottom: 7px;
@@ -594,7 +594,7 @@
   margin-bottom: 2px;
   margin-right: 2px;
   border-radius: 3px;
-  font-family: var(--font-mono, "SF Mono", "Fira Code", "Consolas", monospace);
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', 'Consolas', monospace);
   font-size: 9.5px;
   line-height: 1.2;
   font-weight: 500;
@@ -679,7 +679,7 @@
   box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
-.cfg-number-wrap input[type="number"] {
+.cfg-number-wrap input[type='number'] {
   flex: 1;
   min-width: 0;
   border: none;
@@ -694,8 +694,8 @@
   appearance: textfield;
 }
 
-.cfg-number-wrap input[type="number"]::-webkit-inner-spin-button,
-.cfg-number-wrap input[type="number"]::-webkit-outer-spin-button {
+.cfg-number-wrap input[type='number']::-webkit-inner-spin-button,
+.cfg-number-wrap input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
 
@@ -887,7 +887,7 @@
 
 /* 前置小圆点，暗示"当前状态"而非"可点击" */
 .cfg-special-badge::before {
-  content: "";
+  content: '';
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -922,7 +922,7 @@
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--input-bg);
-  font-family: var(--font-mono, "SF Mono", "Fira Code", "Consolas", monospace);
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', 'Consolas', monospace);
   font-size: 13px;
   cursor: text;
   outline: none;
@@ -1061,7 +1061,7 @@
 
 /* ── 真实 input（编辑模式） ── */
 .cfg-cron-input {
-  font-family: var(--font-mono, "SF Mono", "Fira Code", "Consolas", monospace);
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', 'Consolas', monospace);
   letter-spacing: 0.04em;
 }
 
@@ -1264,7 +1264,7 @@
 }
 
 .cfg-sel-option.selected::after {
-  content: "✓";
+  content: '✓';
   float: right;
   font-size: 11px;
   margin-left: 8px;
@@ -1305,7 +1305,7 @@
 }
 
 .cfg-toggle-slider::before {
-  content: "";
+  content: '';
   position: absolute;
   width: 16px;
   height: 16px;
@@ -2264,15 +2264,26 @@ textarea.cfg-expandable-input:focus {
   }
 
   .cfg-tab {
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 7px;
+    padding: 3px 8px;
+    font-size: 11.5px;
+    border-radius: 8px;
+  }
+
+  .cfg-tab svg {
+    width: 11px;
+    height: 11px;
+    stroke-width: 1.2;
+    flex-shrink: 0;
+  }
+
+  .cfg-tab.active svg {
+    stroke-width: 2;
   }
 
   /* iOS 防自动缩放 */
   .cfg-input,
   .cfg-pw-input,
-  .cfg-number-wrap input[type="number"],
+  .cfg-number-wrap input[type='number'],
   .cfg-sel-trigger,
   .cfg-url-item .cfg-url-input,
   .cfg-cron-display,
@@ -2575,8 +2586,8 @@ textarea.cfg-expandable-input:focus {
 }
 
 /* 徽章基础样式 */
-.mtt-tag-item span[class^="mtt-badge-"],
-.mtt-tag-note span[class^="mtt-badge-"] {
+.mtt-tag-item span[class^='mtt-badge-'],
+.mtt-tag-note span[class^='mtt-badge-'] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2584,7 +2595,7 @@ textarea.cfg-expandable-input:focus {
   height: 16px;
   padding: 1px 6px 0px 6px;
   border-radius: 4px;
-  font-family: var(--font-mono, "SF Mono", "Fira Code", monospace);
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -2681,7 +2692,7 @@ textarea.cfg-expandable-input:focus {
   overflow-wrap: anywhere; /* 必要时断词换行 */
   word-break: break-word; /* 防止长节点名撑爆 */
 
-  font-family: var(--font-mono, "SF Mono", "Fira Code", monospace);
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.002em !important;
