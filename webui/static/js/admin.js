@@ -890,7 +890,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       window.__scp_subStoreRunning = !!d.isSubStoreRunning;
       window.__scp_subStorePort = d.subStorePort || '';
       window.__scp_subStorePath = d.subStorePath || '';
-      window.__scp_singboxExtra = d.singboxOld || '';
+      window.__scp_singboxExtra = d.singboxExtra || '';
       window.__scp_singboxLatest = d.singboxLatest || '';
 
       const checking = !!d.checking
@@ -3469,7 +3469,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           const extraSingboxName = `singbox-${window.__scp_singboxExtra}`;
           const latestSingboxName = `singbox-${window.__scp_singboxLatest}`;
 
-          const extraItem = document.getElementById('singboxExtra-item')
+          const extraItem = document.getElementById('singboxExtraSub-item')
           if (extraItem) {
             const textSpan = extraItem.querySelector('.link-text');
             if (textSpan) {
