@@ -1038,17 +1038,17 @@ const SCHEMA = [
             hint: '节点处理脚本地址，留空使用内置默认值',
           },
           {
-            key: 'singbox-old.version', label: '兼容版本号', type: 'text',
-            placeholder: '1.11',
-            hint: '// Deprecated: sing-box MT 于 2026-08-31 上架 App Store 后将逐步移除，iOS 同步最新 1.14 版本',
+            key: 'singbox-extra.version', label: 'Extra 版本号', type: 'text',
+            placeholder: '1.15-pre',
+            hint: 'sing-box 各版本配置不兼容',
           },
           {
-            key: 'singbox-old.json', label: '兼容版规则 JSON', type: 'text', fullWidth: true,
-            placeholder: 'https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.11.x/sing-box.json',
+            key: 'singbox-extra.json', label: 'Extra 规则 JSON', type: 'text', fullWidth: true,
+            placeholder: 'https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.15.x/sing-box.json',
           },
           {
-            key: 'singbox-old.js', label: '兼容版处理脚本', type: 'text', fullWidth: true,
-            placeholder: 'https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.11.x/sing-box.js',
+            key: 'singbox-extra.js', label: 'Extra 处理脚本', type: 'text', fullWidth: true,
+            placeholder: 'https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.15.x/sing-box.js',
           },
         ],
       },
@@ -1394,31 +1394,31 @@ const FIELD_VALIDATORS = {
     };
   },
 
-  'singbox-old.version': v => {
+  'singbox-extra.version': v => {
     const raw = String(v || '').trim();
     if (!raw) {
-      return { level: 'info', msg: '未填写版本号，默认使用兼容版 1.11' };
+      return { level: 'info', msg: '未填写版本号，默认使用 1.15-pre' };
     }
 
     // 提取数字版本：支持 v1.11.x / 1.11 / 1.11.5 / v1.12 等
     const match = raw.match(/(\d+)\.(\d+)/);
     if (!match) {
-      return { level: 'warn', msg: `版本号格式不正确：${raw}，示例：1.11 或 v1.11.5` };
+      return { level: 'warn', msg: `版本号格式不正确：${raw}，示例：1.15 或 v1.15.5` };
     }
 
     const major = Number(match[1]);
     const minor = Number(match[2]);
 
-    // ≤ 1.11 → 使用你的新文案
+    // ≤ 1.11
     if (major === 1 && minor <= 11) {
       return {
         level: 'warn',
-        msg: `singbox-old 版本 ${raw} 已从 App Store 下架；sing-box MT 版本 1.14 于 2026-08-31 上架 App Store，建议尽快下载`
+        msg: `singbox-extra 版本 ${raw} 已从 App Store 下架；sing-box MT 版本 1.14 于 2026-08-31 上架 App Store，建议尽快下载`
       };
     }
 
     // > 1.11 → 用户主动选择旧版本，不提示
-    return { level: 'ok', msg: `使用兼容版本 ${raw}` };
+    return { level: 'ok', msg: `使用Extra版本 ${raw}` };
   },
 
 };

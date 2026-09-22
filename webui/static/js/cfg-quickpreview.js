@@ -36,7 +36,7 @@ FIELD_VALIDATORS['singbox-latest.version'] = v => {
   return { level: 'info', msg: `版本号 ${raw} 高于推荐版本 1.14，请确认可用性`, suffix: `高于推荐版本 1.14，请确认可用性` };
 };
 
-FIELD_VALIDATORS['singbox-old.version'] = v => {
+FIELD_VALIDATORS['singbox-extra.version'] = v => {
   const raw = String(v || '').trim();
   const m = raw.match(/(\d+)\.(\d+)/);
   if (!m) return { level: 'warn', msg: '格式错误', suffix: '格式错' };
@@ -45,9 +45,9 @@ FIELD_VALIDATORS['singbox-old.version'] = v => {
   const minor = Number(m[2]);
 
   if (major === 1 && minor <= 11)
-    return { level: 'warn', msg: `兼容版 ${raw} 已从 App Store 下架，建议升级到 1.14`, suffix: `已从 App Store 下架，建议升级到 1.14` };
+    return { level: 'warn', msg: `${raw} 已从 App Store 下架，建议升级到 1.14`, suffix: `已从 App Store 下架，建议升级到 1.14` };
 
-  return { level: 'ok', msg: `兼容版 ${raw} 为用户主动选择旧版本`, suffix: `为用户主动选择旧版本` };
+  return { level: 'ok', msg: `${raw} 为用户主动选择版本`, suffix: `` };
 };
 
 
@@ -149,17 +149,17 @@ const PREVIEW_GROUPS = [
       // { key: 'singbox-latest.js', label: '最新版脚本', fmt: v => v || '未设置' },
 
       {
-        key: 'singbox-old.version',
-        label: 'singbox 兼容',
+        key: 'singbox-extra.version',
+        label: 'singbox Extra',
         fmt: (v, cfg) => {
           if (!v) return '未设置';
-          const r = FIELD_VALIDATORS['singbox-old.version'](v, cfg);
+          const r = FIELD_VALIDATORS['singbox-extra.version'](v, cfg);
           return `${v}-${r.suffix}`;
         },
-        validator: FIELD_VALIDATORS['singbox-old.version']
+        validator: FIELD_VALIDATORS['singbox-extra.version']
       },
-      // { key: 'singbox-old.json', label: '兼容版 JSON', fmt: v => v || '未设置' },
-      // { key: 'singbox-old.js', label: '兼容版脚本', fmt: v => v || '未设置' },
+      // { key: 'singbox-extra.json', label: '兼容版 JSON', fmt: v => v || '未设置' },
+      // { key: 'singbox-extra.js', label: '兼容版脚本', fmt: v => v || '未设置' },
     ],
   },
   // {

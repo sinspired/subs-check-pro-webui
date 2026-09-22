@@ -420,7 +420,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
           <span style="font-size:16px;font-weight:800;letter-spacing:0.5px;">路由映射建议</span>
         </div>
-        
+
         <div style="display:flex;flex-direction:column;gap:6px;">
           <p style="font-size:12px;color:var(--fg);opacity:0.55;line-height:1.6;margin:0;">
             ${desc}
@@ -429,7 +429,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
             请在 Cloudflare Tunnel 添加以下 <b>HTTP</b> 映射：
           </p>
         </div>
-        
+
         <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-family:var(--font-code);font-size:12px;">
           <table style="width:100%;border-collapse:collapse;text-align:left;">
             <thead style="background:color-mix(in srgb, var(--fg) 5%, transparent);color:var(--muted);">
@@ -535,8 +535,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   // 定义带旋转动画的 SVG 图标,用于检测任务
   const checking_SPINNER = `
     <style>
-      @keyframes spin-status-rotate { 
-        100% { transform: rotate(360deg); } 
+      @keyframes spin-status-rotate {
+        100% { transform: rotate(360deg); }
       }
       @keyframes spin-status-dash {
         0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
@@ -544,22 +544,22 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         100% { stroke-dasharray: 45, 150; stroke-dashoffset: -62px; }
       }
     </style>
-    <svg 
+    <svg
       style="
         /* 旋转动画 2秒一圈 */
         animation: spin-status-rotate 2s linear infinite;
         will-change: transform;
         transform-origin: center;
-        vertical-align: middle; 
-        margin-right: 6px; 
+        vertical-align: middle;
+        margin-right: 6px;
         margin-bottom: 2px;
-      " 
+      "
       width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
     >
       <!-- 内部线条进行伸缩呼吸动画 -->
-      <circle 
+      <circle
         style="animation: spin-status-dash 1.5s ease-in-out infinite;"
-        cx="12" cy="12" r="10" 
+        cx="12" cy="12" r="10"
       ></circle>
     </svg>
   `
@@ -890,7 +890,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       window.__scp_subStoreRunning = !!d.isSubStoreRunning;
       window.__scp_subStorePort = d.subStorePort || '';
       window.__scp_subStorePath = d.subStorePath || '';
-      window.__scp_singboxOld = d.singboxOld || '';
+      window.__scp_singboxExtra = d.singboxOld || '';
       window.__scp_singboxLatest = d.singboxLatest || '';
 
       const checking = !!d.checking
@@ -3466,19 +3466,19 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           setLink('shadowrocketSub-item', '/download/sub?target=ShadowRocket')
           setLink('mihomoSub-item', '/api/file/mihomo')
 
-          const oldSingboxName = `singbox-${window.__scp_singboxOld}`;
+          const extraSingboxName = `singbox-${window.__scp_singboxExtra}`;
           const latestSingboxName = `singbox-${window.__scp_singboxLatest}`;
 
-          const oldItem = document.getElementById('singboxOldSub-item')
-          if (oldItem) {
-            const textSpan = oldItem.querySelector('.link-text');
+          const extraItem = document.getElementById('singboxExtra-item')
+          if (extraItem) {
+            const textSpan = extraItem.querySelector('.link-text');
             if (textSpan) {
-              textSpan.textContent = `${oldSingboxName}`;
+              textSpan.textContent = `${extraSingboxName}`;
             } else {
-              oldItem.textContent = `${oldSingboxName}`;
+              extraItem.textContent = `${extraSingboxName}`;
             }
-            oldItem.title = `ios设备当前最新版本 1.14, 当前为 ${oldSingboxName}`
-            oldItem.dataset.link = `${baseUrl}/api/file/${oldSingboxName}`
+            extraItem.title = `ios设备当前最新版本 1.14, 当前为 ${extraSingboxName}`
+            extraItem.dataset.link = `${baseUrl}/api/file/${extraSingboxName}`
           }
 
           const newItem = document.getElementById('singboxLatestSub-item')
@@ -3831,7 +3831,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   // 启动事件
   ; (async function bootstrap() {
-const guiSaved = window.__WAILS_GUI?.apiKey || null;
+    const guiSaved = window.__WAILS_GUI?.apiKey || null;
     const sessionSaved = (() => { try { return sessionStorage.getItem('scp_api_key') } catch { return null } })();
     const localSaved = safeLS('scp_api_key');
     // 增加对 Cookie 的读取
@@ -3844,8 +3844,8 @@ const guiSaved = window.__WAILS_GUI?.apiKey || null;
 
     // ★ 补充逻辑：如果是靠 Cookie 进来的，补写进 sessionStorage 和 localStorage，防止后续状态丢失
     if (cookieSaved && !sessionSaved) {
-      try { 
-        sessionStorage.setItem('scp_api_key', cookieSaved); 
+      try {
+        sessionStorage.setItem('scp_api_key', cookieSaved);
         safeLS('scp_api_key', cookieSaved);
       } catch (e) { }
     }

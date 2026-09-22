@@ -73,7 +73,7 @@ const configCompletions = [
   { label: "sub-store-path", type: "property", detail: "sub-store 自定义路径", section: "sub-store", isArray: false },
   { label: "mihomo-overwrite-url", type: "property", detail: "mihomo 覆写订阅地址", section: "sub-store", isArray: false },
   { label: "singbox-latest", type: "property", detail: "singbox latest 版本配置", section: "singbox规则", isArray: false },
-  { label: "singbox-old", type: "property", detail: "singbox 1.11 版本配置（iOS 兼容）", section: "singbox规则", isArray: false },
+  { label: "singbox-extra", type: "property", detail: "singbox Extra 规则", section: "singbox规则", isArray: false },
   { label: "sub-store-sync-cron", type: "property", detail: "sub-store同步gist定时任务", section: "sub-store定时", isArray: false },
   { label: "sub-store-produce-cron", type: "property", detail: "定时更新订阅", section: "sub-store定时", isArray: false },
   { label: "sub-store-push-service", type: "property", detail: "sub-store推送服务地址", section: "sub-store定时", isArray: false, info: "例如：Brak: \'SUB_STORE_PUSH_SERVICE=https://api.day.app/XXXXXXXXXXXX/[推送标题]/[推送内容]\'" },
@@ -242,8 +242,8 @@ const valueCompletions = {
   ],
 
   "version": [
-    { label: "1.12", detail: "singbox 最新版（1.12.x）" },
-    { label: "1.11", detail: "singbox 旧版（1.11.x，iOS 兼容）" },
+    { label: "1.14", detail: "singbox 最新版（1.14.x）" },
+    { label: "1.15", detail: "singbox 预览版" },
     { label: "1.10", detail: "singbox 1.10.x" },
   ],
   "enable": [
@@ -508,7 +508,7 @@ const yamlConfigSource = (context) => {
         apply: (view, completion, from, to) => {
           const insertText = opt.isArray
             ? `${opt.label}:\n${'  '}- `  // 数组键：插入 key:\n  - ，光标在 - 后
-            : `${opt.label}: `;           // 非数组：当前行 key: 
+            : `${opt.label}: `;           // 非数组：当前行 key:
           view.dispatch({
             changes: { from, to, insert: insertText }
           });
@@ -594,7 +594,7 @@ const placeholderMatcher = new MatchDecorator({
   regexp: new RegExp(
     [
       // 匹配所有 configCompletions 中的 label
-      '(?<=^[ \t]*)(print-progress|progress-mode|update|update-on-startup|cron-check-update|prerelease|update-timeout|concurrent|alive-concurrent|speed-concurrent|media-concurrent|ipv6|check-interval|cron-expression|success-limit|timeout|speed-test-url|min-speed|download-timeout|download-mb|total-speed-limit|threshold|gc-threshold|rename-node|node-prefix|node-type|node-loc|isp-check|isp-timeout|isp-check-api-key-ipapi|isp-check-api-key-proxycheck|isp-check-api-key-iplocate|isp-check-api-key-ipdata|media-check|platforms|media-check-timeout|drop-bad-cf-nodes|enhanced-tag|maxmind-db-path|output-dir|keep-success-proxies|listen-port|enable-web-ui|api-key|share-password|callback-script|apprise-api-server|recipient-url|notify-title|sub-store-port|sub-store-path|mihomo-overwrite-url|singbox-latest|singbox-old|sub-store-sync-cron|sub-store-produce-cron|sub-store-push-service|save-method|webdav-url|webdav-username|webdav-password|github-gist-id|github-token|github-api-mirror|worker-url|worker-token|s3-endpoint|s3-access-id|s3-secret-key|s3-bucket|s3-use-ssl|s3-bucket-lookup|system-proxy|github-proxy|ghproxy-group|sub-urls-retry|sub-urls-timeout|sub-urls-stats|success-rate|subs-parse-batch|subs-dedupe-batch|memory-limit-mb|gc-percent|sub-urls-remote|sub-urls|sub-process|resolve-domain|node-split|regex-filter-keep|regex-filter|regex-sort|sub-info|version|json|js|enable|provider|edns|concurrency|type|cache|cache-ttl)(?=\s*:\s*)',
+      '(?<=^[ \t]*)(print-progress|progress-mode|update|update-on-startup|cron-check-update|prerelease|update-timeout|concurrent|alive-concurrent|speed-concurrent|media-concurrent|ipv6|check-interval|cron-expression|success-limit|timeout|speed-test-url|min-speed|download-timeout|download-mb|total-speed-limit|threshold|gc-threshold|rename-node|node-prefix|node-type|node-loc|isp-check|isp-timeout|isp-check-api-key-ipapi|isp-check-api-key-proxycheck|isp-check-api-key-iplocate|isp-check-api-key-ipdata|media-check|platforms|media-check-timeout|drop-bad-cf-nodes|enhanced-tag|maxmind-db-path|output-dir|keep-success-proxies|listen-port|enable-web-ui|api-key|share-password|callback-script|apprise-api-server|recipient-url|notify-title|sub-store-port|sub-store-path|mihomo-overwrite-url|singbox-latest|singbox-extra|sub-store-sync-cron|sub-store-produce-cron|sub-store-push-service|save-method|webdav-url|webdav-username|webdav-password|github-gist-id|github-token|github-api-mirror|worker-url|worker-token|s3-endpoint|s3-access-id|s3-secret-key|s3-bucket|s3-use-ssl|s3-bucket-lookup|system-proxy|github-proxy|ghproxy-group|sub-urls-retry|sub-urls-timeout|sub-urls-stats|success-rate|subs-parse-batch|subs-dedupe-batch|memory-limit-mb|gc-percent|sub-urls-remote|sub-urls|sub-process|resolve-domain|node-split|regex-filter-keep|regex-filter|regex-sort|sub-info|version|json|js|enable|provider|edns|concurrency|type|cache|cache-ttl)(?=\s*:\s*)',
 
       // 列表项：- openai / - "openai"
       '(?<=^[ \\t]*-\\s*["\']?)(openai|iprisk|gemini|copilot|tiktok|youtube|disney|netflix|x|ss|trojan|vless|vmess|shadowsocks)(?=["\']?\\b)',
