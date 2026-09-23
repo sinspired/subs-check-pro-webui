@@ -73,7 +73,8 @@ const MINI_PROTO_INFO = {
   sudoku: { name: 'Sudoku', desc: '结合 HTTPMask 的新型防封协议，支持非对称的纯下行伪装。', level: '低', color: 'var(--success)' },
   anytls: { name: 'AnyTLS', desc: '专注于任意 TLS 版本层伪装的小众隧道协议，适配各种指纹。', level: '较低', color: 'var(--success)' },
   ssh: { name: 'SSH', desc: '老牌系统远程终端与转发协议，明文握手极易被识别封锁。', level: '必封', color: 'var(--danger)' },
-  http: { name: 'HTTP / HTTPS', desc: '最古老的标准代理协议，无隐蔽抗审查能力，仅限局域网分发。', level: '必封', color: 'var(--danger)' },
+  http: { name: 'HTTP', desc: '最古老的标准代理协议，无隐蔽抗审查能力，仅限局域网分发。', level: '必封', color: 'var(--danger)' },
+  https: { name: 'HTTPS', desc: 'HTTP 协议，但加上了 tls，有一定争议，不稳定。', level: '较高', color: 'var(--warning)' },
   socks5: { name: 'Socks5', desc: '网络层标准代理，不加密无混淆，绝对不可暴露在公网用于跨境。', level: '必封', color: 'var(--danger)' },
   trusttunnel: { name: 'TrustTunnel', desc: '小众高性能隧道协议，支持底层复用。', level: '未知', color: 'var(--muted)' }
 };
@@ -650,6 +651,7 @@ const SCHEMA = [
               'trusttunnel',   // TrustTunnel
               'socks5',       // SOCKS5
               'http',         // HTTP
+              'https',         // HTTPs
               'openvpn',      // OpenVPN
             ]
           }

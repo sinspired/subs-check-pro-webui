@@ -296,6 +296,7 @@ const arrayItemCompletions = {
   "node-type": [
     { "label": "socks5", "detail": "SOCKS5 协议" },
     { "label": "http", "detail": "HTTP 代理协议" },
+    { "label": "https", "detail": "HTTPs 代理协议" },
     { "label": "snell", "detail": "Snell 协议" },
     { "label": "ss", "detail": "Shadowsocks 协议" },
     { "label": "shadowsocks", "detail": "Shadowsocks 协议" },
