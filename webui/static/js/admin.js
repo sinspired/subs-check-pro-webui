@@ -3819,7 +3819,12 @@ import { initQuickPreview } from './cfg-quickpreview.js';
             const maxTop = Math.min(safeArea.top, 44); // 限制最大安全区高度
             body.style.paddingTop = `${maxTop}px`;
           }
-          if (safeArea.bottom > 0) body.style.paddingBottom = `${safeArea.bottom}px`;
+
+          if (safeArea.bottom > 0) {
+            const maxBottom = Math.min(safeArea.bottom, 20); // 限制最大安全区高度
+            body.style.paddingBottom = `${maxBottom}px`;
+          }
+
           if (safeArea.left > 0) body.style.paddingLeft = `${safeArea.left}px`;
           if (safeArea.right > 0) body.style.paddingRight = `${safeArea.right}px`;
         }
