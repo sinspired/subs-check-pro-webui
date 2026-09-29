@@ -1827,8 +1827,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       ${miniGridHTML}
 
-      <a href="/analysis" class="summary-analysis-btn"
-         target="_blank" rel="noopener noreferrer" title="查看完整分析报告">
+      <button id="summaryAnalysisBtn" type="button" class="summary-analysis-btn" title="查看完整分析报告">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round" width="11" height="11">
           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -1836,9 +1835,13 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           <line x1="10" y1="14" x2="21" y2="3"/>
         </svg>
         <span>完整报告</span>
-      </a>
+      </button>
     </div>
   `;
+
+    summaryCard
+      .querySelector('#summaryAnalysisBtn')
+      ?.addEventListener('click', handleOpenAnalysis);
 
     // ── 折叠交互 ──────────────────────────────────────────────────
     // 外层摘要卡片折叠时也暂停
@@ -2529,21 +2532,21 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
         sessionStorage.setItem("scp_lastSubStorePath", result.subStorePath);
 
-      // 动态创建并挂载 DOM，拦截返回
-      if (!subStoreOverlayEl) {
-        subStoreOverlayEl = document.createElement("div");
-        subStoreOverlayEl.className = "sub-store-overlay";
+        // 动态创建并挂载 DOM，拦截返回
+        if (!subStoreOverlayEl) {
+          subStoreOverlayEl = document.createElement("div");
+          subStoreOverlayEl.className = "sub-store-overlay";
 
-        const iframe = document.createElement("iframe");
-        iframe.className = "sub-store-iframe";
-        iframe.src = result.url;
+          const iframe = document.createElement("iframe");
+          iframe.className = "sub-store-iframe";
+          iframe.src = result.url;
 
-        subStoreOverlayEl.appendChild(iframe);
-        document.body.appendChild(subStoreOverlayEl);
-      }
+          subStoreOverlayEl.appendChild(iframe);
+          document.body.appendChild(subStoreOverlayEl);
+        }
 
-      window.history.pushState({ subStoreOpen: true }, "");
-      return;
+        window.history.pushState({ subStoreOpen: true }, "");
+        return;
       } catch (err) {
         console.error(err)
         showToast(err.message || '打开失败', 'error');
@@ -2555,8 +2558,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     if (!newWindow) { showToast('窗口弹出被拦截', 'warn'); return; }
 
     // 写入过渡 Loading 界面
-  newWindow.document.title = '正在连接 Sub-Store...';
-  newWindow.document.body.style.cssText = 'margin:0';
+    newWindow.document.title = '正在连接 Sub-Store...';
+    newWindow.document.body.style.cssText = 'margin:0';
     newWindow.document.body.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
                 height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -3040,10 +3043,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         return;
       }
 
-      Events.On("ApiProxy", (msg) => {
-        console.log("收到事件:", msg);
-      });
-
       Events.On('gui:update:toast', e => {
         els.siderBarCheckupdate?.classList.remove('checking-update')
         toastForUpdateMessage(e?.data)
@@ -3075,6 +3074,13 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       console.warn('Wails 更新事件桥接初始化失败:', e)
     }
   }
+
+  // 提取公共的跳转逻辑
+  const handleOpenAnalysis = () => {
+    if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) { fetch('/gui/open-analysis').catch(() => { }); return; }
+    if (sessionKey) safeLS('scp_api_key', sessionKey);
+    openInternalURL('/analysis');
+  };
 
   // ==================== 初始化 ====================
 
@@ -3255,17 +3261,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       openInternalURL('/files', 'small');
     });
 
-    els.analysisBtn?.addEventListener('click', () => {
-      if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) { fetch('/gui/open-analysis').catch(() => { }); return; }
-      if (sessionKey) safeLS('scp_api_key', sessionKey);
-      openInternalURL('/analysis');
-    });
-
-    els.btnAnalysis?.addEventListener('click', () => {
-      if (window.__WAILS_GUI?.baseURL && !window.__WAILS_ANDROID_GUI) { fetch('/gui/open-analysis').catch(() => { }); return; }
-      if (sessionKey) safeLS('scp_api_key', sessionKey);
-      openInternalURL('/analysis');
-    });
+    // 统一绑定事件
+    els.analysisBtn?.addEventListener('click', handleOpenAnalysis);
+    els.btnAnalysis?.addEventListener('click', handleOpenAnalysis);
 
     els.downloadLogsBtnSide?.addEventListener('click', async () => {
       // const r = await sfetch(API.logs)
