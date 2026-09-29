@@ -3791,49 +3791,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     });
   }
 
-  /**
-   * 初始化并应用屏幕安全区域 (适配刘海屏/沉浸式状态栏)
-   */
-  async function initSafeArea() {
-    if (window.__WAILS_ANDROID_GUI && window.WailsBridge?.GetSafeArea) {
-      try {
-        const safeArea = await window.WailsBridge.GetSafeArea();
-        if (safeArea) {
-          const root = document.documentElement;
-          // 注入全局 CSS 变量，供固定定位的元素 (header/footer 等) 使用
-          if (safeArea.top > 0) {
-            const maxTop = Math.min(safeArea.top, 44); // 限制最大安全区高度
-            root.style.setProperty('--safe-area-top', `${maxTop}px`);
-          }
-
-          root.style.setProperty('--safe-area-bottom', `${safeArea.bottom}px`);
-          root.style.setProperty('--safe-area-left', `${safeArea.left}px`);
-          root.style.setProperty('--safe-area-right', `${safeArea.right}px`);
-
-          const body = document.body;
-          body.classList.add('safe-area'); // 确保具有之前挂载的标记类
-
-          // 覆盖原本硬编码的样式，直接应用动态获取的 padding (只对正值生效避免破坏正常布局)
-          // 还需真机测试
-          if (safeArea.top > 0) {
-            const maxTop = Math.min(safeArea.top, 44); // 限制最大安全区高度
-            body.style.paddingTop = `${maxTop}px`;
-          }
-
-          if (safeArea.bottom > 0) {
-            const maxBottom = Math.min(safeArea.bottom, 20); // 限制最大安全区高度
-            body.style.paddingBottom = `${maxBottom}px`;
-          }
-
-          if (safeArea.left > 0) body.style.paddingLeft = `${safeArea.left}px`;
-          if (safeArea.right > 0) body.style.paddingRight = `${safeArea.right}px`;
-        }
-      } catch (err) {
-        console.warn('获取屏幕安全区域失败:', err);
-      }
-    }
-  }
-
   // 启动事件
   ; (async function bootstrap() {
     const guiSaved = window.__WAILS_GUI?.apiKey || null;
@@ -3863,7 +3820,6 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     }
 
     getPublicVersion();
-    initSafeArea();
 
     sessionKey = saved;
     bindControls();
