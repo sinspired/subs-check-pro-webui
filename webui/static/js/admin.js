@@ -2480,6 +2480,16 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     };
   }
 
+  // Android 环境为 Sub-Store 添加安全区框架
+  let subStoreOverlayEl = null;
+
+  window.addEventListener("popstate", (e) => {
+    if (subStoreOverlayEl) {
+      subStoreOverlayEl.remove();
+      subStoreOverlayEl = null;
+    }
+  });
+
   async function handleOpenSubStore(e) {
     e.preventDefault();
     if (!sessionKey) { doLogout; return; }
@@ -2518,8 +2528,22 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         const result = buildSubStoreUrl();
 
         sessionStorage.setItem("scp_lastSubStorePath", result.subStorePath);
-        window.location.href = result.url;
-        return
+
+      // 动态创建并挂载 DOM，拦截返回
+      if (!subStoreOverlayEl) {
+        subStoreOverlayEl = document.createElement("div");
+        subStoreOverlayEl.className = "sub-store-overlay";
+
+        const iframe = document.createElement("iframe");
+        iframe.className = "sub-store-iframe";
+        iframe.src = result.url;
+
+        subStoreOverlayEl.appendChild(iframe);
+        document.body.appendChild(subStoreOverlayEl);
+      }
+
+      window.history.pushState({ subStoreOpen: true }, "");
+      return;
       } catch (err) {
         console.error(err)
         showToast(err.message || '打开失败', 'error');
@@ -2531,8 +2555,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     if (!newWindow) { showToast('窗口弹出被拦截', 'warn'); return; }
 
     // 写入过渡 Loading 界面
-    newWindow.document.title = '正在连接 Sub-Store...';
-    newWindow.document.body.style.cssText = 'margin:0'
+  newWindow.document.title = '正在连接 Sub-Store...';
+  newWindow.document.body.style.cssText = 'margin:0';
     newWindow.document.body.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
                 height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;

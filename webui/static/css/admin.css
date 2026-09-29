@@ -220,6 +220,39 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Sub-Store 全屏防护内联容器 (避开刘海/状态栏) */
+.sub-store-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  animation: slide-up 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.sub-store-header {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 48px; padding: 0 16px;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sub-store-close {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--code-bg); border: none;
+  color: var(--text-main); cursor: pointer;
+  width: 28px; height: 28px; border-radius: 14px;
+  transition: background 0.2s;
+}
+.sub-store-close:active { background: color-mix(in srgb, var(--text-main) 15%, transparent); }
+.sub-store-close svg { width: 16px; height: 16px; opacity: 0.8; }
+.sub-store-title { font-size: 15px; font-weight: 600; color: var(--text-main); letter-spacing: 0.5px; }
+.sub-store-iframe { flex: 1; width: 100%; border: none; background: var(--bg); }
+
 /* 按钮基础样式 */
 .btn {
   padding: 8px 12px;
