@@ -15,6 +15,11 @@
   --chip-vps: #6366f1;
   --chip-traffic: #e23b76;
   --chip-sub: #64748b;
+
+  --sa-top: env(safe-area-inset-top);
+  --sa-bottom: env(safe-area-inset-bottom);
+  --sa-left: env(safe-area-inset-left);
+  --sa-right: env(safe-area-inset-right);
 }
 
 :root[data-theme='dark'] {
@@ -62,13 +67,27 @@
   box-sizing: border-box;
 }
 
+/* 全局重置 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  outline: none !important;
+}
+
+*:focus {
+  outline: none !important;
+}
+
 html {
   overflow: hidden;
   height: 100vh;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  /* Respect the iOS safe area (notch, home indicator) */
+  padding-top: var(--sa-top);
+  padding-bottom: var(--sa-bottom);
+  padding-left: var(--sa-left);
+  padding-right: var(--sa-right);
 }
 
 body {

@@ -10,13 +10,33 @@
   <link rel="icon" type="image/svg+xml" href="/static/icon/favicon.svg" />
   <link rel="stylesheet" href="/static/css/admin.css?v20260324" />
   <style>
+    :root {
+      --sa-top: env(safe-area-inset-top);
+      --sa-bottom: env(safe-area-inset-bottom);
+      --sa-left: env(safe-area-inset-left);
+      --sa-right: env(safe-area-inset-right);
+    }
+
+    html {
+      overflow: hidden;
+      height: 100vh;
+      /* Respect the iOS safe area (notch, home indicator) */
+      padding-top: var(--sa-top);
+      padding-bottom: var(--sa-bottom);
+      padding-left: var(--sa-left);
+      padding-right: var(--sa-right);
+    }
+
     body {
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
-      /* 引入安全区适配 (刘海屏/小白条) */
-      padding: env(safe-area-inset-top, 0) max(16px, env(safe-area-inset-right, 0)) env(safe-area-inset-bottom, 0) max(16px, env(safe-area-inset-left, 0));
+      height: 100%;
+      /* Respect the iOS safe area (notch, home indicator) */
+      padding-top: var(--sa-top);
+      padding-bottom: var(--sa-bottom);
+      padding-left: var(--sa-left);
+      padding-right: var(--sa-right);
       box-sizing: border-box;
       overflow-x: hidden;
     }
@@ -40,8 +60,8 @@
     /* 主题切换按钮（右上角固定，与 share.html 一致） */
     .theme-wrapper {
       position: fixed;
-      top: max(20px, env(safe-area-inset-top, 20px));
-      right: max(20px, env(safe-area-inset-right, 20px));
+      top: max(20px, var(--sa-top, 20px));
+      right: max(20px, var(--sa-right, 20px));
       z-index: 10;
     }
 
@@ -481,7 +501,7 @@
     .footer-outsie {
       width: 100%;
       max-width: 520px;
-      padding: 12px 0 max(24px, env(safe-area-inset-bottom, 0));
+      padding: 12px 0 max(24px, var(--sa-bottom, 0));
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -579,8 +599,8 @@
     @media (max-width: 560px) {
       body {
         /* 小屏幕左右保持极窄边距 */
-        padding-left: max(12px, env(safe-area-inset-left, 0));
-        padding-right: max(12px, env(safe-area-inset-right, 0));
+        padding-left: max(12px, var(--sa-left, 0));
+        padding-right: max(12px, var(--sa-right, 0));
       }
 
       .card-wrapper {
@@ -590,7 +610,7 @@
       .theme-wrapper {
         position: absolute;
         top: 12px;
-        right: max(12px, env(safe-area-inset-right, 12px));
+        right: max(12px, var(--sa-right, 12px));
       }
 
       .card {
@@ -650,7 +670,7 @@
       }
 
       .footer-outsie {
-        padding: 20px 0 max(24px, env(safe-area-inset-bottom, 24px));
+        padding: 20px 0 max(24px, var(--sa-bottom, 24px));
       }
     }
   </style>

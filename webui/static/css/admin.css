@@ -9,6 +9,11 @@
      约 44px 内容 + 8px gap ≈ 52px，加少量余量取 64px，
      使 .sidebar-brand 总高 ≈ 12+52+1+64 = 129px ≈ progressCard(124px)+gap(8px) */
   --brand-status-height: 37px;
+
+  --sa-top: env(safe-area-inset-top);
+  --sa-bottom: env(safe-area-inset-bottom);
+  --sa-left: env(safe-area-inset-left);
+  --sa-right: env(safe-area-inset-right);
 }
 
 :root {
@@ -178,12 +183,17 @@
   --unlock-gemini: #84bb0e;
 }
 
+/* 全局重置 */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  -webkit-font-smoothing: antialiased;
-  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none !important;
+}
+
+*:focus {
+  outline: none !important;
 }
 
 button,
@@ -199,10 +209,11 @@ input[type='submit'] {
 }
 
 html {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  /* Respect the iOS safe area (notch, home indicator) */
+  padding-top: var(--sa-top);
+  padding-bottom: var(--sa-bottom);
+  padding-left: var(--sa-left);
+  padding-right: var(--sa-right);
 }
 
 html,
@@ -216,8 +227,9 @@ body {
 
 /* Respect the iOS safe area (notch, home indicator) */
 .safe-area {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* Respect the iOS safe area (notch, home indicator) */
+  padding-top: var(--sa-top);
+  padding-bottom: var(--sa-bottom);
 }
 
 /* Sub-Store 全屏防护内联容器 (避开刘海/状态栏) */
@@ -228,10 +240,11 @@ body {
   background: var(--bg);
   display: flex;
   flex-direction: column;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  /* Respect the iOS safe area (notch, home indicator) */
+  padding-top: var(--sa-top);
+  padding-bottom: var(--sa-bottom);
+  padding-left: var(--sa-left);
+  padding-right: var(--sa-right);
   animation: slide-up 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes slide-up {
@@ -3523,10 +3536,11 @@ img.link-icon {
   /* ── 布局 ── */
   html {
     overflow-y: auto;
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+  /* Respect the iOS safe area (notch, home indicator) */
+  padding-top: var(--sa-top);
+  padding-bottom: var(--sa-bottom);
+  padding-left: var(--sa-left);
+  padding-right: var(--sa-right);
   }
 
   body {
@@ -3694,10 +3708,10 @@ img.link-icon {
   /* Toast 通知 */
   #toastContainer {
     /* 状态栏/刘海安全区 + 8px 间距 */
-    top: calc(var(--safe-area-top, env(safe-area-inset-top, 0px)) + 10px);
+    top: calc(var(--sa-top) + 10px);
 
     /* 右侧同样避开安全区 */
-    right: calc(var(--safe-area-right, env(safe-area-inset-right, 0px)) + 4px);
+    right: calc(var(--sa-right) + 4px);
   }
 
   /* ── Toast ── */
