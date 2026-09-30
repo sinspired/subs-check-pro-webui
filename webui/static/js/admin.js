@@ -3354,8 +3354,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       }
 
       // 同步 theme-color
-      document.querySelector('meta[name="theme-color"]')
-        ?.setAttribute('content', t === 'dark' ? '#121316' : '#ffffff')
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'dark' ? '#121316' : '#ffffff')
 
       if (codeMirrorView) {
         const val = codeMirrorView.state.doc.toString()
