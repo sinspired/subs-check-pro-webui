@@ -1941,23 +1941,28 @@ h1 svg {
 .sub-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .sub-item {
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 14px 14px;
+  border-radius: 16px;
   border: 1px solid var(--border);
-  background: var(--glass-bg);
+  background: var(--card);
   transition:
     background 0.15s,
     opacity 0.3s ease,
     transform 0.3s ease,
     filter 0.3s ease;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow: 6px 6px 15px
+    color-mix(in srgb, var(--card-shadow) 18%, transparent);
   transform-origin: top center;
   overflow: hidden; /* 新增：限制内部角标不溢出圆角 */
+}
+
+.sub-item:hover {
+  background: color-mix(in srgb, var(--bg-hover) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 100%, var(--fg));
 }
 
 /* 别名角标（装饰卡片左上角） */
@@ -1996,10 +2001,6 @@ h1 svg {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.sub-item:hover {
-  background: var(--input-bg);
 }
 
 .sub-header {
@@ -2056,11 +2057,11 @@ h1 svg {
 }
 
 .sub-bar-wrap {
-  height: 4px;
+  height: 2px;
   background: var(--border);
   border-radius: 99px;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .sub-bar {
@@ -2069,16 +2070,13 @@ h1 svg {
   transition: width 0.5s ease;
 }
 
-/* analysis.css */
-
-/* 找到 .sub-meta，修改其对齐并新增 tag-wrap */
 .sub-meta {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; /* 替换掉原有的 center 以应对多行排版 */
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: 8px; /* 稍微加大间距，原为 5px */
-  font-size: 11px;
+  gap: 10px;
+  font-size: 8px;
   color: var(--muted);
 }
 
@@ -2118,29 +2116,29 @@ h1 svg {
 }
 
 .tag-pill {
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 1px 8px;
+  border-radius: 99px;
   background: var(--input-bg);
   border: 1px solid var(--border);
-  font-size: 10px;
+  font-size: 8px;
   white-space: nowrap;
   box-shadow: 4px 4px 10px
     color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .tag-pill.loc {
-  background: color-mix(in srgb, var(--chip-geo) 7%, transparent);
+  background: color-mix(in srgb, var(--chip-geo) 15%, transparent);
 }
 
 .tag-pill.proto {
-  background: color-mix(in srgb, var(--chip-proto) 7%, transparent);
+  background: color-mix(in srgb, var(--chip-proto) 15%, transparent);
 }
 
 .sub-tier {
   display: inline-flex;
   align-items: center;
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 1px 8px;
+  border-radius: 99px;
   font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
