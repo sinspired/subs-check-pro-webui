@@ -2069,7 +2069,7 @@ h1 svg {
 
 .sub-bar-wrap {
   position: relative; /* 必须：用于定位内部的刻度线 */
-  height: 2px;
+  height: 4px;
   background: var(--border);
   border-radius: 99px;
   overflow: hidden;

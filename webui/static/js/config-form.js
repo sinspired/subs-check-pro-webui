@@ -2062,6 +2062,244 @@ function mkChips(field, values) {
   return wrap;
 }
 
+
+/* ═══════════════════════════ 订阅检测数据展示 ═══════════════════════════ */
+
+let _cachedReportData = null;
+let _reportCacheTime = 0;
+
+async function _getReportData() {
+  if (_cachedReportData && Date.now() - _reportCacheTime < 60000) {
+    return _cachedReportData;
+  }
+  try {
+    const res = await w.sfetch('/api/analysis-report');
+    if (res?.ok && res.payload?.report) {
+      const yamlParse = window.YAML ? window.YAML.parse : (window.safeParse || JSON.parse);
+      _cachedReportData = yamlParse(res.payload.report);
+      _reportCacheTime = Date.now();
+      return _cachedReportData;
+    }
+  } catch (e) {
+    console.error('Fetch report failed', e);
+  }
+  return null;
+}
+
+const _SVG_PIE_CHART = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>`;
+
+const _tooltipUrlTruncator = (() => {
+  let canvas = null;
+  let ctx = null;
+  let observer = null;
+
+  function getCtx() {
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      ctx = canvas.getContext("2d");
+    }
+    return ctx;
+  }
+
+  const truncate = (el) => {
+    const text = el.dataset.fullText;
+    if (!text) return;
+    const availW = el.clientWidth - 1;
+    if (availW <= 0) return;
+    const c = getCtx();
+    if (!c) { el.textContent = text; return; }
+    const style = window.getComputedStyle(el);
+    c.font = style.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    if (c.measureText(text).width <= availW) {
+      if (el.textContent !== text) el.textContent = text;
+      return;
+    }
+    let lo = 0, hi = text.length;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      const candidate = text.slice(0, Math.ceil(mid / 2)) + "…" + text.slice(-Math.floor(mid / 2));
+      if (c.measureText(candidate).width <= availW) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    const finalStr = text.slice(0, Math.ceil(lo / 2)) + "…" + text.slice(-Math.floor(lo / 2));
+    if (el.textContent !== finalStr) el.textContent = finalStr;
+  };
+
+  return {
+    observe: (el) => {
+      if (!observer) {
+        observer = new ResizeObserver((entries) => {
+          for (const entry of entries) requestAnimationFrame(() => truncate(entry.target));
+        });
+      }
+      observer.observe(el);
+      truncate(el);
+    },
+    disconnect: () => {
+      if (observer) observer.disconnect();
+    }
+  };
+})();
+
+let _subTooltipEl = null;
+
+function _showSubTooltip(btn, subData, checkTime) {
+  if (!_subTooltipEl) {
+    _subTooltipEl = el('div', { id: 'subStatsTooltip' });
+    // 使用 min-width / max-width 并配合 width: max-content 让他自适应极其长的数字和标签内容
+    _subTooltipEl.style.cssText = `
+            position: fixed;
+            z-index: 9999;
+            min-width: 340px;
+            max-width: 440px;
+            width: max-content;
+            opacity: 0;
+            transform: scale(0.96) translateY(4px);
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+        `;
+    document.body.appendChild(_subTooltipEl);
+
+    document.addEventListener('click', (e) => {
+      if (_subTooltipEl && _subTooltipEl.classList.contains('visible') && !e.target.closest('#subStatsTooltip') && !e.target.closest('.cfg-url-stats')) {
+        _subTooltipEl.classList.remove('visible');
+        _subTooltipEl.style.opacity = '0';
+        _subTooltipEl.style.pointerEvents = 'none';
+      }
+    });
+  }
+
+  const fmtRateFn = window.fmtRate || (r => r.toFixed(1) + '%');
+  const escapeHtml = window.esc || (str => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
+
+  const stats = subData.stats || {};
+  const rateNum = (stats.success > 0 && stats.total > 0)
+    ? stats.success / stats.total * 100
+    : parseFloat(String(stats.rate || '0'));
+  const rateStr = fmtRateFn(rateNum);
+  const barColor = rateNum >= 10 ? 'var(--success)' : rateNum > 0 ? 'var(--warning)' : 'var(--danger)';
+  const locs = Array.isArray(subData.top_locations) ? subData.top_locations.join('').split('|').filter(Boolean) : [];
+  const protos = subData.protocols ? Object.entries(subData.protocols).sort((a, b) => b[1] - a[1]) : [];
+  const tierClass = rateNum >= 20 ? 'tier-s' : rateNum >= 10 ? 'tier-a' : rateNum >= 3 ? 'tier-b' : 'tier-c';
+  const tierLabel = rateNum >= 20 ? 'S' : rateNum >= 10 ? 'A' : rateNum >= 3 ? 'B' : 'C';
+
+  let rawUrl = subData.url || '';
+  let nameTag = '';
+  let cleanUrl = rawUrl;
+  const hashIdx = rawUrl.lastIndexOf('#');
+  if (hashIdx !== -1) {
+    try { nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); }
+    catch (e) { nameTag = rawUrl.substring(hashIdx + 1); }
+    cleanUrl = rawUrl.substring(0, hashIdx);
+  }
+
+  // 环形图进度计算 (放大半径到 26)
+  const radius = 26;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(rateNum, 100) / 100) * circumference;
+
+  const locIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+
+  _subTooltipEl.innerHTML = `
+    <div class="sub-item" style="margin:0; width: 100%; box-sizing: border-box; cursor: default;">
+        ${nameTag ? `
+        <div class="sub-corner-tag" style="color:${barColor}; background: color-mix(in srgb, ${barColor} 5%, transparent); border-right: 1px solid color-mix(in srgb, ${barColor} 15%, transparent); border-bottom: 1px solid color-mix(in srgb, ${barColor} 15%, transparent); box-shadow: 4px 4px 12px color-mix(in srgb, ${barColor} 5%, transparent);" >
+            <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+            <span class="tag-text">${escapeHtml(nameTag)}</span>
+        </div>` : ''}
+
+        <!-- 满宽 URL -->
+        <div class="sub-full-url js-truncate" data-full-text="${escapeHtml(cleanUrl)}" title="${escapeHtml(rawUrl)}"></div>
+
+        <!-- 核心数据区：左环图 + 右侧(评级/数字) -->
+        <div class="sub-stats-hero">
+            <!-- 左侧：纯环形图 -->
+            <div class="sub-ring-box">
+                <div class="sub-ring-wrapper" style="--ring-color: ${barColor};">
+                    <svg class="sub-ring-svg" viewBox="0 0 64 64">
+                        <circle class="sub-ring-bg" cx="32" cy="32" r="${radius}"></circle>
+                        <circle class="sub-ring-progress" cx="32" cy="32" r="${radius}"
+                                stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+                    </svg>
+                    <div class="sub-ring-text">${rateStr}</div>
+                </div>
+            </div>
+
+            <div class="sub-hero-divider"></div>
+
+            <!-- 右侧：上方评级，下方详情 -->
+            <div class="sub-hero-details">
+                <div class="sub-tier-row">
+                    <span class="sub-tier-label">订阅链接评级</span>
+                    <span class="sub-tier ${tierClass}">${tierLabel}</span>
+                </div>
+                <div class="sub-numbers">
+                    <div class="num-block">
+                        <div class="num-val success-val" style="color:${barColor}">${stats.success || 0}</div>
+                        <div class="num-label">有效节点</div>
+                    </div>
+                    <div class="num-divider">/</div>
+                    <div class="num-block">
+                        <div class="num-val">${stats.total || 0}</div>
+                        <div class="num-label">节点总数</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部标签区 -->
+        ${(locs.length > 0 || protos.length > 0) ? `
+        <div class="sub-meta-tags">
+          ${locs.map(l => `<span class="tag-pill loc">${locIcon}${l}</span>`).join('')}
+          ${protos.map(([k, v]) => `<span class="tag-pill proto"><span class="p-name">${k}</span><span class="p-val">${v}</span></span>`).join('')}
+        </div>` : ''}
+
+        <!-- 更新时间 -->
+        ${checkTime ? `
+        <div class="sub-time-footer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="time-label">上次检测:</span>
+          <span class="time-val">${escapeHtml(checkTime)}</span>
+        </div>` : ''}
+    </div>
+    `;
+
+  requestAnimationFrame(() => {
+    _subTooltipEl.querySelectorAll('.js-truncate').forEach(el => _tooltipUrlTruncator.observe(el));
+
+    // Calculate position
+    const rect = btn.getBoundingClientRect();
+    const elRect = _subTooltipEl.getBoundingClientRect();
+    const margin = 10;
+
+    let left = rect.left - elRect.width - margin;
+    if (left < margin) {
+      left = rect.right + margin;
+      if (left + elRect.width > window.innerWidth - margin) {
+        left = window.innerWidth / 2 - elRect.width / 2;
+      }
+    }
+
+    let top = rect.top;
+    if (top + elRect.height > window.innerHeight - margin) {
+      top = window.innerHeight - elRect.height - margin;
+    }
+    if (top < margin) top = margin;
+
+    _subTooltipEl.style.left = left + 'px';
+    _subTooltipEl.style.top = top + 'px';
+
+    _subTooltipEl.classList.add('visible');
+    _subTooltipEl.style.opacity = '1';
+    _subTooltipEl.style.transform = 'scale(1) translateY(0)';
+    _subTooltipEl.style.pointerEvents = 'auto';
+  });
+}
+
+
 function mkUrlList(field, values) {
   const list = Array.isArray(values) ? values : (values ? [values] : []);
   const wrap = el('div', { class: 'cfg-url-list', 'data-key': field.key });
@@ -2327,6 +2565,49 @@ function mkUrlList(field, values) {
 
       inputWrap.append(iconEl, inp);
       row.append(handle, inputWrap, del);
+    } else if (field.key === 'sub-urls') {
+      const statsBtn = el('button', { class: 'cfg-url-stats cfg-url-del', type: 'button', title: '查看上次检测数据' });
+      statsBtn.style.cssText = 'color: var(--muted); opacity: 1;';
+      statsBtn.innerHTML = _SVG_PIE_CHART;
+      statsBtn.onmouseover = () => statsBtn.style.opacity = '1';
+      statsBtn.onmouseout = () => statsBtn.style.opacity = '0.7';
+
+      statsBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const url = inp.value.trim();
+        if (!url) return window.showToast?.('订阅地址为空', 'warn', 2000);
+
+        statsBtn.disabled = true;
+        statsBtn.innerHTML = typeof _SVG_SPIN !== 'undefined' ? _SVG_SPIN : '⏳';
+
+        const report = await _getReportData();
+
+        statsBtn.disabled = false;
+        statsBtn.innerHTML = _SVG_PIE_CHART;
+
+        if (!report) return window.showToast?.('获取报告数据失败，或您尚未运行检测', 'error', 3000);
+
+        const allSubs = [
+          ...(report.subs_ranking || []),
+          ...(report.subs_ranking_bad || [])
+        ];
+
+        const subData = allSubs.find(s => s.url === url);
+        if (!subData) {
+          return window.showToast?.('暂无该订阅的数据（或最近未被检测）', 'info', 3000);
+        }
+
+        const checkTime = report.check_info?.check_time || '';
+        _showSubTooltip(statsBtn, subData, checkTime);
+      });
+
+      const actionsWrap = el('div', { class: 'cfg-url-actions' });
+      actionsWrap.style.cssText = 'display: flex; gap: 4px; align-items: center; margin-left: 4px;';
+      actionsWrap.append(statsBtn, del);
+      row.append(handle, inp, actionsWrap);
+
     } else {
       row.append(handle, inp, del);
     }
