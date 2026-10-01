@@ -1810,14 +1810,38 @@ function getSubTier(score) {
     return SUB_TIERS.find(t => score >= t.minScore) || SUB_TIERS[SUB_TIERS.length - 1];
 }
 
-let _currentSortMode = 'score'; // 全局记录当前排序维度: 'score', 'count', 'rate'
+let _currentSortMode = 'score'; // 默认排序：综合分
 let _lastRenderCfg = {};        // 缓存配置，供动态排序重绘使用
 
+let _currentFilterMode = 'score'; // 默认筛选：综合分
+let _filterThresholds = { rate: -1, score: -1, count: -1 };
+
+// 排序切换：综合分 / 存活数 / 成功率
 window._setSortMode = function (mode) {
+    if (!['score', 'count', 'rate'].includes(mode)) return;
     if (!_reportData) return;
+
     _currentSortMode = mode;
-    // 触发重绘
-    renderSubs(_reportData.subs_ranking || [], _reportData.subs_ranking_bad || [], _lastRenderCfg);
+
+    renderSubs(
+        _reportData.subs_ranking || [],
+        _reportData.subs_ranking_bad || [],
+        _lastRenderCfg
+    );
+};
+
+// 筛选切换：综合分 / 存活数 / 成功率
+window._setFilterMode = function (mode) {
+    if (!['score', 'count', 'rate'].includes(mode)) return;
+    if (!_reportData) return;
+
+    _currentFilterMode = mode;
+
+    renderSubs(
+        _reportData.subs_ranking || [],
+        _reportData.subs_ranking_bad || [],
+        _lastRenderCfg
+    );
 };
 
 function renderSubs(subs, subsBad, cfg) {
@@ -1871,7 +1895,7 @@ function renderSubs(subs, subsBad, cfg) {
         // 滑块过滤标尺依然使用 rate，所以这里只取 maxRate
         const maxRate = Math.max(...processedSubs.map(s => s._rate), 1);
 
-       // 分级图例与动态排序按钮
+        // 分级图例与动态排序按钮
         const legendHTML = `<div class="tier-legend" style="justify-content: space-between; width: 100%;">
             <div style="display:flex; flex-wrap:wrap; gap: 6px 12px; align-items:center;">
                 <span class="tier-legend-title" title="公式: 存活数量 × √(成功率)">评级(基于综合分)</span>
@@ -1919,8 +1943,8 @@ function renderSubs(subs, subsBad, cfg) {
                 mainMetricHtml = `${s._score.toFixed(1)} <span style="font-size:10px;font-weight:normal;opacity:0.7">分</span>`;
             }
 
-            // 保持原有布局，注入 tier 类名与 --tc 颜色变量关联
-            return `<div class="sub-item tier-${tier.key}" data-rate="${s._rate}">
+            // 保持原有布局，注入 tier 类名与 --tc 颜色变量关联，以及各维度的值用于筛选
+            return `<div class="sub-item tier-${tier.key}" data-rate="${s._rate}" data-score="${s._score}" data-count="${s._success}">
             ${nameTag ? `
             <div class="sub-corner-tag" style="color:var(--tc); background: color-mix(in srgb, var(--tc) 5%, transparent); border-right: 1px solid color-mix(in srgb, var(--tc) 15%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--tc) 15%, transparent); box-shadow: 6px 6px 20px color-mix(in srgb, var(--tc) 5%, transparent);" >
                 <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
@@ -1932,8 +1956,8 @@ function renderSubs(subs, subsBad, cfg) {
                 <span class="sub-tier tier-${tier.key}" title="${tierTip}">${tier.label}</span>
                 <span class="sub-rate" style="color:var(--tc)">${mainMetricHtml}</span>
             </div>
-            <div class="sub-bar-wrap" title="当前节点纯度(成功率): ${rateStr}">
-                <div class="sub-bar" style="width:${barPct.toFixed(2)}%;min-width:${s._rate > 0 ? '4px' : '0'}"></div>
+            <div class="sub-bar-wrap" title="当前成功率: ${rateStr}">
+                <div class="sub-bar" style="width:${barPct.toFixed(2)}%;min-width:${s._rate > 0 ? '4px' : '0'};background:var(--accent)"></div>
             </div>
             <div class="sub-meta">
             <div class="tag-wrap">
@@ -2002,14 +2026,14 @@ function renderSubs(subs, subsBad, cfg) {
     });
 }
 
-function drawRuler(svgEl, maxRate, threshold) {
+function drawRuler(svgEl, maxVal, threshold, unit, fmt) {
     if (!svgEl) return;
     const W = svgEl.getBoundingClientRect().width || svgEl.parentElement?.clientWidth || 400;
     const H = 40;
     const midY = H * 0.5;
     svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
 
-    const pct = Math.max(0, Math.min(1, threshold / maxRate));
+    const pct = Math.max(0, Math.min(1, threshold / maxVal));
     const fillX = pct * W;
     const steps = 5;
     let html = '';
@@ -2025,7 +2049,7 @@ function drawRuler(svgEl, maxRate, threshold) {
         const x = (i / steps) * W;
         const anchor = i === 0 ? 'start' : i === steps ? 'end' : 'middle';
         html += `<line x1="${x.toFixed(1)}" y1="${midY - 9}" x2="${x.toFixed(1)}" y2="${midY - 1}" class="ruler-tick-main"/>`;
-        html += `<text x="${x.toFixed(1)}" y="${midY + 18}" text-anchor="${anchor}" class="ruler-text-bottom">${Math.round(i / steps * maxRate)}%</text>`;
+        html += `<text x="${x.toFixed(1)}" y="${midY + 18}" text-anchor="${anchor}" class="ruler-text-bottom">${fmt(i / steps * maxVal)}${unit}</text>`;
     }
 
     // 副刻度
@@ -2039,13 +2063,9 @@ function drawRuler(svgEl, maxRate, threshold) {
     if (threshold > 0) {
         const tx = Math.max(14, Math.min(W - 14, fillX));
         const anchor = fillX < 20 ? 'start' : fillX > W - 20 ? 'end' : 'middle';
-
-        html += `<text x="${tx.toFixed(1)}" y="${midY - 16}" text-anchor="${anchor}" class="ruler-text-top">${threshold.toFixed(1)}%</text>`;
+        html += `<text x="${tx.toFixed(1)}" y="${midY - 16}" text-anchor="${anchor}" class="ruler-text-top">${fmt(threshold)}${unit}</text>`;
     } else {
-        const tx = Math.max(14, Math.min(W - 14, fillX));
-        const anchor = fillX < 20 ? 'start' : fillX > W - 20 ? 'end' : 'middle';
-
-        html += `<text x="-${tx.toFixed(1) / 2}" y="${midY - 16}" text-anchor="${anchor}" class="ruler-text-top zero">${threshold.toFixed(1)}</text>`;
+        html += `<text x="0" y="${midY - 16}" text-anchor="start" class="ruler-text-top zero">${fmt(0)}</text>`;
     }
 
     svgEl.innerHTML = html;
@@ -2055,27 +2075,62 @@ function initThresholdSlider(subs, cfg) {
     const slot = document.getElementById('thresholdSlot');
     if (!slot) return;
 
-    const rates = subs.map(s => parseFloat(s.stats?.rate || '0'));
-    const maxRate = Math.max(...rates, 1);
-    const cfgRate = parseFloat(cfg['success-rate'] || '0') * 100; // 0.05 → 5%
-    let threshold = cfgRate > 0 ? Math.min(cfgRate, maxRate) : 0;
+    const metrics = {
+        rate: { max: Math.max(...subs.map(s => s._rate), 1), unit: '%', fmt: v => v.toFixed(1).replace(/\.0$/, '') },
+        score: { max: Math.max(...subs.map(s => s._score), 1), unit: '分', fmt: v => v.toFixed(1).replace(/\.0$/, '') },
+        count: { max: Math.max(...subs.map(s => s._success), 1), unit: '个', fmt: v => Math.round(v) }
+    };
 
-    // threshold-container 成功率筛选容器
+    // 首次渲染加载 cfg 里的 success-rate 偏好设定，默认其他维度阈值为 0
+    if (_filterThresholds.score === -1) {
+        const cfgRate = parseFloat(cfg['success-rate'] || '0') * 100;
+        _filterThresholds.rate = cfgRate > 0
+            ? Math.min(cfgRate, metrics.rate.max)
+            : 0;
+
+        _filterThresholds.score = 0;
+        _filterThresholds.count = 0;
+    }
+
+    const currentMax = metrics[_currentFilterMode].max;
+    let threshold = _filterThresholds[_currentFilterMode];
+    if (threshold > currentMax) threshold = currentMax;
+
     slot.innerHTML = `
         <div class="threshold-container">
             <div class="threshold-row">
-                <span class="threshold-meta">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                    </svg>
-                    成功率筛选
-                </span>
+   <span class="threshold-meta" style="gap:8px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+
+    <a href="javascript:void(0)"
+       onclick="window._setFilterMode('score')"
+       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'score' ? 'var(--fg)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'score' ? '700' : '600'}">
+        综合分
+    </a>
+
+    <span style="opacity:0.3">|</span>
+
+    <a href="javascript:void(0)"
+       onclick="window._setFilterMode('count')"
+       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'count' ? 'var(--fg)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'count' ? '700' : '600'}">
+        存活数
+    </a>
+
+    <span style="opacity:0.3">|</span>
+
+    <a href="javascript:void(0)"
+       onclick="window._setFilterMode('rate')"
+       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'rate' ? 'var(--fg)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'rate' ? '700' : '600'}">
+        成功率
+    </a>
+</span>
                 <span class="threshold-chip" id="thresholdChip"></span>
             </div>
             <div class="ruler-outer" id="rulerOuter">
                 <svg class="ruler-svg" id="rulerSvg"></svg>
-                <!-- 去除初始的内联 style="left:0%" -->
                 <div class="ruler-dot-hit" id="rulerDotHit"></div>
                 <div class="ruler-dot" id="rulerDot"></div>
             </div>
@@ -2087,7 +2142,7 @@ function initThresholdSlider(subs, cfg) {
     const dotHit = document.getElementById('rulerDotHit');
 
     const updateUI = () => {
-        const pct = Math.max(0, Math.min(1, threshold / maxRate));
+        const pct = Math.max(0, Math.min(1, threshold / currentMax));
         dot.style.left = `${pct * 100}%`;
         dotHit.style.left = `${pct * 100}%`;
 
@@ -2097,30 +2152,26 @@ function initThresholdSlider(subs, cfg) {
             chip.textContent = '请拖动手柄';
         } else {
             chip.classList.add('visible');
-            chip.textContent = `≥ ${threshold.toFixed(1)}%`;
+            chip.textContent = `≥ ${metrics[_currentFilterMode].fmt(threshold)}${metrics[_currentFilterMode].unit}`;
         }
 
         let above = 0, below = 0;
         document.querySelectorAll('.sub-item[data-rate]').forEach(el => {
-            const r = parseFloat(el.dataset.rate);
-            const dim = threshold > 0 && r < threshold;
+            const val = parseFloat(el.dataset[_currentFilterMode]);
+            const dim = threshold > 0 && val < threshold;
             el.classList.toggle('sub-item--dim', dim);
             dim ? below++ : above++;
         });
 
-        // 动态更新标题栏
         const rankingTitle = document.getElementById('rankingTitle');
         if (rankingTitle) {
             const totalActive = above + below;
             if (threshold > 0) {
-                // 当手柄被拖动时，显示 达标数量 并使用 CSS 类控制高亮和间距
                 rankingTitle.innerHTML = `订阅排名（${totalActive} 个活跃<span class="title-divider">丨</span><span class="title-highlight">${above} 个达标</span><span class="title-divider">丨</span><span class="title-muted">${below} 个已隐藏</span>）`;
             } else {
-                // 手柄归零时恢复原状
                 rankingTitle.innerHTML = `订阅排名（${totalActive} 个活跃）`;
             }
         }
-        // ===============================================
 
         const activeCount = document.querySelectorAll('.sub-item[data-rate]:not(.sub-item--dim)').length;
         const urlsBtn = document.getElementById('copyUrlsBtn');
@@ -2130,14 +2181,15 @@ function initThresholdSlider(subs, cfg) {
         if (yamlBtn) yamlBtn.querySelector('.btn-text').textContent =
             activeCount < subs.length ? `YAML 格式 (${activeCount})` : 'YAML 格式';
 
-        drawRuler(svgEl, maxRate, threshold);
+        drawRuler(svgEl, currentMax, threshold, metrics[_currentFilterMode].unit, metrics[_currentFilterMode].fmt);
     };
 
     const setFromX = clientX => {
         const rect = rulerOuter.getBoundingClientRect();
         let p = (clientX - rect.left) / rect.width;
         p = Math.max(0, Math.min(1, p));
-        threshold = p < 0.03 ? 0 : p * maxRate;
+        threshold = p < 0.03 ? 0 : p * currentMax;
+        _filterThresholds[_currentFilterMode] = threshold; // 持久化手柄状态
         updateUI();
     };
 
@@ -2155,8 +2207,8 @@ function initThresholdSlider(subs, cfg) {
     rulerOuter.addEventListener('click', e => { if (!dragging) setFromX(e.clientX); });
 
     requestAnimationFrame(() => {
-        drawRuler(svgEl, maxRate, threshold);
-        new ResizeObserver(() => drawRuler(svgEl, maxRate, threshold)).observe(rulerOuter);
+        drawRuler(svgEl, currentMax, threshold, metrics[_currentFilterMode].unit, metrics[_currentFilterMode].fmt);
+        new ResizeObserver(() => drawRuler(svgEl, currentMax, threshold, metrics[_currentFilterMode].unit, metrics[_currentFilterMode].fmt)).observe(rulerOuter);
     });
 
     updateUI();
