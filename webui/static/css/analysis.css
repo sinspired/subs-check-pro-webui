@@ -1833,18 +1833,18 @@ h1 svg {
 
 /* ── SVG 尺子及文字样式 ── */
 .ruler-base-line {
-  stroke: color-mix(in srgb, var(--muted) 40%, transparent);
-  stroke-width: 1.8px;
+  stroke: color-mix(in srgb, var(--muted) 60%, transparent);
+  stroke-width: 1.2px;
 }
 
 .ruler-fill-line {
   stroke: color-mix(in srgb, var(--fg) 80%, transparent);
-  stroke-width: 2px;
+  stroke-width: 1.4px;
 }
 
 .ruler-tick-main {
-  stroke: color-mix(in srgb, var(--muted) 40%, transparent);
-  stroke-width: 1.6px;
+  stroke: color-mix(in srgb, var(--muted) 60%, transparent);
+  stroke-width: 1.2px;
   stroke-linecap: round;
 }
 
