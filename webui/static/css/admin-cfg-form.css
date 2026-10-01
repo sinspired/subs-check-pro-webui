@@ -2709,6 +2709,10 @@ textarea.cfg-expandable-input:focus {
 
 /* 基础卡片外壳 */
 #subStatsTooltip .sub-item {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: default;
   padding: 16px;
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -2733,10 +2737,15 @@ textarea.cfg-expandable-input:focus {
   font-weight: 700;
   letter-spacing: 0.04em;
   padding: 5px 12px 5px 14px;
-  border-radius: 0px 0px 8px 0;
+  border-radius: 0px 0px 10px 0;
   margin: -16px 0 12px -16px;
   max-width: 80%;
   line-height: 1;
+  color: var(--tc);
+  background: color-mix(in srgb, var(--tc) 8%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--tc) 20%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--tc) 20%, transparent);
+  box-shadow: 2px 2px 10px color-mix(in srgb, var(--tc) 10%, transparent);
 }
 
 #subStatsTooltip .sub-corner-tag .tag-icon {
@@ -2746,7 +2755,6 @@ textarea.cfg-expandable-input:focus {
   opacity: 0.85;
   flex-shrink: 0;
 }
-
 #subStatsTooltip .sub-corner-tag .tag-text {
   white-space: nowrap;
   overflow: hidden;
@@ -2778,12 +2786,6 @@ textarea.cfg-expandable-input:focus {
   margin-bottom: 14px;
   gap: 16px;
 }
-
-/* 提取公共颜色变量，赋能全组件统一变色 */
-#subStatsTooltip .tier-s { --tc: #10b981; }
-#subStatsTooltip .tier-a { --tc: var(--success, #22c55e); }
-#subStatsTooltip .tier-b { --tc: var(--warning, #f59e0b); }
-#subStatsTooltip .tier-c { --tc: var(--danger, #ef4444); }
 
 /* 优化角标颜色应用 */
 #subStatsTooltip .sub-corner-tag {
@@ -2947,12 +2949,6 @@ textarea.cfg-expandable-input:focus {
   letter-spacing: 0.05em;
 }
 
-/* 沉默订阅(拉取失败/0节点)专属颜色及滤镜 */
-#subStatsTooltip .tier-silent {
-  --tc: var(--muted, #9ca3af);
-  filter: grayscale(0.2);
-}
-
 /* 右侧：评级徽章 */
 #subStatsTooltip .sub-hero-right {
   display: flex;
@@ -3080,5 +3076,157 @@ textarea.cfg-expandable-input:focus {
   #subStatsTooltip .sub-stats-hero {
     gap: 12px;
     padding: 12px;
+  }
+}
+
+/* ================= 表单行内评级徽章 ================= */
+.cfg-url-inline-tier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 4px;
+  margin-right: 2px;
+  color: var(--tc, inherit);
+  background: color-mix(in srgb, var(--tc, var(--muted)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tc, var(--muted)) 25%, transparent);
+  pointer-events: auto; /* 允许 hover 提示 */
+  white-space: nowrap;
+}
+
+/* 映射各评级主题色给行内徽章 */
+.cfg-url-inline-tier.tier-s { --tc: #10b981; }
+.cfg-url-inline-tier.tier-a { --tc: var(--success, #22c55e); }
+.cfg-url-inline-tier.tier-b { --tc: var(--warning, #f59e0b); }
+.cfg-url-inline-tier.tier-c { --tc: var(--danger, #ef4444); }
+.cfg-url-inline-tier.tier-silent { --tc: var(--muted, #9ca3af); }
+.cfg-url-inline-tier.tier-dead {
+  --tc: var(--danger, #ef4444);
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+
+/* ================= 合并后的列表行内按钮 (代替原饼图+徽章) ================= */
+.cfg-url-btn-tier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;  /* 与删除按钮等高 */
+  height: 26px;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 6px;
+  margin-right: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--tc, var(--muted));
+  background: color-mix(in srgb, var(--tc, var(--muted)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tc, var(--muted)) 30%, transparent);
+  font-family: var(--font-mono, monospace);
+  flex-shrink: 0;
+}
+
+.cfg-url-btn-tier:hover {
+  background: color-mix(in srgb, var(--tc, var(--muted)) 20%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--tc, var(--muted)) 20%, transparent);
+}
+
+.cfg-url-btn-tier:active {
+  transform: translateY(0);
+}
+
+/* ================= 提取公共颜色变量，赋能全组件统一变色 ================= */
+#subStatsTooltip .tier-s { --tc: #10b981; }
+#subStatsTooltip .tier-a { --tc: var(--success, #22c55e); }
+#subStatsTooltip .tier-b { --tc: var(--warning, #f59e0b); }
+#subStatsTooltip .tier-c { --tc: var(--accent, #3b82f6); }
+#subStatsTooltip .tier-silent { --tc: var(--muted, #9ca3af); }
+#subStatsTooltip .tier-dead { --tc: var(--danger, #ef4444); }
+
+/* ================= 合并后的列表行内按钮 (代替原饼图+徽章) ================= */
+.cfg-url-btn-tier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;  /* 与删除按钮等高 */
+  height: 26px;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 6px;
+  margin-right: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--tc, var(--muted));
+  background: color-mix(in srgb, var(--tc, var(--muted)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tc, var(--muted)) 30%, transparent);
+  font-family: var(--font-mono, monospace);
+  flex-shrink: 0;
+}
+
+.cfg-url-btn-tier:hover {
+  background: color-mix(in srgb, var(--tc, var(--muted)) 20%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--tc, var(--muted)) 20%, transparent);
+}
+
+.cfg-url-btn-tier:active {
+  transform: translateY(0);
+}
+
+/* 按钮的等级颜色映射 */
+.cfg-url-btn-tier.tier-s { --tc: #10b981; }
+.cfg-url-btn-tier.tier-a { --tc: var(--success, #22c55e); }
+.cfg-url-btn-tier.tier-b { --tc: var(--warning, #f59e0b); }
+.cfg-url-btn-tier.tier-c { --tc: var(--accent, #3b82f6); }
+.cfg-url-btn-tier.tier-silent { --tc: var(--muted, #9ca3af); }
+.cfg-url-btn-tier.tier-dead { --tc: var(--danger, #ef4444); }
+.cfg-url-btn-tier.tier-unknown {
+  --tc: color-mix(in srgb, var(--fg) 50%, transparent);
+  border-style: dashed;
+}
+
+/* ================= 移动端小屏极简自适应 ================= */
+@media (max-width: 480px) {
+  #subStatsTooltip .sub-stats-hero {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  #subStatsTooltip .sub-ring-wrapper {
+    width: 48px;
+    height: 48px;
+  }
+  #subStatsTooltip .sub-ring-text {
+    font-size: 10.5px !important;
+  }
+
+  /* 小屏时综合评分依然保持左右布局，并撑满可用空间 */
+  #subStatsTooltip .sub-score-box {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+    width: 100%;
+  }
+  #subStatsTooltip .sub-score-value {
+    font-size: 20px;
+  }
+
+  #subStatsTooltip .sub-tier-badge {
+    width: 40px;
+    height: 40px;
+  }
+  #subStatsTooltip .sub-tier-badge .tier-text {
+    font-size: 16px;
+  }
+  #subStatsTooltip .sub-tier-badge .tier-title {
+    font-size: 8.5px;
+  }
+
+  #subStatsTooltip .num-val {
+    font-size: 15px;
   }
 }

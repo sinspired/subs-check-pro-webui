@@ -2172,58 +2172,62 @@ function _showSubTooltip(btn, subData, checkTime) {
     });
   }
 
-const fmtRateFn = window.fmtRate || (r => r.toFixed(1) + '%');
+  const fmtRateFn = window.fmtRate || (r => r.toFixed(1) + '%');
   const escapeHtml = window.esc || (str => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
+
+  const formatNum = (n) => {
+    if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + 'W';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return n;
+  };
 
   const stats = subData.stats || {};
   const success = stats.success || 0;
   const total = stats.total || 0;
+  const errMsg = subData.error || '';
 
-  // 判断是否为沉默订阅 (无节点产出)
-  const isSilent = total === 0;
+  const isDead = total === 0 && errMsg !== '';
+  const isSilent = total === 0 && errMsg === '';
 
-  // 计算成功率
   const rateNum = (success > 0 && total > 0)
     ? (success / total * 100)
     : parseFloat(String(stats.rate || '0'));
 
-  // 沉默订阅强制显示 N/A
-  const rateStr = isSilent ? 'N/A' : fmtRateFn(rateNum);
-
-  // 综合评分
+  const rateStr = isDead ? 'Err' : (isSilent ? 'N/A' : fmtRateFn(rateNum));
   const scoreNum = success * Math.sqrt(rateNum / 100);
 
   const locs = Array.isArray(subData.top_locations) ? subData.top_locations.join('').split('|').filter(Boolean) : [];
   const protos = subData.protocols ? Object.entries(subData.protocols).sort((a, b) => b[1] - a[1]) : [];
 
-  // 获取评级与主题色标
   let tierClass, tierLabel;
-  if (isSilent) {
+  if (isDead) {
+    tierClass = 'tier-dead';
+    tierLabel = '失效';
+  } else if (isSilent) {
     tierClass = 'tier-silent';
     tierLabel = '沉默';
   } else {
-    const tierInfo = window.getSubTier
-        ? window.getSubTier(scoreNum)
-        : { key: 'c', label: 'C' };
+    const tierInfo = window.getSubTier ? window.getSubTier(scoreNum) : { key: 'c', label: 'C' };
     tierClass = `tier-${tierInfo.key}`;
     tierLabel = tierInfo.label;
   }
 
+  // 使用传入的 _displayTag，或者按传统解析
   let rawUrl = subData.url || '';
-  let nameTag = '';
+  let nameTag = subData._displayTag || '';
   let cleanUrl = rawUrl;
   const hashIdx = rawUrl.lastIndexOf('#');
   if (hashIdx !== -1) {
-    try { nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); }
-    catch (e) { nameTag = rawUrl.substring(hashIdx + 1); }
     cleanUrl = rawUrl.substring(0, hashIdx);
+    if (!nameTag) {
+      try { nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); }
+      catch (e) { nameTag = rawUrl.substring(hashIdx + 1); }
+    }
   }
 
-  // 环形图进度计算 (放大半径到 26)
   const radius = 26;
   const circumference = 2 * Math.PI * radius;
-  // 如果是沉默订阅，进度条走空
-  const offset = isSilent ? circumference : (circumference - (Math.min(rateNum, 100) / 100) * circumference);
+  const offset = (isDead || isSilent) ? circumference : (circumference - (Math.min(rateNum, 100) / 100) * circumference);
 
   const locIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
 
@@ -2238,38 +2242,37 @@ const fmtRateFn = window.fmtRate || (r => r.toFixed(1) + '%');
         <!-- 满宽 URL -->
         <div class="sub-full-url js-truncate" data-full-text="${escapeHtml(cleanUrl)}" title="${escapeHtml(rawUrl)}"></div>
 
-        <!-- 核心数据区：左、中、右三栏结构 -->
         <div class="sub-stats-hero">
             <!-- 左侧：纯环形图 -->
             <div class="sub-ring-box">
-                <div class="sub-ring-wrapper">
+                <div class="sub-ring-wrapper" title="${isDead ? escapeHtml(errMsg) : ''}">
                     <svg class="sub-ring-svg" viewBox="0 0 64 64">
                         <circle class="sub-ring-bg" cx="32" cy="32" r="${radius}"></circle>
                         <circle class="sub-ring-progress" cx="32" cy="32" r="${radius}"
                                 stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
                     </svg>
-                    <!-- 沉默时缩小字号防止N/A溢出 -->
-                    <div class="sub-ring-text" style="font-size: ${isSilent ? '13px' : '11.5px'}">${rateStr}</div>
+                    <!-- 非正常态时缩小字体防止溢出 -->
+                    <div class="sub-ring-text" style="font-size: ${(isDead || isSilent) ? '13px' : '11.5px'}">${rateStr}</div>
                 </div>
             </div>
 
             <div class="sub-hero-divider"></div>
 
-            <!-- 中间：综合评分与节点数据 -->
+            <!-- 中间：大数已做 W/K 格式化 -->
             <div class="sub-hero-middle">
                 <div class="sub-score-box">
                     <span class="sub-score-label">综合评分</span>
-                    <span class="sub-score-value">${isSilent ? '-' : scoreNum.toFixed(1)}</span>
+                    <span class="sub-score-value">${(isDead || isSilent) ? '-' : scoreNum.toFixed(1)}</span>
                 </div>
                 <div class="sub-numbers-grid">
-                    <div class="num-block">
-                        <span class="num-val success-val">${isSilent ? '-' : success}</span>
-                        <span class="num-label">有效节点</span>
+                    <div class="num-block" title="精确值: ${success}">
+                        <span class="num-val success-val">${(isDead || isSilent) ? '-' : formatNum(success)}</span>
+                        <span class="num-label">有效</span>
                     </div>
                     <div class="num-divider">/</div>
-                    <div class="num-block">
-                        <span class="num-val">${isSilent ? '-' : total}</span>
-                        <span class="num-label">节点总数</span>
+                    <div class="num-block" title="精确值: ${total}">
+                        <span class="num-val">${(isDead || isSilent) ? '-' : formatNum(total)}</span>
+                        <span class="num-label">总数</span>
                     </div>
                 </div>
             </div>
@@ -2280,19 +2283,17 @@ const fmtRateFn = window.fmtRate || (r => r.toFixed(1) + '%');
             <div class="sub-hero-right">
                 <div class="sub-tier-badge">
                     <span class="tier-text">${tierLabel}</span>
-                    <span class="tier-title">${isSilent ? '状态' : '评级'}</span>
+                    <span class="tier-title">${(isDead || isSilent) ? '状态' : '评级'}</span>
                 </div>
             </div>
         </div>
 
-        <!-- 底部标签区 -->
        ${(locs.length > 0 || protos.length > 0) ? `
         <div class="sub-meta-tags">
           ${locs.map(l => `<span class="tag-pill loc">${locIcon}${l}</span>`).join('')}
           ${protos.map(([k, v]) => `<span class="tag-pill proto"><span class="p-name">${k}</span><span class="p-val">${v}</span></span>`).join('')}
         </div>` : ''}
 
-        <!-- 更新时间 -->
         ${checkTime ? `
         <div class="sub-time-footer">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -2600,39 +2601,112 @@ function mkUrlList(field, values) {
 
       inputWrap.append(iconEl, inp);
       row.append(handle, inputWrap, del);
-    } else if (field.key === 'sub-urls') {
-      const statsBtn = el('button', { class: 'cfg-url-stats cfg-url-del', type: 'button', title: '查看上次检测数据' });
-      statsBtn.style.cssText = 'color: var(--muted); opacity: 1;';
-      statsBtn.innerHTML = _SVG_PIE_CHART;
-      statsBtn.onmouseover = () => statsBtn.style.opacity = '1';
-      statsBtn.onmouseout = () => statsBtn.style.opacity = '0.7';
+    }
 
+    if (field.key === 'sub-urls') {
+      // 匹配工具函数：将配置中的 {Ymd} / {ymd1} 等变量转换为正则进行容错匹配，并无视两边的 #Tag
+      const matchSubUrl = (cfgUrlRaw, reportUrls) => {
+        const cfgBase = cfgUrlRaw.split('#')[0].trim();
+        // 对基础字符串进行正则转义，然后将 \{[字母数字_]+\} 替换为 .* 通配符
+        let regexStr = cfgBase.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+        regexStr = regexStr.replace(/\\\{[a-zA-Z0-9_]+\\\}/g, '.*');
+        const regex = new RegExp('^' + regexStr + '$', 'i');
+
+        for (const rUrl of reportUrls) {
+          const rBase = rUrl.split('#')[0].trim();
+          if (cfgBase === rBase || regex.test(rBase)) return rUrl;
+        }
+        return null;
+      };
+
+      // 合并后的多功能徽章按钮
+      const statsBtn = el('button', { class: 'cfg-url-btn-tier tier-unknown', type: 'button' });
+      statsBtn.innerHTML = '?';
+      statsBtn.title = '未知状态 (获取中...)';
+
+      // 只要用户改动了链接内容，恢复为未知状态
+      inp.addEventListener('input', () => {
+        statsBtn.className = 'cfg-url-btn-tier tier-unknown';
+        statsBtn.innerHTML = '?';
+        statsBtn.title = '内容已修改，请重新检测';
+      });
+
+      // 异步读取报告，渲染按钮颜色和字母
+      _getReportData().then(report => {
+        if (!report) return;
+        const currentUrl = inp.value.trim();
+        if (!currentUrl) return;
+
+        const allSubs = [...(report.subs_ranking || []), ...(report.subs_ranking_bad || [])];
+        const reportUrls = allSubs.map(s => s.url);
+        const matchedUrl = matchSubUrl(currentUrl, reportUrls);
+
+        if (matchedUrl) {
+          const subData = allSubs.find(s => s.url === matchedUrl);
+          const st = subData.stats || {};
+          const suc = st.success || 0;
+          const tot = st.total || 0;
+          const err = subData.error || '';
+
+          const isDead = tot === 0 && err !== '';
+          const isSilent = tot === 0 && err === '';
+
+          if (isDead) {
+            statsBtn.className = 'cfg-url-btn-tier tier-dead';
+            statsBtn.innerHTML = '⨯';
+            statsBtn.title = `失效 | 错误: ${err}`;
+          } else if (isSilent) {
+            statsBtn.className = 'cfg-url-btn-tier tier-silent';
+            statsBtn.innerHTML = '∅';
+            statsBtn.title = `沉默 | 无有效节点`;
+          } else {
+            const rNum = (suc > 0 && tot > 0) ? (suc / tot * 100) : parseFloat(String(st.rate || '0'));
+            const sNum = suc * Math.sqrt(rNum / 100);
+            const tier = window.getSubTier ? window.getSubTier(sNum) : { key: 'c', label: 'C' };
+
+            statsBtn.className = `cfg-url-btn-tier tier-${tier.key}`;
+            statsBtn.innerHTML = tier.label;
+            statsBtn.title = `评级: ${tier.label} | 综合分: ${sNum.toFixed(1)}`;
+          }
+        } else {
+          statsBtn.className = 'cfg-url-btn-tier tier-unknown';
+          statsBtn.innerHTML = '?';
+          statsBtn.title = '暂无数据 (可能含有未匹配变量或未被检测)';
+        }
+      });
+
+      // 点击弹出详情 Tooltip
       statsBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        const url = inp.value.trim();
-        if (!url) return window.showToast?.('订阅地址为空', 'warn', 2000);
+        const currentUrl = inp.value.trim();
+        if (!currentUrl) return window.showToast?.('订阅地址为空', 'warn', 2000);
 
+        const originalHTML = statsBtn.innerHTML;
         statsBtn.disabled = true;
         statsBtn.innerHTML = typeof _SVG_SPIN !== 'undefined' ? _SVG_SPIN : '⏳';
 
         const report = await _getReportData();
-
         statsBtn.disabled = false;
-        statsBtn.innerHTML = _SVG_PIE_CHART;
+        statsBtn.innerHTML = originalHTML;
 
         if (!report) return window.showToast?.('获取报告数据失败，或您尚未运行检测', 'error', 3000);
 
-        const allSubs = [
-          ...(report.subs_ranking || []),
-          ...(report.subs_ranking_bad || [])
-        ];
+        const allSubs = [...(report.subs_ranking || []), ...(report.subs_ranking_bad || [])];
+        const reportUrls = allSubs.map(s => s.url);
+        const matchedUrl = matchSubUrl(currentUrl, reportUrls);
 
-        const subData = allSubs.find(s => s.url === url);
-        if (!subData) {
-          return window.showToast?.('暂无该订阅的数据（或最近未被检测）', 'info', 3000);
+        if (!matchedUrl) {
+          return window.showToast?.('无该订阅数据。或该订阅由于网络异常被拦截。', 'info', 4000);
         }
+
+        const subData = allSubs.find(s => s.url === matchedUrl);
+
+        // 智能补全 Tag：配置和报告任意一方带 #Tag 均可合并继承显示
+        let cfgTag = currentUrl.includes('#') ? currentUrl.split('#')[1] : '';
+        let repTag = matchedUrl.includes('#') ? matchedUrl.split('#')[1] : '';
+        subData._displayTag = cfgTag || repTag;
 
         const checkTime = report.check_info?.check_time || '';
         _showSubTooltip(statsBtn, subData, checkTime);
@@ -2640,6 +2714,7 @@ function mkUrlList(field, values) {
 
       const actionsWrap = el('div', { class: 'cfg-url-actions' });
       actionsWrap.style.cssText = 'display: flex; gap: 4px; align-items: center; margin-left: 4px;';
+
       actionsWrap.append(statsBtn, del);
       row.append(handle, inp, actionsWrap);
 
