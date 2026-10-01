@@ -1793,13 +1793,24 @@ function initProtoTooltip() {
     }, { passive: true });
 }
 
+// 订阅分级：阈值统一在此维护，卡片徽标、进度条刻度线、图例共用同一份数据
+const SUB_TIERS = [
+    { key: 's', label: 'S', min: 20 },
+    { key: 'a', label: 'A', min: 10 },
+    { key: 'b', label: 'B', min: 3 },
+    { key: 'c', label: 'C', min: 0 },
+];
+function getSubTier(rate) {
+    return SUB_TIERS.find(t => rate >= t.min) || SUB_TIERS[SUB_TIERS.length - 1];
+}
+
 function renderSubs(subs, subsBad, cfg) {
     cfg = cfg || {};
 
     // 清除上一次的 ResizeObserver
     _urlTruncator.disconnect();
 
-    // 复制工具栏（保持原样，略）
+    // 复制工具栏
     document.getElementById('copyToolbar').innerHTML = subs.length
         ? `<div class="copy-toolbar">
         <span class="copy-toolbar-label">复制：</span>
@@ -1822,17 +1833,40 @@ function renderSubs(subs, subsBad, cfg) {
     if (!subs.length) {
         document.getElementById('rankingContent').innerHTML = '<p style="color:var(--muted);font-size:13px">暂无活跃订阅</p>';
     } else {
+        // 进度条比例：与上方「成功率筛选」标尺使用同一个 maxRate
+        const maxRate = Math.max(...subs.map(s => parseFloat(s.stats?.rate || '0')), 1);
+
+        // 分级边界刻度线（只画落在当前量程内的边界，避免全挤在最左侧）
+        const ticksHTML = SUB_TIERS
+            .filter(t => t.min > 0 && t.min < maxRate)
+            .map(t => `<i class="sub-tick" style="left:${(t.min / maxRate * 100).toFixed(2)}%"></i>`)
+            .join('');
+
+        // 分级图例
+        const legendHTML = `<div class="tier-legend">
+            <span class="tier-legend-title">分级</span>
+            ${SUB_TIERS.map((t, i) => {
+            const range = t.min === 0 ? `&lt; ${SUB_TIERS[i - 1].min}%` : `≥ ${t.min}%`;
+            return `<span class="tier-legend-item"><span class="sub-tier tier-${t.key}">${t.label}</span><em>${range}</em></span>`;
+        }).join('')}
+            ${ticksHTML ? '<span class="tier-legend-note">进度条与标尺同比例，竖线为分级边界</span>' : ''}
+        </div>`;
+
         const listHTML = subs.map((s, i) => {
             const stats = s.stats || {};
             const rateNum = (stats.success > 0 && stats.total > 0)
                 ? stats.success / stats.total * 100
                 : parseFloat(String(stats.rate || '0'));
             const rateStr = fmtRate(rateNum);
-            const barColor = rateNum >= 10 ? 'var(--success)' : rateNum > 0 ? 'var(--warning)' : 'var(--danger)';
+
+            const tier = getSubTier(rateNum);
+            const tierTip = tier.min === 0
+                ? `${tier.label} 级（成功率 < ${SUB_TIERS[SUB_TIERS.length - 2].min}%）`
+                : `${tier.label} 级（成功率 ≥ ${tier.min}%）`;
+            const barPct = Math.min(100, rateNum / maxRate * 100);
+
             const locs = Array.isArray(s.top_locations) ? s.top_locations.join('').split('|').filter(Boolean) : [];
             const protos = s.protocols ? Object.entries(s.protocols).sort((a, b) => b[1] - a[1]) : [];
-            const tierClass = rateNum >= 20 ? 'tier-s' : rateNum >= 10 ? 'tier-a' : rateNum >= 3 ? 'tier-b' : 'tier-c';
-            const tierLabel = rateNum >= 20 ? 'S' : rateNum >= 10 ? 'A' : rateNum >= 3 ? 'B' : 'C';
 
             // 提取 #nameTag
             let rawUrl = s.url || '';
@@ -1845,26 +1879,30 @@ function renderSubs(subs, subsBad, cfg) {
                 cleanUrl = rawUrl.substring(0, hashIdx);
             }
 
-            return `<div class="sub-item" data-rate="${rateNum}">
+            // 保持原有布局，注入 tier 类名与 --tc 颜色变量关联
+            return `<div class="sub-item tier-${tier.key}" data-rate="${rateNum}">
             ${nameTag ? `
-            <div class="sub-corner-tag" style="color:${barColor}; background: color-mix(in srgb, ${barColor} 5%, transparent); border-right: 1px solid color-mix(in srgb, ${barColor} 15%, transparent); border-bottom: 1px solid color-mix(in srgb, ${barColor} 15%, transparent); box-shadow: 6px 6px 20px color-mix(in srgb, ${barColor} 5%, transparent);" >
+            <div class="sub-corner-tag" style="color:var(--tc); background: color-mix(in srgb, var(--tc) 5%, transparent); border-right: 1px solid color-mix(in srgb, var(--tc) 15%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--tc) 15%, transparent); box-shadow: 6px 6px 20px color-mix(in srgb, var(--tc) 5%, transparent);" >
                 <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
                 <span class="tag-text">${esc(nameTag)}</span>
             </div>` : ''}
             <div class="sub-header">
                 <span class="sub-rank">${i + 1}</span>
                 <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
-                <span class="sub-tier ${tierClass}">${tierLabel}</span>
-                <span class="sub-rate" style="color:${barColor}">${rateStr}</span>
+                <span class="sub-tier tier-${tier.key}" title="${tierTip}">${tier.label}</span>
+                <span class="sub-rate" style="color:var(--tc)">${rateStr}</span>
             </div>
-            <div class="sub-bar-wrap"><div class="sub-bar" style="width:${Math.min(rateNum, 100)}%;background:${barColor}"></div></div>
+            <div class="sub-bar-wrap">
+                <div class="sub-bar" style="width:${barPct.toFixed(2)}%;min-width:${rateNum > 0 ? '4px' : '0'}"></div>
+                ${ticksHTML}
+            </div>
             <div class="sub-meta">
             <div class="tag-wrap">
             ${locs.map(l => `<span class="tag-pill loc">${l}</span>`).join('')}
             ${protos.map(([k, v]) => `<span class="tag-pill proto">${k}:${v}</span>`).join('')}
             </div>
             <div class="stats-wrap">
-            <span class="stats-success">${stats.success || 0}</span> / <span class="stats-total">${stats.total || 0}</span>
+            <span class="stats-label">存活</span><span class="stats-success">${stats.success || 0}</span> / <span class="stats-total">${stats.total || 0}</span>
             </div>
             </div>
             </div>`;
@@ -1873,6 +1911,7 @@ function renderSubs(subs, subsBad, cfg) {
         document.getElementById('rankingContent').innerHTML =
             `<div id="thresholdSlot"></div>
        <div class="section-title" id="rankingTitle">订阅排名（${subs.length} 个活跃）</div>
+       ${legendHTML}
        <div class="sub-list">${listHTML}</div>`;
 
         initThresholdSlider(subs, cfg);
