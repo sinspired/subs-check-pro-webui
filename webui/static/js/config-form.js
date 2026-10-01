@@ -2149,25 +2149,12 @@ let _subTooltipEl = null;
 function _showSubTooltip(btn, subData, checkTime) {
   if (!_subTooltipEl) {
     _subTooltipEl = el('div', { id: 'subStatsTooltip' });
-    // 使用 min-width / max-width 并配合 width: max-content 让他自适应极其长的数字和标签内容
-    _subTooltipEl.style.cssText = `
-            position: fixed;
-            z-index: 9999;
-            min-width: 340px;
-            max-width: 440px;
-            width: max-content;
-            opacity: 0;
-            transform: scale(0.96) translateY(4px);
-            transition: opacity 0.2s, transform 0.2s;
-            pointer-events: none;
-        `;
     document.body.appendChild(_subTooltipEl);
 
     document.addEventListener('click', (e) => {
-      if (_subTooltipEl && _subTooltipEl.classList.contains('visible') && !e.target.closest('#subStatsTooltip') && !e.target.closest('.cfg-url-stats')) {
+      // 点击非 Tooltip 本身，且非触发按钮时，关闭悬浮窗
+      if (_subTooltipEl && _subTooltipEl.classList.contains('visible') && !e.target.closest('#subStatsTooltip') && !e.target.closest('.cfg-url-btn-tier')) {
         _subTooltipEl.classList.remove('visible');
-        _subTooltipEl.style.opacity = '0';
-        _subTooltipEl.style.pointerEvents = 'none';
       }
     });
   }
@@ -2231,8 +2218,9 @@ function _showSubTooltip(btn, subData, checkTime) {
 
   const locIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
 
+  /* 彻底清理内联 CSS，结构也简化为经典仪表盘布局 */
   _subTooltipEl.innerHTML = `
-    <div class="sub-item ${tierClass}" style="margin:0; width: 100%; box-sizing: border-box; cursor: default;">
+    <div class="sub-item ${tierClass}">
         ${nameTag ? `
         <div class="sub-corner-tag">
             <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
@@ -2252,28 +2240,25 @@ function _showSubTooltip(btn, subData, checkTime) {
                                 stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
                     </svg>
                     <!-- 非正常态时缩小字体防止溢出 -->
-                    <div class="sub-ring-text" style="font-size: ${(isDead || isSilent) ? '13px' : '11.5px'}">${rateStr}</div>
+                    <div class="sub-ring-text ${(isDead || isSilent) ? 'text-lg' : ''}">${rateStr}</div>
                 </div>
             </div>
 
             <div class="sub-hero-divider"></div>
 
-            <!-- 中间：大数已做 W/K 格式化 -->
+            <!-- 中间：经典的 Label - Value 横线分隔 -->
             <div class="sub-hero-middle">
-                <div class="sub-score-box">
-                    <span class="sub-score-label">综合评分</span>
-                    <span class="sub-score-value">${(isDead || isSilent) ? '-' : scoreNum.toFixed(1)}</span>
+                <div class="sub-info-row">
+                    <span class="info-label">综合评分</span>
+                    <span class="info-value score-val">${(isDead || isSilent) ? '-' : scoreNum.toFixed(1)}</span>
                 </div>
-                <div class="sub-numbers-grid">
-                    <div class="num-block" title="精确值: ${success}">
-                        <span class="num-val success-val">${(isDead || isSilent) ? '-' : formatNum(success)}</span>
-                        <span class="num-label">有效</span>
-                    </div>
-                    <div class="num-divider">/</div>
-                    <div class="num-block" title="精确值: ${total}">
-                        <span class="num-val">${(isDead || isSilent) ? '-' : formatNum(total)}</span>
-                        <span class="num-label">总数</span>
-                    </div>
+                <div class="sub-info-row" title="精确值: ${success}">
+                    <span class="info-label">有效节点</span>
+                    <span class="info-value success-val">${(isDead || isSilent) ? '-' : formatNum(success)}</span>
+                </div>
+                <div class="sub-info-row" title="精确值: ${total}">
+                    <span class="info-label">节点总数</span>
+                    <span class="info-value total-val">${(isDead || isSilent) ? '-' : formatNum(total)}</span>
                 </div>
             </div>
 
@@ -2329,9 +2314,6 @@ function _showSubTooltip(btn, subData, checkTime) {
     _subTooltipEl.style.top = top + 'px';
 
     _subTooltipEl.classList.add('visible');
-    _subTooltipEl.style.opacity = '1';
-    _subTooltipEl.style.transform = 'scale(1) translateY(0)';
-    _subTooltipEl.style.pointerEvents = 'auto';
   });
 }
 

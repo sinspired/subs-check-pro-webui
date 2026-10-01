@@ -2688,18 +2688,25 @@ textarea.cfg-expandable-input:focus {
    订阅地址检测数据悬浮窗 (仪表盘风格 Dashboard)
 ════════════════════════════════════════════════════════════ */
 
-/* 数据查看按钮独立 Hover 样式 */
-.cfg-url-stats {
-  color: color-mix(in srgb, var(--accent) 70%, transparent);
-}
-.cfg-url-stats:hover {
-  color: var(--accent) !important;
-  background: color-mix(in srgb, var(--accent) 10%, transparent) !important;
-}
-
+/* 悬浮窗外层定位与动画 */
 #subStatsTooltip {
+  position: fixed;
+  z-index: 9999;
+  min-width: 320px;
+  max-width: 440px;
+  width: max-content;
+  opacity: 0;
+  transform: scale(0.96) translateY(4px);
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
   --chip-geo: #0198d3;
   --chip-proto: #8b5cf6;
+}
+
+#subStatsTooltip.visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
 }
 
 :root[data-theme='dark'] #subStatsTooltip {
@@ -2778,7 +2785,7 @@ textarea.cfg-expandable-input:focus {
 /* 主数据展示区（左中右结构） */
 #subStatsTooltip .sub-stats-hero {
   display: flex;
-  align-items: stretch; /* 保证分隔线撑满等高 */
+  align-items: stretch;
   background: color-mix(in srgb, var(--fg) 2%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   border-radius: 10px;
@@ -2787,16 +2794,7 @@ textarea.cfg-expandable-input:focus {
   gap: 16px;
 }
 
-/* 优化角标颜色应用 */
-#subStatsTooltip .sub-corner-tag {
-  color: var(--tc);
-  background: color-mix(in srgb, var(--tc) 5%, transparent);
-  border-right: 1px solid color-mix(in srgb, var(--tc) 15%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--tc) 15%, transparent);
-  box-shadow: 4px 4px 12px color-mix(in srgb, var(--tc) 5%, transparent);
-}
-
-/* 左侧：纯环形图 */
+/* 左侧：环形图 */
 #subStatsTooltip .sub-ring-box {
   display: flex;
   align-items: center;
@@ -2841,6 +2839,9 @@ textarea.cfg-expandable-input:focus {
   font-family: var(--font-mono, monospace);
   letter-spacing: -0.02em;
 }
+#subStatsTooltip .sub-ring-text.text-lg {
+  font-size: 13px;
+}
 
 /* 分隔线 */
 #subStatsTooltip .sub-hero-divider {
@@ -2850,103 +2851,50 @@ textarea.cfg-expandable-input:focus {
   flex-shrink: 0;
 }
 
-/* 中间：综合评分与节点数据 (上下分层) */
+/* 中间：三行经典 Label - Value 结构 */
 #subStatsTooltip .sub-hero-middle {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 0;
+  min-width: 120px;
   padding: 0;
+  gap: 6px;
 }
 
-#subStatsTooltip .sub-score-box {
+#subStatsTooltip .sub-info-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  padding-bottom: 6px;
-  margin-bottom: 6px;
-  border-bottom: 1px dashed color-mix(in srgb, var(--border) 75%, transparent);
+  padding-bottom: 4px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--border) 50%, transparent);
 }
-#subStatsTooltip .sub-score-label {
+#subStatsTooltip .sub-info-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+#subStatsTooltip .info-label {
   font-size: 11px;
   color: var(--muted);
   font-weight: 600;
+  white-space: nowrap;
 }
-#subStatsTooltip .sub-score-value {
-  font-size: 20px;
-  line-height: 1;
+#subStatsTooltip .info-value {
+  font-size: 13px;
   font-family: var(--font-mono, monospace);
   font-weight: 800;
-  color: var(--tc);
-}
-
-#subStatsTooltip .sub-numbers-grid {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-#subStatsTooltip .num-block {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-#subStatsTooltip .num-val {
-  font-size: 18px;
-  font-family: var(--font-mono, monospace);
-  font-weight: 800;
-  line-height: 1;
   color: var(--fg);
-}
-#subStatsTooltip .num-val.success-val {
-  color: var(--tc);
-}
-#subStatsTooltip .num-divider {
-  font-size: 18px;
-  color: var(--muted);
-  opacity: 0.25;
-  font-weight: 300;
-  margin-top: -12px; /* 调整斜杠视觉重心 */
-}
-#subStatsTooltip .num-label {
-  font-size: 10px;
-  color: var(--muted);
-  opacity: 0.8;
   white-space: nowrap;
 }
-
-/* 右侧：评级徽章 */
-#subStatsTooltip .sub-hero-right {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-#subStatsTooltip .sub-tier-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+#subStatsTooltip .info-value.score-val {
   color: var(--tc);
-  background: color-mix(in srgb, var(--tc) 12%, transparent);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--tc) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--tc) 20%, transparent);
+  font-size: 14px;
 }
-#subStatsTooltip .sub-tier-badge .tier-text {
-  font-size: 18px; /* 调整字号以适应两字中文(如: 沉默) */
-  font-weight: 800;
-  line-height: 1.1;
-  white-space: nowrap;
+#subStatsTooltip .info-value.success-val {
+  color: var(--tc);
 }
-#subStatsTooltip .sub-tier-badge .tier-title {
-  font-size: 9px;
-  font-weight: 700;
-  opacity: 0.8;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+#subStatsTooltip .info-value.total-val {
+  color: var(--muted);
 }
 
 /* 右侧：评级徽章 */
@@ -2970,9 +2918,10 @@ textarea.cfg-expandable-input:focus {
   border: 1px solid color-mix(in srgb, var(--tc) 20%, transparent);
 }
 #subStatsTooltip .sub-tier-badge .tier-text {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   line-height: 1.1;
+  white-space: nowrap;
 }
 #subStatsTooltip .sub-tier-badge .tier-title {
   font-size: 9px;
@@ -2980,9 +2929,10 @@ textarea.cfg-expandable-input:focus {
   opacity: 0.8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  margin-top: 1px;
 }
 
-/* 标签组合区 (适应海量协议换行) */
+/* 标签组合区 */
 #subStatsTooltip .sub-meta-tags {
   display: flex;
   flex-wrap: wrap;
@@ -2992,21 +2942,16 @@ textarea.cfg-expandable-input:focus {
 #subStatsTooltip .tag-pill {
   display: inline-flex;
   align-items: center;
-  border-radius: 6px;
-  padding: 1px 8px;
   border-radius: 99px;
+  padding: 1px 8px;
   background: var(--input-bg);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   font-size: 9.5px;
   white-space: nowrap;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  box-shadow: 2px 2px 8px color-mix(in srgb, var(--card-shadow) 5%, transparent);
 }
-
 #subStatsTooltip .tag-pill.loc {
   background: color-mix(in srgb, var(--chip-geo) 8%, transparent);
-  /* color: color-mix(in srgb, var(--chip-geo) 90%, var(--fg)); */
   border-color: color-mix(in srgb, var(--chip-geo) 20%, transparent);
   padding: 3px 8px;
   gap: 4px;
@@ -3016,7 +2961,6 @@ textarea.cfg-expandable-input:focus {
   height: 10px;
   opacity: 0.8;
 }
-
 #subStatsTooltip .tag-pill.proto {
   background: color-mix(in srgb, var(--chip-proto) 5%, transparent);
   border-color: color-mix(in srgb, var(--chip-proto) 20%, transparent);
@@ -3024,12 +2968,10 @@ textarea.cfg-expandable-input:focus {
   gap: 6px;
 }
 #subStatsTooltip .tag-pill.proto .p-name {
-  /* color: color-mix(in srgb, var(--chip-proto) 80%, var(--fg)); */
   text-transform: uppercase;
 }
 #subStatsTooltip .tag-pill.proto .p-val {
   background: color-mix(in srgb, var(--chip-proto) 12%, transparent);
-  /* color: color-mix(in srgb, var(--chip-proto) 90%, var(--fg)); */
   padding: 1px 5px;
   border-radius: 4px;
   font-family: var(--font-mono, monospace);
@@ -3060,84 +3002,6 @@ textarea.cfg-expandable-input:focus {
   color: color-mix(in srgb, var(--fg) 80%, transparent);
 }
 
-/* 移动端自适应缩放 */
-@media (max-width: 768px) {
-  #subStatsTooltip {
-    width: 85vw !important;
-    max-width: 320px;
-  }
-  #subStatsTooltip .sub-item {
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-    padding: 16px;
-  }
-  #subStatsTooltip .sub-corner-tag {
-    margin: -16px 0 12px -16px;
-  }
-  #subStatsTooltip .sub-stats-hero {
-    gap: 12px;
-    padding: 12px;
-  }
-}
-
-/* ================= 表单行内评级徽章 ================= */
-.cfg-url-inline-tier {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 800;
-  padding: 2px 5px;
-  border-radius: 4px;
-  margin-right: 2px;
-  color: var(--tc, inherit);
-  background: color-mix(in srgb, var(--tc, var(--muted)) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--tc, var(--muted)) 25%, transparent);
-  pointer-events: auto; /* 允许 hover 提示 */
-  white-space: nowrap;
-}
-
-/* 映射各评级主题色给行内徽章 */
-.cfg-url-inline-tier.tier-s { --tc: #10b981; }
-.cfg-url-inline-tier.tier-a { --tc: var(--success, #22c55e); }
-.cfg-url-inline-tier.tier-b { --tc: var(--warning, #f59e0b); }
-.cfg-url-inline-tier.tier-c { --tc: var(--danger, #ef4444); }
-.cfg-url-inline-tier.tier-silent { --tc: var(--muted, #9ca3af); }
-.cfg-url-inline-tier.tier-dead {
-  --tc: var(--danger, #ef4444);
-  text-decoration: line-through;
-  opacity: 0.85;
-}
-
-/* ================= 合并后的列表行内按钮 (代替原饼图+徽章) ================= */
-.cfg-url-btn-tier {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;  /* 与删除按钮等高 */
-  height: 26px;
-  font-size: 13px;
-  font-weight: 800;
-  border-radius: 6px;
-  margin-right: 2px;
-  cursor: pointer;
-  transition: all 0.15s;
-  color: var(--tc, var(--muted));
-  background: color-mix(in srgb, var(--tc, var(--muted)) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--tc, var(--muted)) 30%, transparent);
-  font-family: var(--font-mono, monospace);
-  flex-shrink: 0;
-}
-
-.cfg-url-btn-tier:hover {
-  background: color-mix(in srgb, var(--tc, var(--muted)) 20%, transparent);
-  transform: translateY(-1px);
-  box-shadow: 0 3px 8px color-mix(in srgb, var(--tc, var(--muted)) 20%, transparent);
-}
-
-.cfg-url-btn-tier:active {
-  transform: translateY(0);
-}
-
 /* ================= 提取公共颜色变量，赋能全组件统一变色 ================= */
 #subStatsTooltip .tier-s { --tc: #10b981; }
 #subStatsTooltip .tier-a { --tc: var(--success, #22c55e); }
@@ -3146,12 +3010,12 @@ textarea.cfg-expandable-input:focus {
 #subStatsTooltip .tier-silent { --tc: var(--muted, #9ca3af); }
 #subStatsTooltip .tier-dead { --tc: var(--danger, #ef4444); }
 
-/* ================= 合并后的列表行内按钮 (代替原饼图+徽章) ================= */
+/* ================= 合并后的列表行内按钮 ================= */
 .cfg-url-btn-tier {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;  /* 与删除按钮等高 */
+  width: 26px;
   height: 26px;
   font-size: 13px;
   font-weight: 800;
@@ -3188,7 +3052,28 @@ textarea.cfg-expandable-input:focus {
   border-style: dashed;
 }
 
-/* ================= 移动端小屏极简自适应 ================= */
+/* ================= 移动端自适应缩放 ================= */
+@media (max-width: 768px) {
+  #subStatsTooltip {
+    width: 90vw !important;
+    max-width: 360px;
+  }
+  #subStatsTooltip .sub-item {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    padding: 16px;
+  }
+  #subStatsTooltip .sub-corner-tag {
+    margin: -16px 0 12px -16px;
+  }
+  #subStatsTooltip .sub-stats-hero {
+    gap: 12px;
+    padding: 12px;
+  }
+  #subStatsTooltip .sub-hero-middle {
+    min-width: 100px;
+  }
+}
+
 @media (max-width: 480px) {
   #subStatsTooltip .sub-stats-hero {
     gap: 8px;
@@ -3199,20 +3084,10 @@ textarea.cfg-expandable-input:focus {
     height: 48px;
   }
   #subStatsTooltip .sub-ring-text {
-    font-size: 10.5px !important;
+    font-size: 10.5px;
   }
-
-  /* 小屏时综合评分依然保持左右布局，并撑满可用空间 */
-  #subStatsTooltip .sub-score-box {
-    flex-direction: row;
-    align-items: baseline;
-    justify-content: space-between;
-    padding-bottom: 5px;
-    margin-bottom: 5px;
-    width: 100%;
-  }
-  #subStatsTooltip .sub-score-value {
-    font-size: 20px;
+  #subStatsTooltip .sub-ring-text.text-lg {
+    font-size: 12px;
   }
 
   #subStatsTooltip .sub-tier-badge {
@@ -3224,9 +3099,5 @@ textarea.cfg-expandable-input:focus {
   }
   #subStatsTooltip .sub-tier-badge .tier-title {
     font-size: 8.5px;
-  }
-
-  #subStatsTooltip .num-val {
-    font-size: 15px;
   }
 }
