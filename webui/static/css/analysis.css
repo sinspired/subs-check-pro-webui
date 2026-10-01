@@ -1886,13 +1886,19 @@ h1 svg {
 
 /* ── 被隐藏的列表项动态效果 ── */
 .sub-item {
-  /* 基础项增加平滑动画 */
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--glass-bg);
   transition:
     background 0.15s,
     opacity 0.3s ease,
     transform 0.3s ease,
     filter 0.3s ease;
+  box-shadow: 4px 4px 10px
+    color-mix(in srgb, var(--card-shadow) 7%, transparent);
   transform-origin: top center;
+  overflow: hidden;
 }
 
 .sub-item--dim {
@@ -1931,9 +1937,53 @@ h1 svg {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--glass-bg);
-  transition: background 0.15s;
+  transition:
+    background 0.15s,
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    filter 0.3s ease;
   box-shadow: 4px 4px 10px
     color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  transform-origin: top center;
+  overflow: hidden; /* 新增：限制内部角标不溢出圆角 */
+}
+
+/* 别名角标（装饰卡片左上角） */
+.sub-corner-tag {
+  display: flex; /* 改为 flex 消除文本基线与行高的幽灵空白 */
+  width: max-content; /* 紧贴文字内容，避免占满整行 */
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 5px 18px 5px 16px;
+  /* 左上角与卡片外框圆角(10px)完美贴合，右下角独立弧度 */
+  border-radius: 0px 0px 10px 0;
+  /* border-radius: 0px 10px 10px 0;
+  /* 负边距精准抵消父级 .sub-item 的 padding(上12px, 左14px) */
+  /* margin: -12px 0 10px -14px; */
+  margin: -12px 0 10px -14px;
+  color: var(--fg-hover);
+  /* background: color-mix(in srgb, var(--bg-hover) 100%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--fg-hover) 15%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--fg-hover) 15%, transparent);
+  box-shadow: 6px 6px 20px color-mix(in srgb, var(--fg-hover) 10%, transparent); */
+  max-width: 50%;
+  line-height: 1;
+}
+
+.sub-corner-tag .tag-icon {
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.sub-corner-tag .tag-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sub-item:hover {
@@ -1978,14 +2028,13 @@ h1 svg {
 }
 
 .sub-url {
-  flex: 1;
   font-size: 11px;
   font-family: var(--font-mono, monospace);
   color: var(--muted);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .sub-rate {
@@ -2008,19 +2057,32 @@ h1 svg {
   transition: width 0.5s ease;
 }
 
+/* analysis.css */
+
+/* 找到 .sub-meta，修改其对齐并新增 tag-wrap */
 .sub-meta {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start; /* 替换掉原有的 center 以应对多行排版 */
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 8px; /* 稍微加大间距，原为 5px */
   font-size: 11px;
   color: var(--muted);
+}
+
+.tag-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .stats-wrap {
   font-size: 8px;
   color: var(--muted);
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .stats-success {
@@ -2102,16 +2164,41 @@ h1 svg {
 }
 
 .bad-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: block; /* 改为 block，使用内部 row 来实现原来的 flex 布局 */
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
-  gap: 8px;
+  overflow: hidden;
 }
 
 .bad-item:last-child {
   border-bottom: none;
+}
+
+.bad-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bad-item .bad-count {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* 沉默订阅专用的黯淡角标 */
+.sub-corner-tag.bad-tag {
+  background: color-mix(in srgb, var(--muted) 8%, transparent);
+  color: var(--muted);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  /* 精准抵消沉默项 .bad-item 的 padding(上8px, 左12px) */
+  margin: -8px 0 8px -12px;
+  padding: 3px 10px 3px 12px;
+  font-size: 9.5px;
+  /* 沉默项无卡片外框，左上角无需做圆角，保持直角拼接即可 */
+  border-radius: 0 0 10px 0;
 }
 
 .bad-url {

@@ -22,6 +22,76 @@ function platformColor(name, category = 'media') {
         : 'var(--unlock-media-fallback)';
 }
 
+// 基于 Canvas 的智能中间截断器
+const _urlTruncator = (() => {
+    let canvas = null;
+    let ctx = null;
+    let observer = null;
+
+    function getCtx() {
+        if (!canvas) {
+            canvas = document.createElement("canvas");
+            ctx = canvas.getContext("2d");
+        }
+        return ctx;
+    }
+
+    const truncate = (el) => {
+        const text = el.dataset.fullText;
+        if (!text) return;
+
+        // 减去 1px 防止因浮点计算引发的细微抖动溢出
+        const availW = el.clientWidth - 1;
+        if (availW <= 0) return;
+
+        const c = getCtx();
+        if (!c) {
+            el.textContent = text;
+            return;
+        }
+
+        const style = window.getComputedStyle(el);
+        // 确保跨浏览器兼容性，重组 font 属性
+        c.font = style.font || `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+
+        if (c.measureText(text).width <= availW) {
+            if (el.textContent !== text) el.textContent = text;
+            return;
+        }
+
+        let lo = 0, hi = text.length;
+        while (hi - lo > 1) {
+            const mid = (lo + hi) >> 1;
+            const candidate = text.slice(0, Math.ceil(mid / 2)) + "…" + text.slice(-Math.floor(mid / 2));
+            if (c.measureText(candidate).width <= availW) {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+
+        const finalStr = text.slice(0, Math.ceil(lo / 2)) + "…" + text.slice(-Math.floor(lo / 2));
+        if (el.textContent !== finalStr) el.textContent = finalStr;
+    };
+
+    return {
+        observe: (el) => {
+            if (!observer) {
+                observer = new ResizeObserver((entries) => {
+                    // 使用 rAF 避免 “ResizeObserver loop limit exceeded” 报错
+                    for (const entry of entries) requestAnimationFrame(() => truncate(entry.target));
+                });
+            }
+            observer.observe(el);
+            // 立即执行一次
+            truncate(el);
+        },
+        disconnect: () => {
+            if (observer) observer.disconnect();
+        }
+    };
+})();
+
 // 国家中心坐标 [lon, lat]
 const GEO_COUNTRY_COORDS = {
     // 东亚
@@ -1726,7 +1796,10 @@ function initProtoTooltip() {
 function renderSubs(subs, subsBad, cfg) {
     cfg = cfg || {};
 
-    // 复制工具栏
+    // 清除上一次的 ResizeObserver
+    _urlTruncator.disconnect();
+
+    // 复制工具栏（保持原样，略）
     document.getElementById('copyToolbar').innerHTML = subs.length
         ? `<div class="copy-toolbar">
         <span class="copy-toolbar-label">复制：</span>
@@ -1744,14 +1817,11 @@ function renderSubs(subs, subsBad, cfg) {
             <span class="scope-text">含沉默订阅</span>
           </label>
         </div>
-      </div>`
-        : '';
+      </div>` : '';
 
     if (!subs.length) {
-        document.getElementById('rankingContent').innerHTML =
-            '<p style="color:var(--muted);font-size:13px">暂无活跃订阅</p>';
+        document.getElementById('rankingContent').innerHTML = '<p style="color:var(--muted);font-size:13px">暂无活跃订阅</p>';
     } else {
-        // ① 先渲染列表 HTML
         const listHTML = subs.map((s, i) => {
             const stats = s.stats || {};
             const rateNum = (stats.success > 0 && stats.total > 0)
@@ -1763,24 +1833,41 @@ function renderSubs(subs, subsBad, cfg) {
             const protos = s.protocols ? Object.entries(s.protocols).sort((a, b) => b[1] - a[1]) : [];
             const tierClass = rateNum >= 20 ? 'tier-s' : rateNum >= 10 ? 'tier-a' : rateNum >= 3 ? 'tier-b' : 'tier-c';
             const tierLabel = rateNum >= 20 ? 'S' : rateNum >= 10 ? 'A' : rateNum >= 3 ? 'B' : 'C';
+
+            // 提取 #nameTag
+            let rawUrl = s.url || '';
+            let nameTag = '';
+            let cleanUrl = rawUrl;
+            const hashIdx = rawUrl.lastIndexOf('#');
+            if (hashIdx !== -1) {
+                try { nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); }
+                catch (e) { nameTag = rawUrl.substring(hashIdx + 1); }
+                cleanUrl = rawUrl.substring(0, hashIdx);
+            }
+
             return `<div class="sub-item" data-rate="${rateNum}">
-        <div class="sub-header">
-          <span class="sub-rank">${i + 1}</span>
-          <span class="sub-url" title="${esc(s.url)}">${esc(s.url)}</span>
-          <span class="sub-tier ${tierClass}">${tierLabel}</span>
-          <span class="sub-rate" style="color:${barColor}">${rateStr}</span>
-        </div>
-        <div class="sub-bar-wrap"><div class="sub-bar" style="width:${Math.min(rateNum, 100)}%;background:${barColor}"></div></div>
-        <div class="sub-meta">
-          <div class="tag-wrap">
-          ${locs.map(l => `<span class="tag-pill loc">${l}</span>`).join('')}
-          ${protos.map(([k, v]) => `<span class="tag-pill proto">${k}:${v}</span>`).join('')}
-          </div>
-          <div class="stats-wrap">
-          <span class="stats-success">${stats.success || 0}</span> / <span class="stats-total">${stats.total || 0}</span>
-          </div>
-        </div>
-      </div>`;
+            ${nameTag ? `
+            <div class="sub-corner-tag" style="color:${barColor}; background: color-mix(in srgb, ${barColor} 5%, transparent); border-right: 1px solid color-mix(in srgb, ${barColor} 15%, transparent); border-bottom: 1px solid color-mix(in srgb, ${barColor} 15%, transparent); box-shadow: 6px 6px 20px color-mix(in srgb, ${barColor} 5%, transparent);" >
+                <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                <span class="tag-text">${esc(nameTag)}</span>
+            </div>` : ''}
+            <div class="sub-header">
+                <span class="sub-rank">${i + 1}</span>
+                <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
+                <span class="sub-tier ${tierClass}">${tierLabel}</span>
+                <span class="sub-rate" style="color:${barColor}">${rateStr}</span>
+            </div>
+            <div class="sub-bar-wrap"><div class="sub-bar" style="width:${Math.min(rateNum, 100)}%;background:${barColor}"></div></div>
+            <div class="sub-meta">
+            <div class="tag-wrap">
+            ${locs.map(l => `<span class="tag-pill loc">${l}</span>`).join('')}
+            ${protos.map(([k, v]) => `<span class="tag-pill proto">${k}:${v}</span>`).join('')}
+            </div>
+            <div class="stats-wrap">
+            <span class="stats-success">${stats.success || 0}</span> / <span class="stats-total">${stats.total || 0}</span>
+            </div>
+            </div>
+            </div>`;
         }).join('');
 
         document.getElementById('rankingContent').innerHTML =
@@ -1788,32 +1875,51 @@ function renderSubs(subs, subsBad, cfg) {
        <div class="section-title" id="rankingTitle">订阅排名（${subs.length} 个活跃）</div>
        <div class="sub-list">${listHTML}</div>`;
 
-        // ② 列表已在 DOM 中，再初始化手柄
         initThresholdSlider(subs, cfg);
     }
 
-    // 沉默订阅
     if (!subsBad.length) {
         document.getElementById('badContent').innerHTML = '';
-        return;
+    } else {
+        document.getElementById('badContent').innerHTML =
+            `<div class="section-title-toggle" onclick="toggleBad()">
+           沉默订阅&nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0">(${subsBad.length})</span>
+           <span class="toggle-line"></span>
+           <svg class="toggle-chevron" id="badChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+         </div>
+         <div id="badList" style="display:none">
+           <div class="bad-list">
+             ${subsBad.map(s => {
+                const st = s.stats || {};
+                let rawUrl = s.url || '';
+                let nameTag = '';
+                let cleanUrl = rawUrl;
+                const hashIdx = rawUrl.lastIndexOf('#');
+                if (hashIdx !== -1) {
+                    try { nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); }
+                    catch (e) { nameTag = rawUrl.substring(hashIdx + 1); }
+                    cleanUrl = rawUrl.substring(0, hashIdx);
+                }
+                return `<div class="bad-item">
+                 ${nameTag ? `
+                 <div class="sub-corner-tag bad-tag">
+                   <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                   <span class="tag-text">${esc(nameTag)}</span>
+                 </div>` : ''}
+                 <div class="bad-item-row">
+                   <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
+                   <span class="bad-count">${st.success || 0}/${st.total || 0}</span>
+                 </div>
+               </div>`;
+            }).join('')}
+           </div>
+         </div>`;
     }
-    document.getElementById('badContent').innerHTML =
-        `<div class="section-title-toggle" onclick="toggleBad()">
-       沉默订阅&nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0">(${subsBad.length})</span>
-       <span class="toggle-line"></span>
-       <svg class="toggle-chevron" id="badChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-     </div>
-     <div id="badList" style="display:none">
-       <div class="bad-list">
-         ${subsBad.map(s => {
-            const st = s.stats || {};
-            return `<div class="bad-item">
-             <span class="bad-url" title="${esc(s.url)}">${esc(s.url)}</span>
-             <span class="bad-count">${st.success || 0}/${st.total || 0}</span>
-           </div>`;
-        }).join('')}
-       </div>
-     </div>`;
+
+    // 3. 渲染完成后为所有需要中间截断的元素绑定监视器
+    requestAnimationFrame(() => {
+        document.querySelectorAll('.js-truncate').forEach(el => _urlTruncator.observe(el));
+    });
 }
 
 function drawRuler(svgEl, maxRate, threshold) {

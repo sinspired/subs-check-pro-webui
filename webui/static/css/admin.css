@@ -55,6 +55,7 @@
   --input-bg: rgba(231, 223, 208, 0.2);
   --bg-summary: rgba(255, 255, 255, 0.5);
   --bg-hover: rgba(242, 234, 219, 0.5);
+  --fg-hover: rgb(243, 165, 56);
 
   /* --logs-bg: rgba(236, 232, 224, 0.2); */
   --logs-bg: rgba(231, 223, 208, 0.1);
@@ -114,6 +115,7 @@
   --input-bg: rgba(0, 0, 0, 0.2);
   --bg-summary: rgba(0, 0, 0, 0.2);
   --bg-hover: #04585540;
+  --fg-hover: #00c5be;
   --logs-bg: rgba(0, 0, 0, 0.2);
   --editor-bg: rgba(23, 23, 23, 0.2);
   --content-bg: rgba(23, 23, 23, 0.2);
