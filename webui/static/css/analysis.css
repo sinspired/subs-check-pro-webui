@@ -488,8 +488,8 @@ h1 svg {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--muted);
-  margin: 0 0 10px;
+  color: var(--fg);
+  margin: 18px 0 16px 8px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1627,7 +1627,7 @@ h1 svg {
   gap: 6px;
   padding: 9px 12px;
   margin-bottom: 14px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--glass-bg);
   flex-wrap: nowrap;
