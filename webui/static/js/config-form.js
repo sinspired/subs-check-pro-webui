@@ -2251,7 +2251,7 @@ function _showSubTooltip(btn, subData, checkTime) {
         </div>
 
         <!-- 底部标签区 -->
-        ${(locs.length > 0 || protos.length > 0) ? `
+       ${(locs.length > 0 || protos.length > 0) ? `
         <div class="sub-meta-tags">
           ${locs.map(l => `<span class="tag-pill loc">${locIcon}${l}</span>`).join('')}
           ${protos.map(([k, v]) => `<span class="tag-pill proto"><span class="p-name">${k}</span><span class="p-val">${v}</span></span>`).join('')}

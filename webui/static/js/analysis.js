@@ -1377,9 +1377,13 @@ function renderGeo(ga) {
 }
 
 const PROTO_COLORS = {
-    vless: '#0ea5a0', vmess: '#d97706', trojan: '#7c3aed', ss: '#2563eb', ssr: '#1d4ed8',
-    http: '#059669', socks5: '#64748b', hysteria: '#db2777', hy2: '#be185d', tuic: '#0891b2',
+  vless: '#0ea5a0', vmess: '#d97706', trojan: '#7c3aed', ss: '#2563eb', ssr: '#1d4ed8',
+  http: '#059669', https: '#059669', socks5: '#64748b', hysteria: '#db2777', hysteria2: '#be185d', tuic: '#0891b2',
+  masque: '#10b981', shadowquic: '#d97706', wireguard: '#ef4444', tailscale: '#ef4444', openvpn: '#ef4444',
+  snell: '#ea580c', 'gost-relay': '#0284c7', mieru: '#059669', sudoku: '#059669', anytls: '#0d9488',
+  ssh: '#ef4444', trusttunnel: '#64748b'
 };
+
 function getProtoColor(name) { return PROTO_COLORS[name.toLowerCase().replace(/[^a-z0-9]/g, '')] || '#94a3b8'; }
 
 /* ── Mihomo 全协议图鉴 & 深度分析字典 ── */

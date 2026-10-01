@@ -2930,15 +2930,21 @@ textarea.cfg-expandable-input:focus {
   display: inline-flex;
   align-items: center;
   border-radius: 6px;
-  font-size: 10px;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  font-size: 9.5px;
+  white-space: nowrap;
+  box-shadow: 4px 4px 10px
+    color-mix(in srgb, var(--card-shadow) 7%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
 
 #subStatsTooltip .tag-pill.loc {
   background: color-mix(in srgb, var(--chip-geo) 8%, transparent);
-  color: color-mix(in srgb, var(--chip-geo) 90%, var(--fg));
+  /* color: color-mix(in srgb, var(--chip-geo) 90%, var(--fg)); */
   border-color: color-mix(in srgb, var(--chip-geo) 20%, transparent);
-  font-weight: 600;
   padding: 3px 8px;
   gap: 4px;
 }
@@ -2955,13 +2961,12 @@ textarea.cfg-expandable-input:focus {
   gap: 6px;
 }
 #subStatsTooltip .tag-pill.proto .p-name {
-  color: color-mix(in srgb, var(--chip-proto) 80%, var(--fg));
-  font-weight: 600;
+  /* color: color-mix(in srgb, var(--chip-proto) 80%, var(--fg)); */
   text-transform: uppercase;
 }
 #subStatsTooltip .tag-pill.proto .p-val {
   background: color-mix(in srgb, var(--chip-proto) 12%, transparent);
-  color: color-mix(in srgb, var(--chip-proto) 90%, var(--fg));
+  /* color: color-mix(in srgb, var(--chip-proto) 90%, var(--fg)); */
   padding: 1px 5px;
   border-radius: 4px;
   font-family: var(--font-mono, monospace);
