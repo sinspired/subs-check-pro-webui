@@ -2172,19 +2172,42 @@ function _showSubTooltip(btn, subData, checkTime) {
     });
   }
 
-  const fmtRateFn = window.fmtRate || (r => r.toFixed(1) + '%');
+const fmtRateFn = window.fmtRate || (r => r.toFixed(1) + '%');
   const escapeHtml = window.esc || (str => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
 
   const stats = subData.stats || {};
-  const rateNum = (stats.success > 0 && stats.total > 0)
-    ? stats.success / stats.total * 100
+  const success = stats.success || 0;
+  const total = stats.total || 0;
+
+  // 判断是否为沉默订阅 (无节点产出)
+  const isSilent = total === 0;
+
+  // 计算成功率
+  const rateNum = (success > 0 && total > 0)
+    ? (success / total * 100)
     : parseFloat(String(stats.rate || '0'));
-  const rateStr = fmtRateFn(rateNum);
-  const barColor = rateNum >= 10 ? 'var(--success)' : rateNum > 0 ? 'var(--warning)' : 'var(--danger)';
+
+  // 沉默订阅强制显示 N/A
+  const rateStr = isSilent ? 'N/A' : fmtRateFn(rateNum);
+
+  // 综合评分
+  const scoreNum = success * Math.sqrt(rateNum / 100);
+
   const locs = Array.isArray(subData.top_locations) ? subData.top_locations.join('').split('|').filter(Boolean) : [];
   const protos = subData.protocols ? Object.entries(subData.protocols).sort((a, b) => b[1] - a[1]) : [];
-  const tierClass = rateNum >= 20 ? 'tier-s' : rateNum >= 10 ? 'tier-a' : rateNum >= 3 ? 'tier-b' : 'tier-c';
-  const tierLabel = rateNum >= 20 ? 'S' : rateNum >= 10 ? 'A' : rateNum >= 3 ? 'B' : 'C';
+
+  // 获取评级与主题色标
+  let tierClass, tierLabel;
+  if (isSilent) {
+    tierClass = 'tier-silent';
+    tierLabel = '沉默';
+  } else {
+    const tierInfo = window.getSubTier
+        ? window.getSubTier(scoreNum)
+        : { key: 'c', label: 'C' };
+    tierClass = `tier-${tierInfo.key}`;
+    tierLabel = tierInfo.label;
+  }
 
   let rawUrl = subData.url || '';
   let nameTag = '';
@@ -2199,14 +2222,15 @@ function _showSubTooltip(btn, subData, checkTime) {
   // 环形图进度计算 (放大半径到 26)
   const radius = 26;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (Math.min(rateNum, 100) / 100) * circumference;
+  // 如果是沉默订阅，进度条走空
+  const offset = isSilent ? circumference : (circumference - (Math.min(rateNum, 100) / 100) * circumference);
 
   const locIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
 
   _subTooltipEl.innerHTML = `
-    <div class="sub-item" style="margin:0; width: 100%; box-sizing: border-box; cursor: default;">
+    <div class="sub-item ${tierClass}" style="margin:0; width: 100%; box-sizing: border-box; cursor: default;">
         ${nameTag ? `
-        <div class="sub-corner-tag" style="color:${barColor}; background: color-mix(in srgb, ${barColor} 5%, transparent); border-right: 1px solid color-mix(in srgb, ${barColor} 15%, transparent); border-bottom: 1px solid color-mix(in srgb, ${barColor} 15%, transparent); box-shadow: 4px 4px 12px color-mix(in srgb, ${barColor} 5%, transparent);" >
+        <div class="sub-corner-tag">
             <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
             <span class="tag-text">${escapeHtml(nameTag)}</span>
         </div>` : ''}
@@ -2214,38 +2238,49 @@ function _showSubTooltip(btn, subData, checkTime) {
         <!-- 满宽 URL -->
         <div class="sub-full-url js-truncate" data-full-text="${escapeHtml(cleanUrl)}" title="${escapeHtml(rawUrl)}"></div>
 
-        <!-- 核心数据区：左环图 + 右侧(评级/数字) -->
+        <!-- 核心数据区：左、中、右三栏结构 -->
         <div class="sub-stats-hero">
             <!-- 左侧：纯环形图 -->
             <div class="sub-ring-box">
-                <div class="sub-ring-wrapper" style="--ring-color: ${barColor};">
+                <div class="sub-ring-wrapper">
                     <svg class="sub-ring-svg" viewBox="0 0 64 64">
                         <circle class="sub-ring-bg" cx="32" cy="32" r="${radius}"></circle>
                         <circle class="sub-ring-progress" cx="32" cy="32" r="${radius}"
                                 stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
                     </svg>
-                    <div class="sub-ring-text">${rateStr}</div>
+                    <!-- 沉默时缩小字号防止N/A溢出 -->
+                    <div class="sub-ring-text" style="font-size: ${isSilent ? '13px' : '11.5px'}">${rateStr}</div>
                 </div>
             </div>
 
             <div class="sub-hero-divider"></div>
 
-            <!-- 右侧：上方评级，下方详情 -->
-            <div class="sub-hero-details">
-                <div class="sub-tier-row">
-                    <span class="sub-tier-label">订阅链接评级</span>
-                    <span class="sub-tier ${tierClass}">${tierLabel}</span>
+            <!-- 中间：综合评分与节点数据 -->
+            <div class="sub-hero-middle">
+                <div class="sub-score-box">
+                    <span class="sub-score-label">综合评分</span>
+                    <span class="sub-score-value">${isSilent ? '-' : scoreNum.toFixed(1)}</span>
                 </div>
-                <div class="sub-numbers">
+                <div class="sub-numbers-grid">
                     <div class="num-block">
-                        <div class="num-val success-val" style="color:${barColor}">${stats.success || 0}</div>
-                        <div class="num-label">有效节点</div>
+                        <span class="num-val success-val">${isSilent ? '-' : success}</span>
+                        <span class="num-label">有效节点</span>
                     </div>
                     <div class="num-divider">/</div>
                     <div class="num-block">
-                        <div class="num-val">${stats.total || 0}</div>
-                        <div class="num-label">节点总数</div>
+                        <span class="num-val">${isSilent ? '-' : total}</span>
+                        <span class="num-label">节点总数</span>
                     </div>
+                </div>
+            </div>
+
+            <div class="sub-hero-divider"></div>
+
+            <!-- 右侧：评级徽章 -->
+            <div class="sub-hero-right">
+                <div class="sub-tier-badge">
+                    <span class="tier-text">${tierLabel}</span>
+                    <span class="tier-title">${isSilent ? '状态' : '评级'}</span>
                 </div>
             </div>
         </div>
