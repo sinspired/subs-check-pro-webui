@@ -652,7 +652,7 @@ h1 svg {
 }
 
 .hero-summary-text {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--fg);
   line-height: 1.7;
   flex: 1;
