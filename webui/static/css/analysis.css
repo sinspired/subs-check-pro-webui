@@ -348,7 +348,7 @@ body {
 
 .sidebar-btn.active {
   color: var(--accent);
-  background: color-mix(in srgb, var(--fg) 6%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .sidebar-btn.active .s-badge {
