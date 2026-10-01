@@ -1944,15 +1944,15 @@ function drawRuler(svgEl, maxRate, threshold) {
     for (let i = 0; i <= steps; i++) {
         const x = (i / steps) * W;
         const anchor = i === 0 ? 'start' : i === steps ? 'end' : 'middle';
-        html += `<line x1="${x.toFixed(1)}" y1="${midY - 5}" x2="${x.toFixed(1)}" y2="${midY - 1}" class="ruler-tick-main"/>`;
-        html += `<text x="${x.toFixed(1)}" y="${midY + 13}" text-anchor="${anchor}" class="ruler-text-bottom">${Math.round(i / steps * maxRate)}%</text>`;
+        html += `<line x1="${x.toFixed(1)}" y1="${midY - 9}" x2="${x.toFixed(1)}" y2="${midY - 1}" class="ruler-tick-main"/>`;
+        html += `<text x="${x.toFixed(1)}" y="${midY + 18}" text-anchor="${anchor}" class="ruler-text-bottom">${Math.round(i / steps * maxRate)}%</text>`;
     }
 
     // 副刻度
-    for (let i = 1; i < steps * 2; i++) {
-        if (i % 2 === 0) continue;
-        const x = (i / (steps * 2)) * W;
-        html += `<line x1="${x.toFixed(1)}" y1="${midY - 3}" x2="${x.toFixed(1)}" y2="${midY - 1}" class="ruler-tick-sub"/>`;
+    for (let i = 1; i < steps * steps; i++) {
+        if (i % steps === 0) continue;
+        const x = (i / (steps * steps)) * W;
+        html += `<line x1="${x.toFixed(1)}" y1="${midY - 7}" x2="${x.toFixed(1)}" y2="${midY - 1}" class="ruler-tick-sub"/>`;
     }
 
     // 手柄上方数值（threshold > 0 时显示）
@@ -1960,7 +1960,12 @@ function drawRuler(svgEl, maxRate, threshold) {
         const tx = Math.max(14, Math.min(W - 14, fillX));
         const anchor = fillX < 20 ? 'start' : fillX > W - 20 ? 'end' : 'middle';
 
-        html += `<text x="${tx.toFixed(1)}" y="${midY - 12}" text-anchor="${anchor}" class="ruler-text-top">${threshold.toFixed(1)}%</text>`;
+        html += `<text x="${tx.toFixed(1)}" y="${midY - 16}" text-anchor="${anchor}" class="ruler-text-top">${threshold.toFixed(1)}%</text>`;
+    } else {
+        const tx = Math.max(14, Math.min(W - 14, fillX));
+        const anchor = fillX < 20 ? 'start' : fillX > W - 20 ? 'end' : 'middle';
+
+        html += `<text x="-${tx.toFixed(1) / 2}" y="${midY - 16}" text-anchor="${anchor}" class="ruler-text-top zero">${threshold.toFixed(1)}</text>`;
     }
 
     svgEl.innerHTML = html;
@@ -1979,21 +1984,20 @@ function initThresholdSlider(subs, cfg) {
     slot.innerHTML = `
         <div class="threshold-container">
             <div class="threshold-row">
-            <span class="threshold-meta">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                成功率筛选
-            </span>
-            <span class="threshold-chip" id="thresholdChip"></span>
+                <span class="threshold-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                    </svg>
+                    成功率筛选
+                </span>
+                <span class="threshold-chip" id="thresholdChip"></span>
             </div>
             <div class="ruler-outer" id="rulerOuter">
-            <svg class="ruler-svg" id="rulerSvg"></svg>
-            <!-- 去除初始的内联 style="left:0%" -->
-            <div class="ruler-dot-hit" id="rulerDotHit"></div>
-            <div class="ruler-dot" id="rulerDot"></div>
-            </div>
-            <div class="threshold-foot">
-            <span class="foot-above" id="thresholdAbove"></span>
-            <span class="foot-below" id="thresholdBelow"></span>
+                <svg class="ruler-svg" id="rulerSvg"></svg>
+                <!-- 去除初始的内联 style="left:0%" -->
+                <div class="ruler-dot-hit" id="rulerDotHit"></div>
+                <div class="ruler-dot" id="rulerDot"></div>
             </div>
         </div>`;
 
@@ -2010,7 +2014,7 @@ function initThresholdSlider(subs, cfg) {
         const chip = document.getElementById('thresholdChip');
         if (threshold <= 0) {
             chip.classList.remove('visible');
-            chip.textContent = '拖动以筛选';
+            chip.textContent = '请拖动手柄';
         } else {
             chip.classList.add('visible');
             chip.textContent = `≥ ${threshold.toFixed(1)}%`;
@@ -2024,18 +2028,13 @@ function initThresholdSlider(subs, cfg) {
             dim ? below++ : above++;
         });
 
-        document.getElementById('thresholdAbove').textContent =
-            threshold > 0 ? `${above} 个达标` : `全部 ${above} 个活跃订阅`;
-        document.getElementById('thresholdBelow').textContent =
-            threshold > 0 ? `${below} 个已隐藏` : '';
-
         // 动态更新标题栏
         const rankingTitle = document.getElementById('rankingTitle');
         if (rankingTitle) {
             const totalActive = above + below;
             if (threshold > 0) {
                 // 当手柄被拖动时，显示 达标数量 并使用 CSS 类控制高亮和间距
-                rankingTitle.innerHTML = `订阅排名（${totalActive} 个活跃<span class="title-divider">丨</span><span class="title-highlight">${above} 个达标</span>）`;
+                rankingTitle.innerHTML = `订阅排名（${totalActive} 个活跃<span class="title-divider">丨</span><span class="title-highlight">${above} 个达标</span><span class="title-divider">丨</span><span class="title-muted">${below} 个已隐藏</span>）`;
             } else {
                 // 手柄归零时恢复原状
                 rankingTitle.innerHTML = `订阅排名（${totalActive} 个活跃）`;
