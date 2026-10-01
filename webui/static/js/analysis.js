@@ -1377,11 +1377,11 @@ function renderGeo(ga) {
 }
 
 const PROTO_COLORS = {
-  vless: '#0ea5a0', vmess: '#d97706', trojan: '#7c3aed', ss: '#2563eb', ssr: '#1d4ed8',
-  http: '#059669', https: '#059669', socks5: '#64748b', hysteria: '#db2777', hysteria2: '#be185d', tuic: '#0891b2',
-  masque: '#10b981', shadowquic: '#d97706', wireguard: '#ef4444', tailscale: '#ef4444', openvpn: '#ef4444',
-  snell: '#ea580c', 'gost-relay': '#0284c7', mieru: '#059669', sudoku: '#059669', anytls: '#0d9488',
-  ssh: '#ef4444', trusttunnel: '#64748b'
+    vless: '#0ea5a0', vmess: '#d97706', trojan: '#7c3aed', ss: '#2563eb', ssr: '#1d4ed8',
+    http: '#059669', https: '#059669', socks5: '#64748b', hysteria: '#db2777', hysteria2: '#be185d', tuic: '#0891b2',
+    masque: '#10b981', shadowquic: '#d97706', wireguard: '#ef4444', tailscale: '#ef4444', openvpn: '#ef4444',
+    snell: '#ea580c', 'gost-relay': '#0284c7', mieru: '#059669', sudoku: '#059669', anytls: '#0d9488',
+    ssh: '#ef4444', trusttunnel: '#64748b'
 };
 
 function getProtoColor(name) { return PROTO_COLORS[name.toLowerCase().replace(/[^a-z0-9]/g, '')] || '#94a3b8'; }
@@ -1797,19 +1797,32 @@ function initProtoTooltip() {
     }, { passive: true });
 }
 
-// 订阅分级：阈值统一在此维护，卡片徽标、进度条刻度线、图例共用同一份数据
+// 订阅分级：阈值变更为基于“综合评分 (Score = 存活数量 × √(成功率))”
+// 评分范例：50个可用(100%成功率) = 50分；50个可用(25%成功率) = 25分 (加大存活数量权重)
 const SUB_TIERS = [
-    { key: 's', label: 'S', min: 20 },
-    { key: 'a', label: 'A', min: 10 },
-    { key: 'b', label: 'B', min: 3 },
-    { key: 'c', label: 'C', min: 0 },
+    { key: 's', label: 'S', minScore: 20, desc: '主力 (高产出且高纯度)' },
+    { key: 'a', label: 'A', minScore: 8, desc: '优质 (产出稳定)' },
+    { key: 'b', label: 'B', minScore: 2, desc: '可用 (小额或纯度较低)' },
+    { key: 'c', label: 'C', minScore: 0, desc: '劣质 (几乎无产出)' },
 ];
-function getSubTier(rate) {
-    return SUB_TIERS.find(t => rate >= t.min) || SUB_TIERS[SUB_TIERS.length - 1];
+
+function getSubTier(score) {
+    return SUB_TIERS.find(t => score >= t.minScore) || SUB_TIERS[SUB_TIERS.length - 1];
 }
+
+let _currentSortMode = 'score'; // 全局记录当前排序维度: 'score', 'count', 'rate'
+let _lastRenderCfg = {};        // 缓存配置，供动态排序重绘使用
+
+window._setSortMode = function (mode) {
+    if (!_reportData) return;
+    _currentSortMode = mode;
+    // 触发重绘
+    renderSubs(_reportData.subs_ranking || [], _reportData.subs_ranking_bad || [], _lastRenderCfg);
+};
 
 function renderSubs(subs, subsBad, cfg) {
     cfg = cfg || {};
+    _lastRenderCfg = cfg;
 
     // 清除上一次的 ResizeObserver
     _urlTruncator.disconnect();
@@ -1837,37 +1850,50 @@ function renderSubs(subs, subsBad, cfg) {
     if (!subs.length) {
         document.getElementById('rankingContent').innerHTML = '<p style="color:var(--muted);font-size:13px">暂无活跃订阅</p>';
     } else {
-        // 进度条比例：与上方「成功率筛选」标尺使用同一个 maxRate
-        const maxRate = Math.max(...subs.map(s => parseFloat(s.stats?.rate || '0')), 1);
+        // 1. 数据预处理：计算每个订阅的综合分 Score
+        const processedSubs = subs.map(s => {
+            const stats = s.stats || {};
+            const success = stats.success || 0;
+            const total = stats.total || 0;
+            const rateNum = (success > 0 && total > 0) ? (success / total * 100) : parseFloat(String(stats.rate || '0'));
+            // 核心公式：加大存活数量权重，使用平方根对成功率进行平滑衰减
+            const scoreNum = success * Math.sqrt(rateNum / 100);
+            return { ...s, _success: success, _total: total, _rate: rateNum, _score: scoreNum };
+        });
 
-        // 分级边界刻度线（只画落在当前量程内的边界，避免全挤在最左侧）
-        const ticksHTML = SUB_TIERS
-            .filter(t => t.min > 0 && t.min < maxRate)
-            .map(t => `<i class="sub-tick" style="left:${(t.min / maxRate * 100).toFixed(2)}%"></i>`)
-            .join('');
+        // 2. 动态排序
+        processedSubs.sort((a, b) => {
+            if (_currentSortMode === 'count') return b._success - a._success;
+            if (_currentSortMode === 'rate') return b._rate - a._rate;
+            return b._score - a._score; // 默认按综合分
+        });
 
-        // 分级图例
-        const legendHTML = `<div class="tier-legend">
-            <span class="tier-legend-title">分级</span>
-            ${SUB_TIERS.map((t, i) => {
-            const range = t.min === 0 ? `&lt; ${SUB_TIERS[i - 1].min}%` : `≥ ${t.min}%`;
-            return `<span class="tier-legend-item"><span class="sub-tier tier-${t.key}">${t.label}</span><em>${range}</em></span>`;
+        // 滑块过滤标尺依然使用 rate，所以这里只取 maxRate
+        const maxRate = Math.max(...processedSubs.map(s => s._rate), 1);
+
+       // 分级图例与动态排序按钮
+        const legendHTML = `<div class="tier-legend" style="justify-content: space-between; width: 100%;">
+            <div style="display:flex; flex-wrap:wrap; gap: 6px 12px; align-items:center;">
+                <span class="tier-legend-title" title="公式: 存活数量 × √(成功率)">评级(基于综合分)</span>
+                ${SUB_TIERS.map((t, i) => {
+            const range = t.minScore === 0 ? `&lt; ${SUB_TIERS[i - 1].minScore}分` : `≥ ${t.minScore}分`;
+            return `<span class="tier-legend-item" title="${t.desc}"><span class="sub-tier tier-${t.key}">${t.label}</span><em>${range}</em></span>`;
         }).join('')}
-            ${ticksHTML ? '<span class="tier-legend-note">进度条与标尺同比例，竖线为分级边界</span>' : ''}
+            </div>
+            <div class="sort-toggles" style="display:flex; gap: 8px; font-size:11px; align-items:center;">
+                <span style="color:var(--muted); opacity:0.8;">排序:</span>
+                <a href="javascript:void(0)" onclick="window._setSortMode('score')" style="text-decoration:none; transition:0.2s; color:${_currentSortMode === 'score' ? 'var(--accent)' : 'var(--muted)'};font-weight:${_currentSortMode === 'score' ? '700' : '500'}">综合分</a>
+                <a href="javascript:void(0)" onclick="window._setSortMode('count')" style="text-decoration:none; transition:0.2s; color:${_currentSortMode === 'count' ? 'var(--accent)' : 'var(--muted)'};font-weight:${_currentSortMode === 'count' ? '700' : '500'}">存活数</a>
+                <a href="javascript:void(0)" onclick="window._setSortMode('rate')"  style="text-decoration:none; transition:0.2s; color:${_currentSortMode === 'rate' ? 'var(--accent)' : 'var(--muted)'};font-weight:${_currentSortMode === 'rate' ? '700' : '500'}">成功率</a>
+            </div>
         </div>`;
 
-        const listHTML = subs.map((s, i) => {
-            const stats = s.stats || {};
-            const rateNum = (stats.success > 0 && stats.total > 0)
-                ? stats.success / stats.total * 100
-                : parseFloat(String(stats.rate || '0'));
-            const rateStr = fmtRate(rateNum);
-
-            const tier = getSubTier(rateNum);
-            const tierTip = tier.min === 0
-                ? `${tier.label} 级（成功率 < ${SUB_TIERS[SUB_TIERS.length - 2].min}%）`
-                : `${tier.label} 级（成功率 ≥ ${tier.min}%）`;
-            const barPct = Math.min(100, rateNum / maxRate * 100);
+        const listHTML = processedSubs.map((s, i) => {
+            const rateStr = fmtRate(s._rate);
+            const tier = getSubTier(s._score);
+            const tierTip = `${tier.label} 级（${tier.desc}，综合分: ${s._score.toFixed(1)}）`;
+            // 进度条依然直观展示“纯度”（成功率）
+            const barPct = Math.min(100, s._rate / maxRate * 100);
 
             const locs = Array.isArray(s.top_locations) ? s.top_locations.join('').split('|').filter(Boolean) : [];
             const protos = s.protocols ? Object.entries(s.protocols).sort((a, b) => b[1] - a[1]) : [];
@@ -1883,8 +1909,18 @@ function renderSubs(subs, subsBad, cfg) {
                 cleanUrl = rawUrl.substring(0, hashIdx);
             }
 
+            // 根据排序模式，在列表右上角高亮展示对应指标
+            let mainMetricHtml = '';
+            if (_currentSortMode === 'count') {
+                mainMetricHtml = `${s._success} <span style="font-size:10px;font-weight:normal;opacity:0.7">节点</span>`;
+            } else if (_currentSortMode === 'rate') {
+                mainMetricHtml = rateStr;
+            } else {
+                mainMetricHtml = `${s._score.toFixed(1)} <span style="font-size:10px;font-weight:normal;opacity:0.7">分</span>`;
+            }
+
             // 保持原有布局，注入 tier 类名与 --tc 颜色变量关联
-            return `<div class="sub-item tier-${tier.key}" data-rate="${rateNum}">
+            return `<div class="sub-item tier-${tier.key}" data-rate="${s._rate}">
             ${nameTag ? `
             <div class="sub-corner-tag" style="color:var(--tc); background: color-mix(in srgb, var(--tc) 5%, transparent); border-right: 1px solid color-mix(in srgb, var(--tc) 15%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--tc) 15%, transparent); box-shadow: 6px 6px 20px color-mix(in srgb, var(--tc) 5%, transparent);" >
                 <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
@@ -1894,11 +1930,10 @@ function renderSubs(subs, subsBad, cfg) {
                 <span class="sub-rank">${i + 1}</span>
                 <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
                 <span class="sub-tier tier-${tier.key}" title="${tierTip}">${tier.label}</span>
-                <span class="sub-rate" style="color:var(--tc)">${rateStr}</span>
+                <span class="sub-rate" style="color:var(--tc)">${mainMetricHtml}</span>
             </div>
-            <div class="sub-bar-wrap">
-                <div class="sub-bar" style="width:${barPct.toFixed(2)}%;min-width:${rateNum > 0 ? '4px' : '0'}"></div>
-                ${ticksHTML}
+            <div class="sub-bar-wrap" title="当前节点纯度(成功率): ${rateStr}">
+                <div class="sub-bar" style="width:${barPct.toFixed(2)}%;min-width:${s._rate > 0 ? '4px' : '0'}"></div>
             </div>
             <div class="sub-meta">
             <div class="tag-wrap">
@@ -1906,7 +1941,8 @@ function renderSubs(subs, subsBad, cfg) {
             ${protos.map(([k, v]) => `<span class="tag-pill proto">${k}:${v}</span>`).join('')}
             </div>
             <div class="stats-wrap">
-            <span class="stats-label">存活</span><span class="stats-success">${stats.success || 0}</span> / <span class="stats-total">${stats.total || 0}</span>
+                <span class="stats-label">综合分</span><span style="font-weight:600;color:var(--fg);margin-right:8px">${s._score.toFixed(1)}</span>
+                <span class="stats-label">存活</span><span class="stats-success">${s._success}</span> / <span class="stats-total">${s._total}</span>
             </div>
             </div>
             </div>`;
@@ -1918,7 +1954,8 @@ function renderSubs(subs, subsBad, cfg) {
        ${legendHTML}
        <div class="sub-list">${listHTML}</div>`;
 
-        initThresholdSlider(subs, cfg);
+        // 成功率阈值过滤功能照旧，底层处理逻辑已自洽
+        initThresholdSlider(processedSubs, cfg);
     }
 
     if (!subsBad.length) {
