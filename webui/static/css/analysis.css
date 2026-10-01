@@ -109,7 +109,6 @@ body {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  padding-bottom: 50px;
 }
 
 .login-scene {
