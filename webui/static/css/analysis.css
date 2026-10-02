@@ -2051,10 +2051,18 @@ h1 svg {
 }
 
 /* ── 分级颜色变量：进度条 / 百分比 / 角标共用 ── */
-.sub-item.tier-s { --tc: #10b981; }
-.sub-item.tier-a { --tc: var(--success); }
-.sub-item.tier-b { --tc: var(--warning); }
-.sub-item.tier-c { --tc: var(--danger); }
+.sub-item.tier-s {
+  --tc: #10b981;
+}
+.sub-item.tier-a {
+  --tc: #84cc16;
+}
+.sub-item.tier-b {
+  --tc: #eab308;
+}
+.sub-item.tier-c {
+  --tc: #f97316;
+}
 
 .sub-rate {
   text-align: right;
@@ -2217,20 +2225,17 @@ h1 svg {
   background: color-mix(in srgb, #10b981 14%, transparent);
   color: #10b981;
 }
-
 .sub-tier.tier-a {
-  background: color-mix(in srgb, var(--success) 14%, transparent);
-  color: var(--success);
+  background: color-mix(in srgb, #84cc16 14%, transparent);
+  color: #84cc16;
 }
-
 .sub-tier.tier-b {
-  background: color-mix(in srgb, var(--warning) 14%, transparent);
-  color: var(--warning);
+  background: color-mix(in srgb, #eab308 14%, transparent);
+  color: #eab308;
 }
-
 .sub-tier.tier-c {
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
-  color: var(--danger);
+  background: color-mix(in srgb, #f97316 12%, transparent);
+  color: #f97316;
 }
 
 .bad-list {
@@ -2268,13 +2273,35 @@ h1 svg {
 .sub-corner-tag.bad-tag {
   background: color-mix(in srgb, var(--muted) 8%, transparent);
   color: var(--muted);
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  /* 精准抵消沉默项 .bad-item 的 padding(上8px, 左12px) */
+  border-right: 1px solid color-mix(in srgb, var(--muted) 20%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--muted) 20%, transparent);
   margin: -8px 0 8px -12px;
   padding: 3px 10px 3px 12px;
   font-size: 9.5px;
-  /* 沉默项无卡片外框，左上角无需做圆角，保持直角拼接即可 */
+  border-radius: 0 0 10px 0;
+}
+
+/* 失效订阅专用的红色角标 */
+.sub-corner-tag.dead-tag {
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: var(--danger);
+  border-right: 1px solid color-mix(in srgb, var(--danger) 20%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--danger) 20%, transparent);
+  margin: -8px 0 8px -12px;
+  padding: 3px 10px 3px 12px;
+  font-size: 9.5px;
+  border-radius: 0 0 10px 0;
+}
+
+/* 异常订阅（网络波动/429等）专用的黄色角标 */
+.sub-corner-tag.temp-tag {
+  background: color-mix(in srgb, var(--warning) 8%, transparent);
+  color: var(--warning);
+  border-right: 1px solid color-mix(in srgb, var(--warning) 20%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--warning) 20%, transparent);
+  margin: -8px 0 8px -12px;
+  padding: 3px 10px 3px 12px;
+  font-size: 9.5px;
   border-radius: 0 0 10px 0;
 }
 

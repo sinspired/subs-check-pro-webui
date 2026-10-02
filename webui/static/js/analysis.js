@@ -1797,17 +1797,138 @@ function initProtoTooltip() {
     }, { passive: true });
 }
 
-// 订阅分级：阈值变更为基于“综合评分 (Score = 存活数量 × √(成功率))”
-// 评分范例：50个可用(100%成功率) = 50分；50个可用(25%成功率) = 25分 (加大存活数量权重)
+// 订阅分级：综合评分 = 存活数量 × √(成功率)
+// 示例：
+// 50 个有效节点 + 100% 成功率 = 50 分 → S
+// 50 个有效节点 + 25% 成功率  = 25 分 → A
+// 只有 success > 0 的订阅才进入 S/A/B/C 评级。
 const SUB_TIERS = [
-    { key: 's', label: 'S', minScore: 20, desc: '主力 (高产出且高纯度)' },
-    { key: 'a', label: 'A', minScore: 8, desc: '优质 (产出稳定)' },
-    { key: 'b', label: 'B', minScore: 2, desc: '可用 (小额或纯度较低)' },
-    { key: 'c', label: 'C', minScore: 0, desc: '劣质 (几乎无产出)' },
+    { key: 's', label: 'S', minScore: 50, desc: '旗舰 (高产出且高纯度)' },
+    { key: 'a', label: 'A', minScore: 20, desc: '优质 (产出与纯度较稳定)' },
+    { key: 'b', label: 'B', minScore: 5, desc: '可用 (具备一定有效节点)' },
+    { key: 'c', label: 'C', minScore: 0, desc: '基础 (存在少量有效节点)' },
 ];
 
 function getSubTier(score) {
+    if (!(score > 0)) return null;
+
     return SUB_TIERS.find(t => score >= t.minScore) || SUB_TIERS[SUB_TIERS.length - 1];
+}
+
+// 统一订阅状态判断
+function getSubReportState(subData) {
+    const stats = subData?.stats || {};
+
+    const success = Math.max(0, Number(stats.success) || 0);
+    const total = Math.max(0, Number(stats.total) || 0);
+    const errMsg = String(subData?.error || '').trim();
+
+    // 只有非常明确的链接不存在/失效才判定为 dead
+    const isFatalError = !!errMsg && /(?:\b404\b|\b410\b|not\s*found|resource\s+not\s+found|\bgone\b|subscription\s+not\s+found|不存在|已失效|链接失效|链接无效)/i.test(errMsg);
+
+    // 临时性网络、限流、服务端错误
+    const isTempError = !!errMsg && !isFatalError && /(?:\b408\b|\b425\b|\b429\b|\b5\d{2}\b|timeout|timed\s*out|deadline|rate[\s-]*limit|limit\s*exceeded|超时|限流|网络|network|网关|gateway|连接|connection|connect|重置|reset|refused|被拒|temporary|temporarily|unavailable|unreachable|dns)/i.test(errMsg);
+
+    let state;
+
+    if (isFatalError) {
+        state = 'dead';
+    } else if (isTempError) {
+        state = 'temp';
+    } else if (success > 0) {
+        state = 'grade';
+    } else if (total > 0) {
+        // 有节点，只是当前全部不可用
+        state = 'silent';
+    } else {
+        // 没获取到任何节点
+        state = 'empty';
+    }
+
+    const rateNum = total > 0
+        ? Math.min(100, Math.max(0, success / total * 100))
+        : 0;
+
+    const scoreNum = success > 0
+        ? success * Math.sqrt(rateNum / 100)
+        : 0;
+
+    const tier = state === 'grade' ? getSubTier(scoreNum) : null;
+
+    return {
+        state,
+        success,
+        total,
+        errMsg,
+        rateNum,
+        scoreNum,
+        tier,
+        isFatalError,
+        isTempError
+    };
+}
+
+// 状态 SVG：只用于非评级状态
+function getSubStateIcon(state, size = 16) {
+    const svgAttrs = `width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"`;
+
+    switch (state) {
+        // 睡眠：月亮 + Z
+        case 'silent':
+            return `<svg class="sub-state-icon sub-state-icon--sleep" ${svgAttrs}>
+                <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.7 6.7 0 0 0 9.8 9.8z"/>
+                <path d="M17 4h3l-3 3h3"/>
+            </svg>`;
+
+        // 临时异常：警告三角
+        case 'temp':
+            return `<svg class="sub-state-icon sub-state-icon--temp" ${svgAttrs}>
+                <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>
+                <path d="M12 9v4"/>
+                <path d="M12 17h.01"/>
+            </svg>`;
+
+        // 失效：圆圈 X
+        case 'dead':
+            return `<svg class="sub-state-icon sub-state-icon--dead" ${svgAttrs}>
+                <circle cx="12" cy="12" r="9"/>
+                <path d="m9 9 6 6"/>
+                <path d="m15 9-6 6"/>
+            </svg>`;
+
+        // 无节点：圆圈 + 斜杠
+        case 'empty':
+            return `<svg class="sub-state-icon sub-state-icon--empty" ${svgAttrs}>
+                <circle cx="12" cy="12" r="9"/>
+                <path d="m8 8 8 8"/>
+            </svg>`;
+
+        // 未匹配：问号
+        case 'unknown':
+        default:
+            return `<svg class="sub-state-icon sub-state-icon--unknown" ${svgAttrs}>
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M9.6 9a2.4 2.4 0 1 1 4.1 1.7c-.8.7-1.7 1.1-1.7 2.3"/>
+                <path d="M12 16.5h.01"/>
+            </svg>`;
+    }
+}
+
+// 非评级状态在徽章里的显示内容。
+// 控制在两个字符以内：沉默 / 异常 / 失效 / 0
+function getSubStateBadgeText(state) {
+    switch (state) {
+        case 'silent':
+            return '沉默';
+        case 'temp':
+            return '异常';
+        case 'dead':
+            return '失效';
+        case 'empty':
+            return '0';
+        default:
+            return '';
+    }
 }
 
 let _currentSortMode = 'score'; // 默认排序：综合分
@@ -1864,111 +1985,178 @@ function renderSubs(subs, subsBad, cfg) {
           <span class="btn-text">YAML 格式</span>
         </button>
         <div class="copy-scope">
-          <label title="同时包含沉默订阅">
+          <label title="同时包含非活跃订阅">
             <input type="checkbox" id="copyIncludeBad">
-            <span class="scope-text">含沉默订阅</span>
+            <span class="scope-text">含非活跃订阅</span>
           </label>
         </div>
       </div>` : '';
 
     if (!subs.length) {
-        document.getElementById('rankingContent').innerHTML = '<p style="color:var(--muted);font-size:13px">暂无活跃订阅</p>';
+        document.getElementById('rankingContent').innerHTML =
+            '<p style="color:var(--muted);font-size:13px">暂无活跃订阅</p>';
     } else {
-        // 1. 数据预处理：计算每个订阅的综合分 Score
+        // 1. 数据预处理：统一计算状态、成功率、综合分
         const processedSubs = subs.map(s => {
-            const stats = s.stats || {};
-            const success = stats.success || 0;
-            const total = stats.total || 0;
-            const rateNum = (success > 0 && total > 0) ? (success / total * 100) : parseFloat(String(stats.rate || '0'));
-            // 核心公式：加大存活数量权重，使用平方根对成功率进行平滑衰减
-            const scoreNum = success * Math.sqrt(rateNum / 100);
-            return { ...s, _success: success, _total: total, _rate: rateNum, _score: scoreNum };
+            const report = getSubReportState(s);
+
+            return {
+                ...s,
+                _success: report.success,
+                _total: report.total,
+                _rate: report.rateNum,
+                _score: report.scoreNum,
+                _state: report.state,
+                _tier: report.tier
+            };
         });
 
         // 2. 动态排序
         processedSubs.sort((a, b) => {
             if (_currentSortMode === 'count') return b._success - a._success;
             if (_currentSortMode === 'rate') return b._rate - a._rate;
-            return b._score - a._score; // 默认按综合分
+            return b._score - a._score;
         });
 
-        // 滑块过滤标尺依然使用 rate，所以这里只取 maxRate
         const maxRate = Math.max(...processedSubs.map(s => s._rate), 1);
 
-        // 分级图例与动态排序按钮
         const legendHTML = `<div class="tier-legend" style="justify-content: space-between; width: 100%;">
-            <div style="display:flex; flex-wrap:wrap; gap: 6px 12px; align-items:center;">
+            <div style="display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center;">
                 <span class="tier-legend-title" title="公式: 存活数量 × √(成功率)">评级(基于综合分)</span>
                 ${SUB_TIERS.map((t, i) => {
-            const range = t.minScore === 0 ? `&lt; ${SUB_TIERS[i - 1].minScore}分` : `≥ ${t.minScore}分`;
-            return `<span class="tier-legend-item" title="${t.desc}"><span class="sub-tier tier-${t.key}">${t.label}</span><em>${range}</em></span>`;
+            let range;
+
+            if (i === 0) {
+                range = `≥ ${t.minScore}分`;
+            } else if (t.minScore === 0) {
+                range = `< ${SUB_TIERS[i - 1].minScore}分`;
+            } else {
+                range = `${t.minScore}–<${SUB_TIERS[i - 1].minScore}分`;
+            }
+
+            return `<span class="tier-legend-item" title="${t.desc}">
+                    <span class="sub-tier tier-${t.key}">${t.label}</span>
+                    <em>${range}</em>
+                </span>`;
         }).join('')}
             </div>
-            <div class="sort-toggles" style="display:flex; gap: 8px; font-size:11px; align-items:center;">
+
+            <div class="sort-toggles" style="display:flex; gap:8px; font-size:11px; align-items:center;">
                 <span style="color:var(--muted); opacity:0.8;">排序:</span>
-                <a href="javascript:void(0)" onclick="window._setSortMode('score')" style="text-decoration:none; transition:0.2s; color:${_currentSortMode === 'score' ? 'var(--accent)' : 'var(--muted)'};font-weight:${_currentSortMode === 'score' ? '700' : '500'}">综合分</a>
-                <a href="javascript:void(0)" onclick="window._setSortMode('count')" style="text-decoration:none; transition:0.2s; color:${_currentSortMode === 'count' ? 'var(--accent)' : 'var(--muted)'};font-weight:${_currentSortMode === 'count' ? '700' : '500'}">存活数</a>
-                <a href="javascript:void(0)" onclick="window._setSortMode('rate')"  style="text-decoration:none; transition:0.2s; color:${_currentSortMode === 'rate' ? 'var(--accent)' : 'var(--muted)'};font-weight:${_currentSortMode === 'rate' ? '700' : '500'}">成功率</a>
+                <a href="javascript:void(0)" onclick="window._setSortMode('score')" style="text-decoration:none;transition:0.2s;color:${_currentSortMode === 'score' ? 'var(--accent)' : 'var(--muted)'};font-weight:${_currentSortMode === 'score' ? '700' : '500'}">综合分</a>
+                <a href="javascript:void(0)" onclick="window._setSortMode('count')" style="text-decoration:none;transition:0.2s;color:${_currentSortMode === 'count' ? 'var(--accent)' : 'var(--muted)'};font-weight:${_currentSortMode === 'count' ? '700' : '500'}">存活数</a>
+                <a href="javascript:void(0)" onclick="window._setSortMode('rate')" style="text-decoration:none;transition:0.2s;color:${_currentSortMode === 'rate' ? 'var(--accent)' : 'var(--muted)'};font-weight:${_currentSortMode === 'rate' ? '700' : '500'}">成功率</a>
             </div>
         </div>`;
 
         const listHTML = processedSubs.map((s, i) => {
             const rateStr = fmtRate(s._rate);
-            const tier = getSubTier(s._score);
-            const tierTip = `${tier.label} 级（${tier.desc}，综合分: ${s._score.toFixed(1)}）`;
-            // 进度条依然直观展示“纯度”（成功率）
+            const isGrade = s._state === 'grade';
+
+            const tierClass = isGrade
+                ? `tier-${s._tier.key}`
+                : `tier-${s._state}`;
+
+            const tierLabel = isGrade
+                ? s._tier.label
+                : getSubStateBadgeText(s._state);
+
+            const tierTip = isGrade
+                ? `${s._tier.label} 级（${s._tier.desc}，综合分: ${s._score.toFixed(1)}）`
+                : s._state === 'silent'
+                    ? `沉默 | 有 ${s._total} 个节点，但当前没有可用节点`
+                    : s._state === 'empty'
+                        ? `无节点 | 已读取订阅，但未获取到任何节点`
+                        : s._state === 'temp'
+                            ? `异常 | ${s.error || '临时异常'}`
+                            : `失效 | ${s.error || '链接已失效'}`;
+
             const barPct = Math.min(100, s._rate / maxRate * 100);
 
-            const locs = Array.isArray(s.top_locations) ? s.top_locations.join('').split('|').filter(Boolean) : [];
-            const protos = s.protocols ? Object.entries(s.protocols).sort((a, b) => b[1] - a[1]) : [];
+            const locs = Array.isArray(s.top_locations)
+                ? s.top_locations.join('').split('|').filter(Boolean)
+                : [];
 
-            // 提取 #nameTag
+            const protos = s.protocols
+                ? Object.entries(s.protocols).sort((a, b) => b[1] - a[1])
+                : [];
+
             let rawUrl = s.url || '';
             let nameTag = '';
             let cleanUrl = rawUrl;
+
             const hashIdx = rawUrl.lastIndexOf('#');
+
             if (hashIdx !== -1) {
-                try { nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); }
-                catch (e) { nameTag = rawUrl.substring(hashIdx + 1); }
+                try {
+                    nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1));
+                } catch (e) {
+                    nameTag = rawUrl.substring(hashIdx + 1);
+                }
+
                 cleanUrl = rawUrl.substring(0, hashIdx);
             }
 
-            // 根据排序模式，在列表右上角高亮展示对应指标
+            // 根据排序模式，在列表右上角展示当前指标
             let mainMetricHtml = '';
+
             if (_currentSortMode === 'count') {
-                mainMetricHtml = `${s._success} <span style="font-size:10px;font-weight:normal;opacity:0.7">节点</span>`;
+                mainMetricHtml = `${s._success} <span class="sub-metric-unit">节点</span>`;
             } else if (_currentSortMode === 'rate') {
                 mainMetricHtml = rateStr;
+            } else if (isGrade) {
+                mainMetricHtml = `${s._score.toFixed(1)} <span class="sub-metric-unit">分</span>`;
             } else {
-                mainMetricHtml = `${s._score.toFixed(1)} <span style="font-size:10px;font-weight:normal;opacity:0.7">分</span>`;
+                mainMetricHtml = getSubStateIcon(s._state, 14);
             }
 
-            // 保持原有布局，注入 tier 类名与 --tc 颜色变量关联，以及各维度的值用于筛选
-            return `<div class="sub-item tier-${tier.key}" data-rate="${s._rate}" data-score="${s._score}" data-count="${s._success}">
+            const barTitle = isGrade
+                ? `当前成功率: ${rateStr}`
+                : `状态: ${tierTip}`;
+
+            return `<div class="sub-item ${tierClass}"
+                data-rate="${s._rate}"
+                data-score="${s._score}"
+                data-count="${s._success}">
+
             ${nameTag ? `
-            <div class="sub-corner-tag" style="color:var(--tc); background: color-mix(in srgb, var(--tc) 5%, transparent); border-right: 1px solid color-mix(in srgb, var(--tc) 15%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--tc) 15%, transparent); box-shadow: 6px 6px 20px color-mix(in srgb, var(--tc) 5%, transparent);" >
+            <div class="sub-corner-tag">
                 <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
                 <span class="tag-text">${esc(nameTag)}</span>
             </div>` : ''}
+
             <div class="sub-header">
                 <span class="sub-rank">${i + 1}</span>
                 <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
-                <span class="sub-tier tier-${tier.key}" title="${tierTip}">${tier.label}</span>
-                <span class="sub-rate" style="color:var(--tc)">${mainMetricHtml}</span>
+                <span class="sub-tier ${tierClass}" title="${esc(tierTip)}">${tierLabel}</span>
+                <span class="sub-rate" title="${esc(tierTip)}">${mainMetricHtml}</span>
             </div>
-            <div class="sub-bar-wrap" title="当前成功率: ${rateStr}">
+
+            <div class="sub-bar-wrap" title="${esc(barTitle)}">
                 <div class="sub-bar" style="width:${barPct.toFixed(2)}%;min-width:${s._rate > 0 ? '4px' : '0'};background:var(--accent)"></div>
             </div>
+
             <div class="sub-meta">
-            <div class="tag-wrap">
-            ${locs.map(l => `<span class="tag-pill loc">${l}</span>`).join('')}
-            ${protos.map(([k, v]) => `<span class="tag-pill proto">${k}:${v}</span>`).join('')}
+                <div class="tag-wrap">
+                    ${locs.map(l => `<span class="tag-pill loc">${esc(l)}</span>`).join('')}
+                    ${protos.map(([k, v]) => `<span class="tag-pill proto">${esc(k)}:${v}</span>`).join('')}
+                </div>
+
+                <div class="stats-wrap">
+                    <span class="stats-label">综合分</span>
+                    <span style="font-weight:600;color:var(--fg);margin-right:8px">${isGrade ? s._score.toFixed(1) : '-'}</span>
+                    <span class="stats-label">存活</span>
+                    <span class="stats-success">${s._success}</span> /
+                    <span class="stats-total">${s._total}</span>
+                </div>
             </div>
-            <div class="stats-wrap">
-                <span class="stats-label">综合分</span><span style="font-weight:600;color:var(--fg);margin-right:8px">${s._score.toFixed(1)}</span>
-                <span class="stats-label">存活</span><span class="stats-success">${s._success}</span> / <span class="stats-total">${s._total}</span>
-            </div>
-            </div>
+
+            ${s._state === 'temp' || s._state === 'dead' ? `
+            <div class="sub-time-footer">
+                <span class="time-label">${getSubStateIcon(s._state, 12)}</span>
+                <span class="time-val" title="${esc(s.error || '')}">${esc(s.error || '未知异常')}</span>
+            </div>` : ''}
+
             </div>`;
         }).join('');
 
@@ -1978,52 +2166,136 @@ function renderSubs(subs, subsBad, cfg) {
        ${legendHTML}
        <div class="sub-list">${listHTML}</div>`;
 
-        // 成功率阈值过滤功能照旧，底层处理逻辑已自洽
         initThresholdSlider(processedSubs, cfg);
     }
 
     if (!subsBad.length) {
         document.getElementById('badContent').innerHTML = '';
     } else {
-        document.getElementById('badContent').innerHTML =
-            `<div class="section-title-toggle" onclick="toggleBad()">
-           沉默订阅&nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0">(${subsBad.length})</span>
+        const badGroups = [
+            {
+                key: 'silent',
+                title: '沉默订阅',
+                items: subsBad.filter(s => getSubReportState(s).state === 'silent')
+            },
+            {
+                key: 'empty',
+                title: '无节点订阅',
+                items: subsBad.filter(s => getSubReportState(s).state === 'empty')
+            },
+            {
+                key: 'temp',
+                title: '临时异常',
+                items: subsBad.filter(s => getSubReportState(s).state === 'temp')
+            },
+            {
+                key: 'dead',
+                title: '失效订阅',
+                items: subsBad.filter(s => getSubReportState(s).state === 'dead')
+            }
+        ];
+
+        let badHtml = '';
+
+        badGroups.forEach(group => {
+            if (!group.items.length) return;
+
+            const listId = `${group.key}List`;
+            const chevronId = `${group.key}Chevron`;
+
+            badHtml += `
+         <div class="section-title-toggle" onclick="toggleBad('${listId}', '${chevronId}')">
+           ${group.title}&nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0">(${group.items.length})</span>
            <span class="toggle-line"></span>
-           <svg class="toggle-chevron" id="badChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+           <svg class="toggle-chevron" id="${chevronId}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
          </div>
-         <div id="badList" style="display:none">
-           <div class="bad-list">
-             ${subsBad.map(s => {
-                const st = s.stats || {};
-                let rawUrl = s.url || '';
-                let nameTag = '';
-                let cleanUrl = rawUrl;
-                const hashIdx = rawUrl.lastIndexOf('#');
-                if (hashIdx !== -1) {
-                    try { nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); }
-                    catch (e) { nameTag = rawUrl.substring(hashIdx + 1); }
-                    cleanUrl = rawUrl.substring(0, hashIdx);
-                }
-                return `<div class="bad-item">
-                 ${nameTag ? `
-                 <div class="sub-corner-tag bad-tag">
-                   <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                   <span class="tag-text">${esc(nameTag)}</span>
-                 </div>` : ''}
-                 <div class="bad-item-row">
-                   <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
-                   <span class="bad-count">${st.success || 0}/${st.total || 0}</span>
-                 </div>
-               </div>`;
-            }).join('')}
+
+         <div id="${listId}" style="display:none">
+           <div class="bad-list" style="margin-bottom:12px;">
+             ${group.items.map(s => renderBadItem(s, group.key)).join('')}
            </div>
          </div>`;
+        });
+
+        document.getElementById('badContent').innerHTML = badHtml;
     }
 
-    // 3. 渲染完成后为所有需要中间截断的元素绑定监视器
     requestAnimationFrame(() => {
         document.querySelectorAll('.js-truncate').forEach(el => _urlTruncator.observe(el));
     });
+}
+
+function renderBadItem(s, type) {
+    const report = getSubReportState(s);
+
+    const state = report.state;
+    const success = report.success;
+    const total = report.total;
+    const errMsg = report.errMsg;
+
+    let rawUrl = s.url || '';
+    let nameTag = '';
+    let cleanUrl = rawUrl;
+
+    const hashIdx = rawUrl.lastIndexOf('#');
+
+    if (hashIdx !== -1) {
+        try {
+            nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1));
+        } catch (e) {
+            nameTag = rawUrl.substring(hashIdx + 1);
+        }
+
+        cleanUrl = rawUrl.substring(0, hashIdx);
+    }
+
+    let tagColorClass = 'bad-tag';
+
+    if (state === 'dead') {
+        tagColorClass = 'dead-tag';
+    } else if (state === 'temp') {
+        tagColorClass = 'temp-tag';
+    } else if (state === 'empty') {
+        tagColorClass = 'empty-tag';
+    } else if (state === 'silent') {
+        tagColorClass = 'silent-tag';
+    }
+
+    const showError =
+        (state === 'temp' || state === 'dead' || state === 'empty') &&
+        !!errMsg;
+
+    const errText = showError
+        ? `<span class="bad-error" title="${esc(errMsg)}">${esc(errMsg)}</span>`
+        : '';
+
+    const stateTip = state === 'silent'
+        ? `沉默 | 有 ${total} 个节点，但当前没有可用节点`
+        : state === 'empty'
+            ? `无节点 | 已读取订阅，但未获取到任何节点${errMsg ? ` | ${errMsg}` : ''}`
+            : state === 'temp'
+                ? `异常 | ${errMsg || '临时异常'}`
+                : `失效 | ${errMsg || '链接已失效'}`;
+
+    return `<div class="bad-item">
+                 ${nameTag ? `
+                 <div class="sub-corner-tag ${tagColorClass}">
+                   <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                   <span class="tag-text">${esc(nameTag)}</span>
+                 </div>` : ''}
+
+                 <div class="bad-item-row">
+                   <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
+
+                   <div class="bad-status-wrap">
+                     ${getSubStateIcon(state, 15)}
+
+                     <span class="bad-count">${success}/${total}</span>
+
+                     ${errText}
+                   </div>
+                 </div>
+               </div>`;
 }
 
 function drawRuler(svgEl, maxVal, threshold, unit, fmt) {
@@ -2625,7 +2897,15 @@ function renderConfig(ci, ga, sr, sb, cfg) {
         <div class="cfg-bottom-grid">${deployHTML}${suggestHTML}</div>`;
 }
 
-function toggleBad() { const list = document.getElementById('badList'), chevron = document.getElementById('badChevron'); const open = list.style.display === 'none'; list.style.display = open ? '' : 'none'; chevron.classList.toggle('open', open); }
+function toggleBad(listId, chevronId) {
+    const list = document.getElementById(listId);
+    const chevron = document.getElementById(chevronId);
+    if (!list || !chevron) return;
+    const open = list.style.display === 'none';
+    list.style.display = open ? '' : 'none';
+    chevron.classList.toggle('open', open);
+}
+
 function esc(str) { return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 async function writeClipboard(text) {
