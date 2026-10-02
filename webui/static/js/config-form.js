@@ -2157,9 +2157,9 @@ function _showSubTooltip(btn, subData, checkTime) {
     document.addEventListener('click', (e) => {
 
       if (_subTooltipEl &&
-          _subTooltipEl.classList.contains('visible') &&
-          !e.target.closest('#subStatsTooltip') &&
-          !e.target.closest('.cfg-url-btn-tier')) {
+        _subTooltipEl.classList.contains('visible') &&
+        !e.target.closest('#subStatsTooltip') &&
+        !e.target.closest('.cfg-url-btn-tier')) {
 
         _subTooltipEl.classList.remove('visible');
 
@@ -2824,10 +2824,7 @@ function mkUrlList(field, values) {
 
       inputWrap.append(iconEl, inp);
       row.append(handle, inputWrap, del);
-    }
-
-    if (field.key === 'sub-urls') {
-
+    } else if (field.key === 'sub-urls') {
       // 匹配工具函数：将配置中的 {Ymd} / {ymd1} 等变量转换为正则进行容错匹配，并无视两边的 #Tag
       const matchSubUrl = (cfgUrlRaw, reportUrls) => {
         const cfgBase = cfgUrlRaw.split('#')[0].trim();
