@@ -2067,23 +2067,34 @@ function mkChips(field, values) {
 
 let _cachedReportData = null;
 let _reportCacheTime = 0;
+let _reportPromise = null; // 用于锁定正在进行的请求
 
 async function _getReportData() {
   if (_cachedReportData && Date.now() - _reportCacheTime < 60000) {
     return _cachedReportData;
   }
-  try {
-    const res = await w.sfetch('/api/analysis-report');
-    if (res?.ok && res.payload?.report) {
-      const yamlParse = window.YAML ? window.YAML.parse : (window.safeParse || JSON.parse);
-      _cachedReportData = yamlParse(res.payload.report);
-      _reportCacheTime = Date.now();
-      return _cachedReportData;
+  // 如果当前已经有请求在飞，直接返回同一个 Promise，防止并发风暴
+  if (_reportPromise) return _reportPromise;
+
+  _reportPromise = (async () => {
+    try {
+      const res = await w.sfetch('/api/analysis-report');
+      if (res?.ok && res.payload?.report) {
+        // 注意：YAML.parse 在大文件时是同步阻塞的，详见下文第 3 点
+        const yamlParse = window.YAML ? window.YAML.parse : (window.safeParse || JSON.parse);
+        _cachedReportData = yamlParse(res.payload.report);
+        _reportCacheTime = Date.now();
+        return _cachedReportData;
+      }
+    } catch (e) {
+      console.error('Fetch report failed', e);
+    } finally {
+      _reportPromise = null; // 请求结束，释放锁
     }
-  } catch (e) {
-    console.error('Fetch report failed', e);
-  }
-  return null;
+    return null;
+  })();
+
+  return _reportPromise;
 }
 
 const _SVG_PIE_CHART = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>`;
@@ -4371,6 +4382,10 @@ export function initConfigForm() {
 
   // 初始化胶囊 hover mini 提示
   initMiniHoverTooltip();
+
+  // 静默预加载订阅报告数据
+  _getReportData().catch(() => { });
+
 }
 
 
