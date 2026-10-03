@@ -639,8 +639,9 @@ h1 svg {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 15%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .hero-summary svg {
@@ -693,8 +694,9 @@ h1 svg {
   transition:
     border-color 0.15s,
     background 0.15s;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 6px 10px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .summary-chip:hover {
@@ -757,8 +759,9 @@ h1 svg {
   font-weight: 600;
   border: 1px solid var(--border);
   background: var(--glass-bg);
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .unlock-tag .ut-dot {
@@ -802,8 +805,9 @@ h1 svg {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--glass-bg);
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .panel-title {
@@ -828,16 +832,39 @@ h1 svg {
   border-radius: 8px;
   background: var(--input-bg);
   border: 1px solid var(--border);
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .quality-item.card-cf {
-  background-color: color-mix(in srgb, var(--chip-cf) 5%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--chip-cf) 28%, transparent),
+    color-mix(in srgb, var(--chip-cf) 10%, transparent)
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--chip-cf) 10%, transparent);
 }
 
 .quality-item.card-vps {
-  background-color: color-mix(in srgb, var(--chip-vps) 5%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--chip-vps) 28%, transparent),
+    color-mix(in srgb, var(--chip-vps) 10%, transparent)
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--chip-vps) 10%, transparent);
+}
+
+.quality-item.card-cf {
+  border: 1px solid color-mix(in srgb, var(--chip-cf) 30%, transparent);
+}
+
+.quality-item.card-vps {
+  border: 1px solid color-mix(in srgb, var(--chip-vps) 30%, transparent);
 }
 
 .quality-item.card-cf .quality-val {
@@ -855,8 +882,9 @@ h1 svg {
 
 .quality-label {
   font-size: 10px;
-  color: var(--muted);
+  color: var(--fg);
   margin-top: 4px;
+  font-weight: 600;
 }
 
 .cf-breakdown {
@@ -894,7 +922,9 @@ h1 svg {
   border: 1px solid var(--border);
   font-size: 10px;
   background: var(--glass-bg);
-  box-shadow: 2px 2px 4px color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 2px 4px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .cf-tag em {
@@ -1232,8 +1262,9 @@ h1 svg {
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   flex-wrap: wrap;
-  box-shadow: -4px -4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .geo-summary-item {
@@ -1395,8 +1426,9 @@ h1 svg {
   border: 1px solid var(--border);
   margin-bottom: 14px;
   flex-wrap: wrap;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .proto-stat-item {
@@ -1427,8 +1459,9 @@ h1 svg {
   border: 1px solid var(--border);
   border-radius: 10px;
   margin-bottom: 14px;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .proto-donut-svg {
@@ -1522,23 +1555,43 @@ h1 svg {
 
 .proto-card {
   padding: 16px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--glass-bg);
+  border-radius: 12px;
+
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--proto-color) 8%, var(--bg)),
+      color-mix(in srgb, var(--proto-color) 2%, transparent)
+    ),
+    var(--glass-bg);
+
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  border: 1px solid color-mix(in srgb, var(--proto-color) 20%, var(--border));
+
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
+
   transition:
     border-color 0.15s,
-    transform 0.15s;
-
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 
 .proto-card:hover {
-  border-color: var(--proto-color, var(--accent));
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+
+  border-color: color-mix(in srgb, var(--proto-color) 35%, var(--border));
+
+  box-shadow:
+    0 2px 4px color-mix(in srgb, white 3%, transparent),
+    0 12px 32px color-mix(in srgb, var(--proto-color) 10%, transparent);
 }
 
 .proto-card-header {
@@ -1632,8 +1685,9 @@ h1 svg {
   background: var(--glass-bg);
   flex-wrap: nowrap;
   overflow: hidden;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 8%, transparent);
 }
 
 .copy-toolbar-label {
@@ -1669,8 +1723,9 @@ h1 svg {
     background 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
-  box-shadow: 4px 2px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .copy-btn svg {
@@ -1718,16 +1773,17 @@ h1 svg {
   border-radius: 20px;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-hover) 40%, var(--bg) 60%);
-  box-shadow: 0 -1px 6px rgba(0, 0, 0, 0.04);
-  box-shadow: 6px 6px 10px
-    color-mix(in srgb, var(--card-shadow) 15%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .threshold-container:hover {
-  border: 1px solid color-mix(in srgb, var(--border) 100%, var(--bg-hover) 100%);
+  border: 1px solid color-mix(in srgb, var(--border) 100%, var(--bg-hover) 0%);
   background: color-mix(in srgb, var(--bg-hover) 100%, var(--bg) 60%);
-  box-shadow: 6px 6px 10px
-    color-mix(in srgb, var(--card-shadow) 15%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 5%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 15%, transparent);
 }
 
 .threshold-row {
@@ -1891,19 +1947,28 @@ h1 svg {
 
 /* ── 被隐藏的列表项动态效果 ── */
 .sub-item {
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 14px 14px;
+  border-radius: 16px;
   border: 1px solid var(--border);
-  background: var(--glass-bg);
+  background: var(--card);
   transition:
     background 0.15s,
     opacity 0.3s ease,
     transform 0.3s ease,
     filter 0.3s ease;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 15%, transparent);
   transform-origin: top center;
   overflow: hidden;
+}
+
+.sub-item:hover {
+  background: color-mix(in srgb, var(--bg-hover) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tc) 20%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 5%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 18%, transparent);
 }
 
 .sub-item--dim {
@@ -1942,27 +2007,6 @@ h1 svg {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.sub-item {
-  padding: 14px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  transition:
-    background 0.15s,
-    opacity 0.3s ease,
-    transform 0.3s ease,
-    filter 0.3s ease;
-  box-shadow: 6px 6px 15px
-    color-mix(in srgb, var(--card-shadow) 18%, transparent);
-  transform-origin: top center;
-  overflow: hidden; /* 新增：限制内部角标不溢出圆角 */
-}
-
-.sub-item:hover {
-  background: color-mix(in srgb, var(--bg-hover) 80%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border) 100%, var(--fg));
 }
 
 .sub-top-row {
@@ -2018,7 +2062,7 @@ h1 svg {
 /* 大小屏统一显示无标签占位 */
 .sub-corner-tag.empty-name-tag {
   display: flex;
-  opacity: 0.45;
+  opacity: 0.5;
   font-weight: 500;
 }
 
@@ -2303,13 +2347,9 @@ h1 svg {
 .stats-score {
   padding: 1px 6px;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--tc, var(--fg)) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--tc, var(--fg)) 25%, transparent);
-  color: var(--tc, var(--fg));
-  font-weight: 700;
+  background: color-mix(in srgb, var(--tc, var(--fg)) 5%, var(--input-bg));
+  border: 1px solid color-mix(in srgb, var(--tc, var(--fg)) 15%, transparent);
   white-space: nowrap;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .stats-success {
@@ -2318,8 +2358,6 @@ h1 svg {
   background: var(--input-bg);
   border: 1px solid var(--border);
   white-space: nowrap;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .stats-total {
@@ -2328,8 +2366,6 @@ h1 svg {
   background: var(--input-bg);
   border: 1px solid var(--border);
   white-space: nowrap;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .tag-pill {
@@ -2339,8 +2375,6 @@ h1 svg {
   border: 1px solid var(--border);
   font-size: 9.5px;
   white-space: nowrap;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
 }
 
 .tag-pill.loc {
@@ -2393,7 +2427,8 @@ h1 svg {
   padding: 4px 10px 4px 12px;
   font-size: 9.5px;
   border-radius: 0 0 10px 0;
-  box-shadow: none;
+  box-shadow: 2px 2px 10px
+    color-mix(in srgb, var(--tc, var(--fg)) 10%, transparent);
 }
 
 /* 失效订阅专用的红色角标 */
@@ -2405,7 +2440,8 @@ h1 svg {
   padding: 4px 10px 4px 12px;
   font-size: 9.5px;
   border-radius: 0 0 10px 0;
-  box-shadow: none;
+  box-shadow: 2px 2px 10px
+    color-mix(in srgb, var(--tc, var(--danger)) 10%, transparent);
 }
 
 /* 异常订阅（网络波动/429等）专用的黄色角标 */
@@ -2417,7 +2453,8 @@ h1 svg {
   padding: 4px 10px 4px 12px;
   font-size: 9.5px;
   border-radius: 0 0 10px 0;
-  box-shadow: none;
+  box-shadow: 2px 2px 10px
+    color-mix(in srgb, var(--tc, var(--warning)) 10%, transparent);
 }
 
 .bad-url {
@@ -2462,8 +2499,9 @@ h1 svg {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--glass-bg);
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 7%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .cfg-card-title {
@@ -2552,7 +2590,10 @@ h1 svg {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--glass-bg);
-  box-shadow: 4px 4px 10px color-mix(in srgb, var(--warning) 5%, transparent);
+  /* box-shadow: 4px 4px 10px color-mix(in srgb, var(--warning) 5%, transparent); */
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 .deploy-card:hover {
@@ -3044,8 +3085,8 @@ code {
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow:
-    0 12px 32px color-mix(in srgb, var(--card-shadow, #000) 12%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--bg) 40%, transparent) inset;
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 15%, transparent);
   padding: 16px;
   pointer-events: none;
   opacity: 0;
@@ -3186,7 +3227,9 @@ code {
     max-width: 340px;
     max-height: 80vh; /* 防止内容过长超出屏幕 */
     overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, white 3%, transparent),
+      0 8px 20px color-mix(in srgb, var(--card-shadow) 15%, transparent);
   }
 }
 
