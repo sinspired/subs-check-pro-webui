@@ -2359,7 +2359,6 @@ function renderBadItem(s, type) {
                        <span class="tag-text">${esc(nameTag || '无标签')}</span>
                      </div>
                      <div class="bad-status-wrap">
-                       ${getSubStateIcon(state, 15)}
                        <span class="bad-count">${success}/${total}</span>
                        ${errText}
                      </div>
