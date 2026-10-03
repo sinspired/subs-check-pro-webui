@@ -1717,6 +1717,14 @@ function renderProto(ga) {
 
 function initProtoTooltip() {
     let tooltip = document.getElementById('protoTooltip');
+    let overlay = document.getElementById('protoTooltipOverlay');
+
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'protoTooltipOverlay';
+        document.body.appendChild(overlay);
+    }
+
     if (!tooltip) {
         tooltip = document.createElement('div');
         tooltip.id = 'protoTooltip';
@@ -1726,14 +1734,29 @@ function initProtoTooltip() {
     const container = document.getElementById('protoContent');
     if (!container) return;
 
-    // Pro (优势) 与 Con (劣势) 的 SVG 图标
     const svgPro = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
     const svgCon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
     const svgExp = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`;
 
-    // 触摸设备判定：没有真正 hover 能力，或主输入是粗指针(手指)
     const isTouchDevice = window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches;
-    let openCard = null; // 触摸端记录当前是哪张卡片打开了提示，用于再次点击时关闭
+    let openCard = null;
+
+    const closeProtoTooltip = () => {
+        tooltip.classList.remove('visible');
+        if (overlay) {
+            overlay.classList.remove('visible');
+            setTimeout(() => { overlay.style.display = 'none'; }, 200);
+        }
+        openCard = null;
+    };
+
+    overlay.addEventListener('click', closeProtoTooltip);
+
+    tooltip.addEventListener('click', (e) => {
+        if (e.target.closest('.tt-close-btn')) {
+            closeProtoTooltip();
+        }
+    });
 
     const renderTooltip = (protoName) => {
         const info = getProtoInfoDetailed(protoName);
@@ -1746,6 +1769,7 @@ function initProtoTooltip() {
                     <span class="tt-dot" style="background: ${pColor}"></span>
                     ${info.name}
                 </div>
+                ${isTouchDevice ? `<div class="tt-close-btn">×</div>` : ''}
                 <div class="tt-gfw">封锁概率: ${info.gfw.level}</div>
             </div>
             <div class="tt-desc">${info.desc}</div>
@@ -1766,40 +1790,30 @@ function initProtoTooltip() {
         `;
     };
 
-    // 桌面端：hover 预览，跟随鼠标定位
+    // 桌面端 Hover
     container.addEventListener('mouseover', (e) => {
         if (isTouchDevice) return;
         const target = e.target.closest('.proto-card') || e.target.closest('.proto-donut-row');
-        if (!target) return;
+        if (!target || !target.dataset.proto) return;
 
-        const protoName = target.dataset.proto;
-        if (!protoName) return;
-
-        renderTooltip(protoName);
+        tooltip.style.width = '300px';
+        renderTooltip(target.dataset.proto);
         tooltip.classList.add('visible');
     });
 
     container.addEventListener('mousemove', (e) => {
-        if (isTouchDevice) return;
-        if (!tooltip.classList.contains('visible')) return;
+        if (isTouchDevice || !tooltip.classList.contains('visible')) return;
 
-        const x = e.clientX;
-        const y = e.clientY;
         const tooltipRect = tooltip.getBoundingClientRect();
+        let left = e.clientX + 15;
+        let top = e.clientY + 15;
 
-        let left = x + 15;
-        let top = y + 15;
-
-        // 边缘防溢出检测
-        if (left + tooltipRect.width > window.innerWidth) {
-            left = x - tooltipRect.width - 15;
-        }
-        if (top + tooltipRect.height > window.innerHeight) {
-            top = y - tooltipRect.height - 15;
-        }
+        if (left + tooltipRect.width > window.innerWidth) left = e.clientX - tooltipRect.width - 15;
+        if (top + tooltipRect.height > window.innerHeight) top = e.clientY - tooltipRect.height - 15;
 
         tooltip.style.left = `${left}px`;
         tooltip.style.top = `${top}px`;
+        tooltip.style.transform = 'none';
     });
 
     container.addEventListener('mouseout', (e) => {
@@ -1809,31 +1823,36 @@ function initProtoTooltip() {
         tooltip.classList.remove('visible');
     });
 
-    // 触摸端：卡片本身没有选中语义，直接 tap 切换显示/隐藏；
-    // 再次点同一张卡关闭，点别的卡切换内容，点空白处关闭
+    // 移动端 Click
     container.addEventListener('click', (e) => {
         if (!isTouchDevice) return;
         const target = e.target.closest('.proto-card') || e.target.closest('.proto-donut-row');
-        if (!target) return;
-
-        const protoName = target.dataset.proto;
-        if (!protoName) return;
+        if (!target || !target.dataset.proto) return;
 
         if (openCard === target && tooltip.classList.contains('visible')) {
-            tooltip.classList.remove('visible');
-            openCard = null;
+            closeProtoTooltip();
             return;
         }
 
-        renderTooltip(protoName);
+        // 先抹除内联样式（清除桌面端残留的坐标与宽度），交由 CSS 控制居中和边距
+        tooltip.removeAttribute('style');
+
+        // 然后再渲染内容，此时赋予的 --gfw-color 就不会被误删除了
+        renderTooltip(target.dataset.proto);
+
+        overlay.style.display = 'block';
+        requestAnimationFrame(() => { overlay.classList.add('visible'); });
+
         tooltip.classList.add('visible');
         openCard = target;
     });
 
     document.addEventListener('touchstart', (e) => {
-        if (tooltip.classList.contains('visible') && !e.target.closest('.proto-card') && !e.target.closest('#protoTooltip')) {
-            tooltip.classList.remove('visible');
-            openCard = null;
+        if (tooltip.classList.contains('visible') &&
+            !e.target.closest('.proto-card') &&
+            !e.target.closest('#protoTooltip') &&
+            !e.target.closest('.proto-donut-row')) {
+            closeProtoTooltip();
         }
     }, { passive: true });
 }
@@ -2006,6 +2025,20 @@ window._setFilterMode = function (mode) {
     );
 };
 
+window._copySingleUrl = async function (e, url) {
+    e.preventDefault();
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    const ok = await writeClipboard(url);
+    if (ok) {
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        setTimeout(() => { btn.innerHTML = oldHtml; }, 1500);
+    } else {
+        window.showToast?.('复制失败', 'error');
+    }
+};
+
 function renderSubs(subs, subsBad, cfg) {
     cfg = cfg || {};
     _lastRenderCfg = cfg;
@@ -2138,19 +2171,6 @@ function renderSubs(subs, subsBad, cfg) {
                 cleanUrl = rawUrl.substring(0, hashIdx);
             }
 
-            // 根据排序模式，在列表右上角展示当前指标
-            let mainMetricHtml = '';
-
-            if (_currentSortMode === 'count') {
-                mainMetricHtml = `${s._success} <span class="sub-metric-unit">节点</span>`;
-            } else if (_currentSortMode === 'rate') {
-                mainMetricHtml = rateStr;
-            } else if (isGrade) {
-                mainMetricHtml = `${s._score.toFixed(1)} <span class="sub-metric-unit">分</span>`;
-            } else {
-                mainMetricHtml = getSubStateIcon(s._state, 14);
-            }
-
             const barTitle = isGrade
                 ? `当前成功率: ${rateStr}`
                 : `状态: ${tierTip}`;
@@ -2160,17 +2180,24 @@ function renderSubs(subs, subsBad, cfg) {
                 data-score="${s._score}"
                 data-count="${s._success}">
 
-            ${nameTag ? `
-            <div class="sub-corner-tag">
-                <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                <span class="tag-text">${esc(nameTag)}</span>
-            </div>` : ''}
+           <div class="sub-top-row">
+                <div class="sub-corner-tag${nameTag ? '' : ' empty-name-tag'}">
+                    <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                    <span class="tag-text">${esc(nameTag || '无标签')}</span>
+                </div>
+                <div class="sub-metrics">
+                    <span class="sub-tier ${tierClass}" title="${esc(tierTip)}">${tierLabel}</span>
+                </div>
+            </div>
 
             <div class="sub-header">
                 <span class="sub-rank">${i + 1}</span>
-                <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
-                <span class="sub-tier ${tierClass}" title="${esc(tierTip)}">${tierLabel}</span>
-                <span class="sub-rate" title="${esc(tierTip)}">${mainMetricHtml}</span>
+                <div class="sub-url-box">
+                    <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
+                    <button class="sub-copy-btn" onclick="window._copySingleUrl(event, '${esc(rawUrl)}')" title="复制链接">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                </div>
             </div>
 
             <div class="sub-bar-wrap" title="${esc(barTitle)}">
@@ -2184,11 +2211,18 @@ function renderSubs(subs, subsBad, cfg) {
                 </div>
 
                 <div class="stats-wrap">
-                    <span class="stats-label">综合分</span>
-                    <span style="font-weight:600;color:var(--fg);margin-right:8px">${isGrade ? s._score.toFixed(1) : '-'}</span>
-                    <span class="stats-label">存活</span>
-                    <span class="stats-success">${s._success}</span> /
-                    <span class="stats-total">${s._total}</span>
+                    <span class="stats-group survival-group">
+                        <span class="stats-label">存活</span>
+                        <span class="stats-success">${s._success}</span>
+                        <span style="opacity:0.4; margin:0 3px;">/</span>
+                        <span class="stats-total">${s._total}</span>
+                    </span>
+                    <span class="stats-group score-group">
+                        <span class="stats-label">评分</span>
+                        <span class="stats-score">${isGrade ? s._score.toFixed(1) : '-'}</span>
+                        ${_currentSortMode === 'count' ? `<span class="stats-label" style="margin-left:8px">存活数</span><span class="stats-score">${s._success}</span>` : ''}
+                        ${_currentSortMode === 'rate' ? `<span class="stats-label" style="margin-left:8px">成功率</span><span class="stats-score">${rateStr}</span>` : ''}
+                    </span>
                 </div>
             </div>
 
@@ -2319,23 +2353,26 @@ function renderBadItem(s, type) {
                 : `失效 | ${errMsg || '链接已失效'}`;
 
     return `<div class="bad-item">
-                 ${nameTag ? `
-                 <div class="sub-corner-tag ${tagColorClass}">
-                   <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                   <span class="tag-text">${esc(nameTag)}</span>
-                 </div>` : ''}
+                <div class="bad-top-row">
+                     <div class="sub-corner-tag ${tagColorClass}${nameTag ? '' : ' empty-name-tag'}">
+                       <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                       <span class="tag-text">${esc(nameTag || '无标签')}</span>
+                     </div>
+                     <div class="bad-status-wrap">
+                       ${getSubStateIcon(state, 15)}
+                       <span class="bad-count">${success}/${total}</span>
+                       ${errText}
+                     </div>
+                </div>
 
-                 <div class="bad-item-row">
-                   <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
-
-                   <div class="bad-status-wrap">
-                     ${getSubStateIcon(state, 15)}
-
-                     <span class="bad-count">${success}/${total}</span>
-
-                     ${errText}
+                <div class="bad-item-row">
+                   <div class="sub-url-box">
+                     <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
+                     <button class="sub-copy-btn" onclick="window._copySingleUrl(event, '${esc(rawUrl)}')" title="复制链接">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                     </button>
                    </div>
-                 </div>
+                </div>
                </div>`;
 }
 
