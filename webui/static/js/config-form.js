@@ -2169,66 +2169,98 @@ const _tooltipUrlTruncator = (() => {
 })();
 
 let _subTooltipEl = null;
+let _subTooltipOverlayEl = null;
+
+window._copySubUrl = async function (btn, url) {
+  let ok = false;
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(url); ok = true; } catch (e) { }
+  }
+  if (!ok) {
+    // 兼容 iOS/老旧浏览器的兜底方案
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:absolute;top:' + (window.scrollY || document.documentElement.scrollTop) + 'px;left:0;width:1px;height:1px;padding:0;border:none;outline:none;box-shadow:none;background:transparent;opacity:0';
+    document.body.appendChild(ta);
+    const isIOS = /ipad|iphone/i.test(navigator.userAgent);
+    if (isIOS) {
+      const range = document.createRange(); range.selectNodeContents(ta);
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      ta.setSelectionRange(0, 999999);
+    } else {
+      ta.select();
+    }
+    try { ok = document.execCommand('copy'); } catch (e) { }
+    document.body.removeChild(ta);
+  }
+
+  if (ok) {
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    setTimeout(() => { btn.innerHTML = oldHtml; }, 1500);
+  } else {
+    window.showToast?.('复制失败，请手动选取', 'warn');
+  }
+};
 
 function _showSubTooltip(btn, subData, checkTime) {
+  const closeSubTooltip = () => {
+    if (_subTooltipEl) _subTooltipEl.classList.remove('visible');
+    if (_subTooltipOverlayEl) {
+      _subTooltipOverlayEl.classList.remove('visible');
+      setTimeout(() => { _subTooltipOverlayEl.style.display = 'none'; }, 200);
+    }
+    window.removeEventListener('scroll', _tooltipScrollHandler, true);
+  };
 
   if (!_subTooltipEl) {
+    _subTooltipOverlayEl = el('div', { id: 'subStatsOverlay' });
+    document.body.appendChild(_subTooltipOverlayEl);
+    _subTooltipOverlayEl.addEventListener('click', closeSubTooltip);
 
     _subTooltipEl = el('div', { id: 'subStatsTooltip' });
-
     document.body.appendChild(_subTooltipEl);
 
     document.addEventListener('click', (e) => {
-
-      if (_subTooltipEl &&
-        _subTooltipEl.classList.contains('visible') &&
-        !e.target.closest('#subStatsTooltip') &&
-        !e.target.closest('.cfg-url-btn-tier')) {
-
-        _subTooltipEl.classList.remove('visible');
-
+      if (_subTooltipEl.classList.contains('visible')) {
+        if (e.target.closest('.sub-tooltip-close-btn') ||
+          (!e.target.closest('#subStatsTooltip') && !e.target.closest('.cfg-url-btn-tier'))) {
+          closeSubTooltip();
+        }
       }
-
     });
-
   }
 
+  const _tooltipScrollHandler = (e) => {
+    if (_subTooltipEl.contains(e.target)) return;
+
+    const tableWrapper =
+      document.getElementById('cfgPanels');
+
+    if (
+      tableWrapper &&
+      (
+        e.target === tableWrapper ||
+        tableWrapper.contains(e.target)
+      )
+    ) {
+      closeSubTooltip();
+    }
+  };
+  window.addEventListener('scroll', _tooltipScrollHandler, true);
+
   const fmtRateFn = window.fmtRate || (r => Number(r).toFixed(1) + '%');
-
-  const escapeHtml = window.esc || (str => String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;'));
-
+  const escapeHtml = window.esc || (str => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
   const formatNum = (n) => {
-
     n = Number(n) || 0;
-
-    if (n >= 10000) {
-      return (n / 10000).toFixed(1).replace(/\.0$/, '') + 'W';
-    }
-
-    if (n >= 1000) {
-      return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-    }
-
+    if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + 'W';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
     return n;
   };
 
-  const report = window.getSubReportState
-    ? window.getSubReportState(subData)
-    : getSubReportState(subData);
-
-  const {
-    state,
-    success,
-    total,
-    errMsg,
-    rateNum,
-    scoreNum,
-    tier
-  } = report;
+  const report = window.getSubReportState ? window.getSubReportState(subData) : getSubReportState(subData);
+  const { state, success, total, errMsg, rateNum, scoreNum, tier } = report;
 
   const isGrade = state === 'grade';
   const isFatalErr = state === 'dead';
@@ -2236,352 +2268,150 @@ function _showSubTooltip(btn, subData, checkTime) {
   const isSilent = state === 'silent';
   const isEmpty = state === 'empty';
 
-  /*
-   * 正常状态使用 S/A/B/C。
-   * 非正常状态只显示两个汉字以内的状态文字。
-   */
-  const tierClass = isGrade
-    ? `tier-${tier.key}`
-    : `tier-${state}`;
+  const tierClass = isGrade ? `tier-${tier.key}` : `tier-${state}`;
+  const tierLabel = isGrade ? tier.label : isSilent ? '沉默' : isTempErr ? '异常' : isFatalErr ? '失效' : '0';
 
-  const tierLabel = isGrade
-    ? tier.label
-    : isSilent
-      ? '沉默'
-      : isTempErr
-        ? '异常'
-        : isFatalErr
-          ? '失效'
-          : '0';
-
-  /*
-   * 环形图中心：
-   * 正常 → 成功率
-   * 沉默 → 0.0%
-   * 无节点 → 无节点
-   * 异常 → 异常
-   * 失效 → 失效
-   *
-   * 这里不使用状态 SVG。
-   */
   let ringContent;
-
-  if (isGrade) {
-
-    ringContent = escapeHtml(fmtRateFn(rateNum));
-
-  } else if (isSilent) {
-
-    ringContent = escapeHtml(fmtRateFn(0));
-
-  } else if (isEmpty) {
-
-    ringContent = '<span class="sub-ring-empty-text">无节点</span>';
-
-  } else if (isTempErr) {
-
-    ringContent = '<span class="sub-ring-state-text">异常</span>';
-
-  } else {
-
-    ringContent = '<span class="sub-ring-state-text">失效</span>';
-
-  }
+  if (isGrade) ringContent = escapeHtml(fmtRateFn(rateNum));
+  else if (isSilent) ringContent = escapeHtml(fmtRateFn(0));
+  else if (isEmpty) ringContent = '<span class="sub-ring-empty-text">无节点</span>';
+  else if (isTempErr) ringContent = '<span class="sub-ring-state-text">异常</span>';
+  else ringContent = '<span class="sub-ring-state-text">失效</span>';
 
   const hasRingProgress = isGrade && rateNum > 0;
-
   const radius = 26;
   const circumference = 2 * Math.PI * radius;
+  const offset = hasRingProgress ? circumference - (Math.min(rateNum, 100) / 100) * circumference : circumference;
 
-  const offset = hasRingProgress
-    ? circumference - (Math.min(rateNum, 100) / 100) * circumference
-    : circumference;
+  const locs = Array.isArray(subData.top_locations) ? subData.top_locations.join('').split('|').filter(Boolean) : [];
+  const protos = subData.protocols ? Object.entries(subData.protocols).sort((a, b) => b[1] - a[1]) : [];
+  const locIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
 
-  const locs = Array.isArray(subData.top_locations)
-    ? subData.top_locations.join('').split('|').filter(Boolean)
-    : [];
-
-  const protos = subData.protocols
-    ? Object.entries(subData.protocols).sort((a, b) => b[1] - a[1])
-    : [];
-
-  const locIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-    <circle cx="12" cy="10" r="3"></circle>
-  </svg>`;
-
-  // 使用传入的 _displayTag，或者按传统 #Tag 解析
   let rawUrl = subData.url || '';
   let nameTag = subData._displayTag || '';
   let cleanUrl = rawUrl;
-
   const hashIdx = rawUrl.lastIndexOf('#');
-
   if (hashIdx !== -1) {
-
     cleanUrl = rawUrl.substring(0, hashIdx);
-
     if (!nameTag) {
-
-      try {
-        nameTag = decodeURIComponent(
-          rawUrl.substring(hashIdx + 1)
-        );
-      } catch (e) {
-        nameTag = rawUrl.substring(hashIdx + 1);
-      }
-
+      try { nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); }
+      catch (e) { nameTag = rawUrl.substring(hashIdx + 1); }
     }
-
   }
 
-  /*
-   * 错误 / 无节点状态单独使用独立组件。
-   * 不再使用 sub-time-footer，避免继承时间栏样式。
-   */
   let statusMessage = '';
+  if (isTempErr) statusMessage = `<div class="sub-status-message is-temp"><span class="status-label">异常</span><span class="status-content" title="${escapeHtml(errMsg || '临时网络或服务异常')}">${escapeHtml(errMsg || '临时网络或服务异常')}</span></div>`;
+  else if (isFatalErr) statusMessage = `<div class="sub-status-message is-dead"><span class="status-label">失效</span><span class="status-content" title="${escapeHtml(errMsg || '订阅链接已失效')}">${escapeHtml(errMsg || '订阅链接已失效')}</span></div>`;
+  else if (isEmpty) statusMessage = `<div class="sub-status-message is-empty"><span class="status-label">无节点</span><span class="status-content" title="${escapeHtml(errMsg || '未获取到节点')}">${escapeHtml(errMsg || '未获取到任何节点')}</span></div>`;
 
-  if (isTempErr) {
 
-    statusMessage = `
-      <div class="sub-status-message is-temp">
-        <span class="status-label">异常</span>
-        <span class="status-content" title="${escapeHtml(errMsg || '临时网络或服务异常')}">
-          ${escapeHtml(errMsg || '临时网络或服务异常')}
-        </span>
-      </div>`;
-
-  } else if (isFatalErr) {
-
-    statusMessage = `
-      <div class="sub-status-message is-dead">
-        <span class="status-label">失效</span>
-        <span class="status-content" title="${escapeHtml(errMsg || '订阅链接已失效')}">
-          ${escapeHtml(errMsg || '订阅链接已失效')}
-        </span>
-      </div>`;
-
-  } else if (isEmpty) {
-
-    if (errMsg) {
-
-      statusMessage = `
-        <div class="sub-status-message is-empty">
-          <span class="status-label">无节点</span>
-          <span class="status-content" title="${escapeHtml(errMsg)}">
-            ${escapeHtml(errMsg)}
-          </span>
-        </div>`;
-
-    } else {
-
-      statusMessage = `
-        <div class="sub-status-message is-empty">
-          <span class="status-label">无节点</span>
-          <span class="status-content">
-            已读取订阅，但未获取到任何节点
-          </span>
-        </div>`;
-
-    }
-
-  }
-
+  // 彻底剥离行内样式
   _subTooltipEl.innerHTML = `
+<div class="sub-item ${tierClass}">
+    <button class="sub-tooltip-close-btn">×</button>
 
-    <div class="sub-item ${tierClass}">
+    ${nameTag ? `
+    <div class="sub-corner-tag">
+        <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+            <line x1="7" y1="7" x2="7.01" y2="7"></line>
+        </svg>
+        <span class="tag-text">${escapeHtml(nameTag)}</span>
+    </div>` : '<div style="height: 12px;"></div>'}
 
-        ${nameTag ? `
-        <div class="sub-corner-tag">
-            <svg class="tag-icon"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2.5"
-                 stroke-linecap="round"
-                 stroke-linejoin="round">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                <line x1="7" y1="7" x2="7.01" y2="7"></line>
-            </svg>
-            <span class="tag-text">${escapeHtml(nameTag)}</span>
-        </div>` : ''}
-
-        <div class="sub-full-url js-truncate"
-             data-full-text="${escapeHtml(cleanUrl)}"
-             title="${escapeHtml(rawUrl)}"></div>
-
-        <div class="sub-stats-hero">
-
-            <div class="sub-ring-box">
-                <div class="sub-ring-wrapper"
-                     title="${escapeHtml(errMsg || '')}">
-
-                    <svg class="sub-ring-svg"
-                         viewBox="0 0 64 64">
-
-                        <circle class="sub-ring-bg"
-                                cx="32"
-                                cy="32"
-                                r="${radius}">
-                        </circle>
-
-                        <circle class="sub-ring-progress"
-                                cx="32"
-                                cy="32"
-                                r="${radius}"
-                                stroke-dasharray="${circumference}"
-                                stroke-dashoffset="${offset}">
-                        </circle>
-
-                    </svg>
-
-                    <div class="sub-ring-text ${(isFatalErr || isTempErr || isEmpty) ? 'text-lg' : ''}">
-                        ${ringContent}
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="sub-hero-divider"></div>
-
-            <div class="sub-hero-middle">
-
-                <div class="sub-info-row">
-                    <span class="info-label">综合评分</span>
-
-                    <span class="info-value score-val">
-                        ${isGrade ? scoreNum.toFixed(2) : '-'}
-                    </span>
-                </div>
-
-                <div class="sub-info-row"
-                     title="精确值: ${success}">
-
-                    <span class="info-label">有效节点</span>
-
-                    <span class="info-value success-val">
-                        ${formatNum(success)}
-                    </span>
-                </div>
-
-                <div class="sub-info-row"
-                     title="精确值: ${total}">
-
-                    <span class="info-label">节点总数</span>
-
-                    <span class="info-value total-val">
-                        ${formatNum(total)}
-                    </span>
-                </div>
-
-            </div>
-
-            <div class="sub-hero-divider"></div>
-
-            <div class="sub-hero-right">
-
-                <div class="sub-tier-badge">
-                    <span class="tier-text">
-                        ${escapeHtml(tierLabel)}
-                    </span>
-
-                    <span class="tier-title">
-                        ${isGrade ? '评级' : '状态'}
-                    </span>
-                </div>
-
-            </div>
-
+    <div class="sub-tooltip-copy-box">
+        <div class="sub-tooltip-copy-text">
+            ${escapeHtml(rawUrl)}
         </div>
-
-        ${statusMessage}
-
-        ${(locs.length > 0 || protos.length > 0) ? `
-        <div class="sub-meta-tags">
-
-          ${locs.map(l => `
-            <span class="tag-pill loc">
-              ${locIcon}
-              ${escapeHtml(l)}
-            </span>
-          `).join('')}
-
-          ${protos.map(([k, v]) => `
-            <span class="tag-pill proto">
-              <span class="p-name">${escapeHtml(k)}</span>
-              <span class="p-val">${v}</span>
-            </span>
-          `).join('')}
-
-        </div>` : ''}
-
-        ${checkTime ? `
-        <div class="sub-time-footer">
-
-          <svg viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2"
-               stroke-linecap="round"
-               stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-
-          <span class="time-label">上次检测:</span>
-
-          <span class="time-val">
-            ${escapeHtml(checkTime)}
-          </span>
-
-        </div>` : ''}
-
+        <button class="sub-tooltip-copy-action" onclick="window._copySubUrl(this, '${escapeHtml(rawUrl)}')"
+            title="复制完整链接">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+        </button>
     </div>
-    `;
+
+    <div class="sub-stats-hero">
+        <div class="sub-ring-box">
+            <div class="sub-ring-wrapper" title="${escapeHtml(errMsg || '')}">
+                <svg class="sub-ring-svg" viewBox="0 0 64 64">
+                    <circle class="sub-ring-bg" cx="32" cy="32" r="${radius}"></circle>
+                    <circle class="sub-ring-progress" cx="32" cy="32" r="${radius}" stroke-dasharray="${circumference}"
+                        stroke-dashoffset="${offset}"></circle>
+                </svg>
+                <div class="sub-ring-text ${(isFatalErr || isTempErr || isEmpty) ? 'text-lg' : ''}">${ringContent}</div>
+            </div>
+        </div>
+        <div class="sub-hero-divider"></div>
+        <div class="sub-hero-middle">
+            <div class="sub-info-row"><span class="info-label">综合评分</span><span class="info-value score-val">${isGrade ? scoreNum.toFixed(2) : '-'}</span></div>
+            <div class="sub-info-row" title="精确值: ${success}"><span class="info-label">有效节点</span><span
+                    class="info-value success-val">${formatNum(success)}</span></div>
+            <div class="sub-info-row" title="精确值: ${total}"><span class="info-label">节点总数</span><span
+                    class="info-value total-val">${formatNum(total)}</span></div>
+        </div>
+        <div class="sub-hero-divider"></div>
+        <div class="sub-hero-right">
+            <div class="sub-tier-badge">
+                <span class="tier-text">${escapeHtml(tierLabel)}</span>
+                <span class="tier-title">${isGrade ? '评级' : '状态'}</span>
+            </div>
+        </div>
+    </div>
+
+    ${statusMessage}
+
+    ${(locs.length > 0 || protos.length > 0) ? `
+    <div class="sub-meta-tags">
+        ${locs.map(l => `<span class="tag-pill loc">${locIcon}${escapeHtml(l)}</span>`).join('')}
+        ${protos.map(([k, v]) => `<span class="tag-pill proto"><span class="p-name">${escapeHtml(k)}</span><span
+                class="p-val">${v}</span></span>`).join('')}
+    </div>` : ''}
+
+    ${checkTime ? `<div class="sub-time-footer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+        </svg><span class="time-label">上次检测:</span><span class="time-val">${escapeHtml(checkTime)}</span></div>` : ''}
+</div>
+  `;
 
   requestAnimationFrame(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
 
-    _subTooltipEl
-      .querySelectorAll('.js-truncate')
-      .forEach(el => {
-        _tooltipUrlTruncator.observe(el);
-      });
+    if (vw <= 640) {
+      _subTooltipOverlayEl.style.display = 'block';
+      requestAnimationFrame(() => { _subTooltipOverlayEl.classList.add('visible'); });
 
-    const rect = btn.getBoundingClientRect();
-    const elRect = _subTooltipEl.getBoundingClientRect();
+      _subTooltipEl.classList.add('is-mobile-modal');
+    } else {
+      _subTooltipEl.classList.remove('is-mobile-modal');
 
-    const margin = 10;
+      const rect = btn.getBoundingClientRect();
+      const elRect = _subTooltipEl.getBoundingClientRect();
+      const margin = 10;
+      let left = rect.left - elRect.width - margin;
 
-    let left = rect.left - elRect.width - margin;
-
-    if (left < margin) {
-
-      left = rect.right + margin;
-
-      if (left + elRect.width > window.innerWidth - margin) {
-        left = window.innerWidth / 2 - elRect.width / 2;
+      if (left < margin) {
+        left = rect.right + margin;
+        if (left + elRect.width > vw - margin) left = vw / 2 - elRect.width / 2;
       }
 
+      let top = rect.top;
+      if (top + elRect.height > vh - margin) top = vh - elRect.height - margin;
+      if (top < margin) top = margin;
+
+      _subTooltipEl.style.left = left + 'px';
+      _subTooltipEl.style.top = top + 'px';
     }
-
-    let top = rect.top;
-
-    if (top + elRect.height > window.innerHeight - margin) {
-      top = window.innerHeight - elRect.height - margin;
-    }
-
-    if (top < margin) {
-      top = margin;
-    }
-
-    _subTooltipEl.style.left = left + 'px';
-    _subTooltipEl.style.top = top + 'px';
 
     _subTooltipEl.classList.add('visible');
-
   });
 }
-
 
 function mkUrlList(field, values) {
   const list = Array.isArray(values) ? values : (values ? [values] : []);

@@ -2688,12 +2688,11 @@ textarea.cfg-expandable-input:focus {
 ════════════════════════════════════════════════════════════ */
 
 /* ================= 悬浮窗外层定位与动画 ================= */
-
 #subStatsTooltip {
   position: fixed;
   z-index: 9999;
   min-width: 320px;
-  max-width: 440px;
+  max-width: 400px;
   width: max-content;
   opacity: 0;
   transform: scale(0.96) translateY(4px);
@@ -2792,11 +2791,11 @@ textarea.cfg-expandable-input:focus {
   padding: 16px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--glass-bg);
+  background: color-mix(in srgb, var(--bg) 20%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow:
-    0 10px 30px color-mix(in srgb, var(--card-shadow, #000) 15%, transparent),
+    0 8px 24px color-mix(in srgb, var(--card-shadow, #000) 50%, transparent),
     0 0 0 1px color-mix(in srgb, var(--bg) 40%, transparent) inset;
 
   overflow: hidden;
@@ -2860,7 +2859,7 @@ textarea.cfg-expandable-input:focus {
 #subStatsTooltip .sub-stats-hero {
   display: flex;
   align-items: stretch;
-  gap: 16px;
+  gap: 12px;
   padding: 14px 18px;
   margin-bottom: 14px;
   background: color-mix(in srgb, var(--fg) 2%, transparent);
@@ -2879,8 +2878,8 @@ textarea.cfg-expandable-input:focus {
 
 #subStatsTooltip .sub-ring-wrapper {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 70px;
+  height: 70px;
   --ring-color: var(--tc);
 }
 
@@ -2894,13 +2893,13 @@ textarea.cfg-expandable-input:focus {
 #subStatsTooltip .sub-ring-bg {
   fill: none;
   stroke: color-mix(in srgb, var(--border) 60%, transparent);
-  stroke-width: 5;
+  stroke-width: 6;
 }
 
 #subStatsTooltip .sub-ring-progress {
   fill: none;
   stroke: var(--ring-color);
-  stroke-width: 5;
+  stroke-width: 6;
   stroke-linecap: round;
   animation: ringFill 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -2960,7 +2959,7 @@ textarea.cfg-expandable-input:focus {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 120px;
+  min-width: 100px;
   padding: 0;
   gap: 0;
 }
@@ -3011,7 +3010,7 @@ textarea.cfg-expandable-input:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-
+  padding-left: 4px;
   flex-shrink: 0;
 }
 
@@ -3022,9 +3021,10 @@ textarea.cfg-expandable-input:focus {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 10px;
+  width: 54px;
+  height: 54px;
+  box-sizing: border-box;
+  border-radius: 12px;
   color: var(--tc);
   background: color-mix(in srgb, var(--tc) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--tc) 22%, transparent);
@@ -3039,7 +3039,7 @@ textarea.cfg-expandable-input:focus {
 }
 
 #subStatsTooltip .sub-tier-badge .tier-title {
-  margin-top: 1px;
+  margin-top: 2px;
   font-size: 9px;
   font-weight: 700;
   opacity: 0.8;
@@ -3512,6 +3512,10 @@ textarea.cfg-expandable-input:focus {
     font-size: 10.5px;
   }
 
+  #subStatsTooltip .sub-info-row {
+    padding: 2px 0;
+  }
+
   #subStatsTooltip .sub-ring-text.text-lg {
     font-size: 12px;
   }
@@ -3525,8 +3529,9 @@ textarea.cfg-expandable-input:focus {
   }
 
   #subStatsTooltip .sub-tier-badge {
-    width: 40px;
-    height: 40px;
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
   }
 
   #subStatsTooltip .sub-tier-badge .tier-text {
@@ -3535,5 +3540,96 @@ textarea.cfg-expandable-input:focus {
 
   #subStatsTooltip .sub-tier-badge .tier-title {
     font-size: 8.5px;
+  }
+}
+
+/* ================= 订阅详情：背景模糊遮罩层 ================= */
+#subStatsOverlay {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 9995; /* 保证在 tooltip(99999) 之下 */
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: none;
+}
+#subStatsOverlay.visible {
+  opacity: 1;
+}
+
+/* ================= 订阅详情：弹窗关闭按钮 ================= */
+.sub-tooltip-close-btn {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  background: none;
+  border: none;
+  color: color-mix(in srgb, var(--fg) 40%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+  padding: 0;
+  z-index: 10;
+  transition: color 0.2s;
+}
+.sub-tooltip-close-btn:hover {
+  color: var(--danger, #ef4444);
+}
+
+/* ================= 订阅详情：URL 复制框 (居中对齐) ================= */
+.sub-tooltip-copy-box {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 8px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center; /* 保证左侧多行文字和右侧按钮垂直居中 */
+  gap: 8px;
+}
+.sub-tooltip-copy-text {
+  flex: 1;
+  word-break: break-all;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--fg) 85%, transparent);
+  font-family: var(--font-mono, monospace);
+  line-height: 1.45;
+  max-height: 48px;
+  overflow-y: auto;
+}
+.sub-tooltip-copy-action {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sub-tooltip-copy-action:hover {
+  color: var(--fg);
+}
+
+/* ================= 订阅详情：移动端弹窗居中与边距优化 ================= */
+@media (max-width: 640px) {
+  #subStatsTooltip.is-mobile-modal {
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) scale(0.96) !important;
+    width: calc(100vw - 24px) !important; /* 左右各留出 12px 空隙 */
+    z-index: 99999;
+  }
+  #subStatsTooltip.is-mobile-modal.visible {
+    transform: translate(-50%, -50%) scale(1) !important;
   }
 }
