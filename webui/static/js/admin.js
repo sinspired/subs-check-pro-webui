@@ -8,7 +8,7 @@
 /** @type {Window & WindowWithSfetch} */
 const w = window;
 
-import { initConfigForm, renderConfigForm, collectConfigForm } from './config-form.js';
+import { initConfigForm, renderConfigForm, collectConfigForm, invalidateReportCache } from './config-form.js';
 import { initQuickPreview } from './cfg-quickpreview.js';
 
 ; (function () {
@@ -166,6 +166,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   let lastLogLines = []
   let logsPollRunning = false
   let statusPollRunning = false
+  let _wasChecking = false;
 
   let apiFailureCount = 0
   let firstFailureAt = null
@@ -896,6 +897,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const checking = !!d.checking
       const fetching = !!d.fetching
 
+      const justFinished = (_wasChecking === true && checking === false);
+      _wasChecking = checking; // 更新状态，供下一次轮询比对
+
       const forceClose = !!d.forceClose
       const successlimited = !!d.successlimited
       const processResults = !!d.processResults
@@ -1033,6 +1037,17 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         if (checkStartTime || now - loadStatus.lastReportFetchTime > 3000) {
           await syncHistoryFromYaml()
           loadStatus.lastReportFetchTime = now
+        }
+
+        // 在检测完成瞬间触发全局无感刷新
+        if (justFinished) {
+          // 1. 清理 config-form 里的订阅 URL 气泡状态缓存
+          if (typeof invalidateReportCache === 'function') invalidateReportCache();
+
+          // 2. 发送全域广播：让独立打开的分析报告页面自动刷新
+          localStorage.setItem('scp_report_updated', Date.now().toString());
+
+          showToast('订阅链接评级已更新', 'success', 3000);
         }
 
         updateProgress(

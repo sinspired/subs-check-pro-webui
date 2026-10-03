@@ -2069,6 +2069,17 @@ let _cachedReportData = null;
 let _reportCacheTime = 0;
 let _reportPromise = null; // 用于锁定正在进行的请求
 
+export function invalidateReportCache() {
+  _cachedReportData = null;
+  _reportCacheTime = 0;
+  _reportPromise = null;
+
+  // 强行让当前界面上所有的订阅地址栏触发专属刷新事件
+  document.querySelectorAll('.cfg-url-input').forEach(inp => {
+    inp.dispatchEvent(new Event('scp-refresh-stats'));
+  });
+}
+
 async function _getReportData() {
   if (_cachedReportData && Date.now() - _reportCacheTime < 60000) {
     return _cachedReportData;
@@ -2958,6 +2969,39 @@ function mkUrlList(field, values) {
         }
       };
 
+      // 将检查更新逻辑封装为闭包函数
+      const refreshStats = () => {
+        _getReportData().then(report => {
+          if (!report) return;
+
+          const currentUrl = inp.value.trim();
+          if (!currentUrl) {
+            updateStatsButton(null);
+            return;
+          }
+
+          const allSubs = [
+            ...(report.subs_ranking || []),
+            ...(report.subs_ranking_bad || [])
+          ];
+
+          const reportUrls = allSubs.map(s => s.url);
+          const matchedUrl = matchSubUrl(currentUrl, reportUrls);
+
+          if (!matchedUrl) {
+            updateStatsButton(null);
+            return;
+          }
+
+          const subData = allSubs.find(s => s.url === matchedUrl);
+
+          // 防止异步获取报告期间用户已经修改了输入框
+          if (currentUrl !== inp.value.trim()) return;
+
+          updateStatsButton(subData);
+        });
+      };
+
       // 只要用户改动了链接内容，恢复为未知状态
       inp.addEventListener('input', () => {
         statsBtn.className = 'cfg-url-btn-tier tier-unknown';
@@ -2967,33 +3011,11 @@ function mkUrlList(field, values) {
         statsBtn.title = '内容已修改，请重新检测';
       });
 
-      // 异步读取报告，渲染按钮状态
-      _getReportData().then(report => {
-        if (!report) return;
+      // 监听专属刷新事件，实现无感重绘
+      inp.addEventListener('scp-refresh-stats', refreshStats);
 
-        const currentUrl = inp.value.trim();
-        if (!currentUrl) return;
-
-        const allSubs = [
-          ...(report.subs_ranking || []),
-          ...(report.subs_ranking_bad || [])
-        ];
-
-        const reportUrls = allSubs.map(s => s.url);
-        const matchedUrl = matchSubUrl(currentUrl, reportUrls);
-
-        if (!matchedUrl) {
-          updateStatsButton(null);
-          return;
-        }
-
-        const subData = allSubs.find(s => s.url === matchedUrl);
-
-        // 防止异步获取报告期间用户已经修改了输入框
-        if (currentUrl !== inp.value.trim()) return;
-
-        updateStatsButton(subData);
-      });
+      // 初始化时执行一次
+      refreshStats();
 
       // 点击弹出详情 Tooltip
       statsBtn.addEventListener('click', async (e) => {
@@ -4418,7 +4440,6 @@ export function renderConfigForm(configObj) {
 
   applyPanels();
 }
-
 
 /**
  * collectConfigForm()

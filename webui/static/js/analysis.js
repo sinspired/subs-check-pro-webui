@@ -982,6 +982,43 @@ async function loadReport() {
     } catch (e) { showRetryArea(`报告解析失败：${e.message}`); }
 }
 
+async function reloadAnalysisSilently() {
+    if (!_reportData) return; // 如果页面还没完成首次加载，则忽略
+
+    try {
+        const [reportResult, cfgResult] = await Promise.all([sfetch('/api/analysis-report'), sfetch('/api/config')]);
+
+        if (reportResult.ok && (reportResult.payload?.report_data || reportResult.payload?.report)) {
+            // 兼容后端的优化：优先使用后端解析好的 JSON 对象
+            const report = reportResult.payload.report_data || safeParse(reportResult.payload.report);
+
+            let cfg = {};
+            if (cfgResult.ok && cfgResult.payload?.content) {
+                cfg = safeParse(cfgResult.payload.content) || {};
+            }
+
+            // 重新渲染全部图表
+            renderReport(report, cfg);
+
+            // 如果地球仪正在转动，重置一下飞行路线动画
+            if (document.getElementById('tab-geo')?.classList.contains('active') && _geoMapInstance) {
+                _geoMapInstance.t0 = null;
+            }
+
+            console.log("检测完成，分析报告已静默刷新");
+        }
+    } catch (e) {
+        console.warn('Silent reload failed:', e);
+    }
+}
+
+// 监听从 admin.js 发来的跨窗口检测完成信号
+window.addEventListener('storage', e => {
+    if (e.key === 'scp_report_updated') {
+        window.reloadAnalysisSilently();
+    }
+});
+
 // ==================== 认证与交互 ====================
 function doLogout() {
     if (window.__WAILS_GUI?.baseURL) {
