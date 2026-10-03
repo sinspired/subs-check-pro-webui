@@ -2125,6 +2125,7 @@ h1 svg {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-top: 16px;
   margin-bottom: 6px;
   min-width: 0;
 }
@@ -2166,6 +2167,7 @@ h1 svg {
   .tag-wrap {
     order: 2;
     width: 100%;
+    margin-top: 10px;
   }
   .stats-wrap {
     order: 1;
