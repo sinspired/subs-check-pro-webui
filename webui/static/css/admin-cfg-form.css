@@ -2844,7 +2844,7 @@ textarea.cfg-expandable-input:focus {
 #subStatsTooltip .sub-full-url {
   width: 100%;
   padding-bottom: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   border-bottom: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
   font-size: 11.5px;
   line-height: 1.4;
@@ -2861,7 +2861,7 @@ textarea.cfg-expandable-input:focus {
   align-items: stretch;
   gap: 12px;
   padding: 14px 18px;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   background: color-mix(in srgb, var(--fg) 2%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   border-radius: 10px;
@@ -3470,76 +3470,52 @@ textarea.cfg-expandable-input:focus {
   color: var(--muted, #94a3b8);
 }
 
-/* ================= 移动端自适应 ================= */
-
+/* 移动端 Tooltip */
 @media (max-width: 768px) {
   #subStatsTooltip {
-    width: 90vw !important;
-    max-width: 360px;
+    min-width: 0 !important;
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   #subStatsTooltip .sub-item {
-    padding: 16px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    padding: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
   }
 
   #subStatsTooltip .sub-corner-tag {
-    margin: -16px 0 12px -16px;
+    margin: -14px 0 12px -14px;
   }
 
   #subStatsTooltip .sub-stats-hero {
     gap: 12px;
     padding: 12px;
   }
-
-  #subStatsTooltip .sub-hero-middle {
-    min-width: 100px;
-  }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 420px) {
   #subStatsTooltip .sub-stats-hero {
-    gap: 8px;
-    padding: 10px 12px;
+    gap: 10px;
+    padding-left: 12px;
+    padding-right: 12px;
   }
 
-  #subStatsTooltip .sub-ring-wrapper {
-    width: 48px;
-    height: 48px;
+  #subStatsTooltip .sub-tier-row {
+    gap: 6px;
   }
 
-  #subStatsTooltip .sub-ring-text {
-    font-size: 10.5px;
+  #subStatsTooltip .sub-tier-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  #subStatsTooltip .sub-info-row {
-    padding: 2px 0;
-  }
-
-  #subStatsTooltip .sub-ring-text.text-lg {
-    font-size: 12px;
-  }
-
-  #subStatsTooltip .sub-ring-empty-text {
-    font-size: 9px;
-  }
-
-  #subStatsTooltip .sub-ring-state-text {
-    font-size: 10px;
-  }
-
-  #subStatsTooltip .sub-tier-badge {
-    width: 46px;
-    height: 46px;
-    border-radius: 10px;
-  }
-
-  #subStatsTooltip .sub-tier-badge .tier-text {
-    font-size: 16px;
-  }
-
-  #subStatsTooltip .sub-tier-badge .tier-title {
-    font-size: 8.5px;
+  #subStatsTooltip .sub-tier-summary {
+    flex-shrink: 0;
+    gap: 4px;
   }
 }
 
@@ -3589,7 +3565,7 @@ textarea.cfg-expandable-input:focus {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 8px 8px;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center; /* 保证左侧多行文字和右侧按钮垂直居中 */
   gap: 8px;
@@ -3771,5 +3747,63 @@ textarea.cfg-expandable-input:focus {
 @media (max-width: 640px) {
   #subStatsTooltip .sub-remote-list {
     max-height: 32vh;
+  }
+}
+/* ════════════════════════════════════════════════════════════
+   悬浮窗：附加统计卡片
+   平均速度 / 检测流量 / 文件大小
+════════════════════════════════════════════════════════════ */
+#subStatsTooltip .sub-extra-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--fg) 2%, transparent);
+}
+
+#subStatsTooltip .ses-item {
+  min-width: 0;
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#subStatsTooltip .ses-item + .ses-item {
+  border-left: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+#subStatsTooltip .ses-label {
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#subStatsTooltip .ses-val {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg);
+  font: 800 13px/1.1 var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+#subStatsTooltip .loc-n {
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+#subStatsTooltip .loc-more {
+  cursor: help;
+  opacity: 0.75;
+}
+
+@media (max-width: 640px) {
+  #subStatsTooltip .sub-remote-list {
+    max-height: 40vh;
   }
 }

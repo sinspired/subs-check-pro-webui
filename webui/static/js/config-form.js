@@ -2266,19 +2266,27 @@ function _openSubTooltip(btn, html) {
     } else {
       _subTooltipEl.classList.remove('is-mobile-modal');
 
-      const rect = btn.getBoundingClientRect();
-      const elRect = _subTooltipEl.getBoundingClientRect();
-      const margin = 10;
-      let left = rect.left - elRect.width - margin;
+    const rect = btn.getBoundingClientRect();
+    const elRect = _subTooltipEl.getBoundingClientRect();
+    const margin = 10;
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
 
-      if (left < margin) {
-        left = rect.right + margin;
-        if (left + elRect.width > vw - margin) left = vw / 2 - elRect.width / 2;
-      }
+    let left;
+    if (viewW <= 768) {
+      left = (viewW - elRect.width) / 2;
+    } else if (rect.left - elRect.width - margin >= margin) {
+      left = rect.left - elRect.width - margin;
+    } else if (rect.right + elRect.width + margin <= viewW - margin) {
+      left = rect.right + margin;
+    } else {
+      left = (viewW - elRect.width) / 2;
+    }
 
-      let top = rect.top;
-      if (top + elRect.height > vh - margin) top = vh - elRect.height - margin;
-      if (top < margin) top = margin;
+    left = Math.max(margin, Math.min(left, viewW - elRect.width - margin));
+
+    let top = rect.top + rect.height / 2 - elRect.height / 2;
+    top = Math.max(margin, Math.min(top, viewH - elRect.height - margin));
 
       _subTooltipEl.style.left = left + 'px';
       _subTooltipEl.style.top = top + 'px';
@@ -2329,9 +2337,24 @@ function _showSubTooltip(btn, subData, checkTime) {
   const circumference = 2 * Math.PI * radius;
   const offset = hasRingProgress ? circumference - (Math.min(rateNum, 100) / 100) * circumference : circumference;
 
-  const locs = Array.isArray(subData.top_locations) ? subData.top_locations.join('').split('|').filter(Boolean) : [];
-  const protos = subData.protocols ? Object.entries(subData.protocols).sort((a, b) => b[1] - a[1]) : [];
+  const protos = subData.protocols
+    ? Object.entries(subData.protocols).sort((a, b) => b[1] - a[1])
+    : [];
+
   const locIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+
+  // analysis.js 统一提供地区标签与附加统计
+  const remote = subData._remote || null;
+
+  const locPills = window.buildLocPillsHtml
+    ? window.buildLocPillsHtml(subData, 8, locIcon)
+    : '';
+
+  const extraStats = window.buildSubExtraStatsHtml
+    ? window.buildSubExtraStatsHtml(subData, {
+        sizeTitle: remote ? '各订阅文件大小合计' : '订阅文件大小'
+      })
+    : '';
 
   let rawUrl = subData.url || '';
   let nameTag = subData._displayTag || '';
@@ -2349,10 +2372,6 @@ function _showSubTooltip(btn, subData, checkTime) {
   if (isTempErr) statusMessage = `<div class="sub-status-message is-temp"><span class="status-label">异常</span><span class="status-content" title="${escapeHtml(errMsg || '临时网络或服务异常')}">${escapeHtml(errMsg || '临时网络或服务异常')}</span></div>`;
   else if (isFatalErr) statusMessage = `<div class="sub-status-message is-dead"><span class="status-label">失效</span><span class="status-content" title="${escapeHtml(errMsg || '订阅链接已失效')}">${escapeHtml(errMsg || '订阅链接已失效')}</span></div>`;
   else if (isEmpty) statusMessage = `<div class="sub-status-message is-empty"><span class="status-label">无节点</span><span class="status-content" title="${escapeHtml(errMsg || '未获取到节点')}">${escapeHtml(errMsg || '未获取到任何节点')}</span></div>`;
-
-
-  // 彻底剥离行内样式
-  const remote = subData._remote || null;
 
   const html = `
 <div class="sub-item ${tierClass}">
@@ -2396,12 +2415,24 @@ function _showSubTooltip(btn, subData, checkTime) {
         <div class="sub-hero-divider"></div>
         <div class="sub-hero-middle">
             ${remote
-      ? `<div class="sub-info-row" title="精确值: ${remote.count}"><span class="info-label">订阅链接</span><span class="info-value">${formatNum(remote.count)}</span></div>`
-      : `<div class="sub-info-row"><span class="info-label">综合评分</span><span class="info-value score-val">${isGrade ? scoreNum.toFixed(2) : '-'}</span></div>`}
-            <div class="sub-info-row" title="精确值: ${success}"><span class="info-label">有效节点</span><span
-                    class="info-value success-val">${formatNum(success)}</span></div>
-            <div class="sub-info-row" title="精确值: ${total}"><span class="info-label">节点总数</span><span
-                    class="info-value total-val">${formatNum(total)}</span></div>
+      ? `<div class="sub-info-row" title="精确值: ${remote.count}">
+            <span class="info-label">订阅链接</span>
+            <span class="info-value">${formatNum(remote.count)}</span>
+         </div>`
+      : `<div class="sub-info-row">
+            <span class="info-label">综合评分</span>
+            <span class="info-value score-val">${isGrade ? scoreNum.toFixed(2) : '-'}</span>
+         </div>`}
+
+            <div class="sub-info-row" title="精确值: ${success}">
+                <span class="info-label">有效节点</span>
+                <span class="info-value success-val">${formatNum(success)}</span>
+            </div>
+
+            <div class="sub-info-row" title="精确值: ${total}">
+                <span class="info-label">节点总数</span>
+                <span class="info-value total-val">${formatNum(total)}</span>
+            </div>
         </div>
         <div class="sub-hero-divider"></div>
         <div class="sub-hero-right">
@@ -2414,9 +2445,11 @@ function _showSubTooltip(btn, subData, checkTime) {
 
     ${statusMessage}
 
-    ${(locs.length > 0 || protos.length > 0) ? `
+    ${extraStats}
+
+    ${(locPills || protos.length > 0) ? `
     <div class="sub-meta-tags">
-        ${locs.map(l => `<span class="tag-pill loc">${locIcon}${escapeHtml(l)}</span>`).join('')}
+        ${locPills}
         ${protos.map(([k, v]) => `<span class="tag-pill proto"><span class="p-name">${escapeHtml(k)}</span><span
                 class="p-val">${v}</span></span>`).join('')}
     </div>` : ''}

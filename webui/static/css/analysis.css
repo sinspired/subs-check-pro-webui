@@ -2164,8 +2164,13 @@ h1 svg {
     flex-direction: column;
     gap: 8px;
   }
-  .tag-wrap {
+  .sub-extra-stats {
     order: 2;
+    width: 100%;
+    margin-top: 0px;
+  }
+  .tag-wrap {
+    order: 3;
     width: 100%;
     margin-top: 10px;
   }
@@ -2312,11 +2317,10 @@ h1 svg {
 }
 
 .tag-wrap {
-  display: flex;
+  flex-basis: 100%;
+  width: 100%;
   flex-wrap: wrap;
   gap: 4px;
-  flex: 1;
-  min-width: 0;
 }
 
 .stats-wrap {
@@ -3311,14 +3315,38 @@ code {
 .remote-card .sub-remote-chip {
   --tc: var(--muted);
 }
-.remote-card.tier-s, .remote-card .tier-s { --tc: #10b981; }
-.remote-card.tier-a, .remote-card .tier-a { --tc: #84cc16; }
-.remote-card.tier-b, .remote-card .tier-b { --tc: #eab308; }
-.remote-card.tier-c, .remote-card .tier-c { --tc: #f97316; }
-.remote-card.tier-silent, .remote-card .tier-silent { --tc: var(--muted); }
-.remote-card.tier-empty, .remote-card .tier-empty { --tc: #64748b; }
-.remote-card.tier-temp, .remote-card .tier-temp { --tc: var(--warning, #f59e0b); }
-.remote-card.tier-dead, .remote-card .tier-dead { --tc: var(--danger, #ef4444); }
+.remote-card.tier-s,
+.remote-card .tier-s {
+  --tc: #10b981;
+}
+.remote-card.tier-a,
+.remote-card .tier-a {
+  --tc: #84cc16;
+}
+.remote-card.tier-b,
+.remote-card .tier-b {
+  --tc: #eab308;
+}
+.remote-card.tier-c,
+.remote-card .tier-c {
+  --tc: #f97316;
+}
+.remote-card.tier-silent,
+.remote-card .tier-silent {
+  --tc: var(--muted);
+}
+.remote-card.tier-empty,
+.remote-card .tier-empty {
+  --tc: #64748b;
+}
+.remote-card.tier-temp,
+.remote-card .tier-temp {
+  --tc: var(--warning, #f59e0b);
+}
+.remote-card.tier-dead,
+.remote-card .tier-dead {
+  --tc: var(--danger, #ef4444);
+}
 
 .remote-list {
   display: flex;
@@ -3388,7 +3416,7 @@ code {
   align-items: center;
   gap: 6px 14px;
   margin-top: 10px;
-  font-size: 11.5px;
+  font-size: 10px;
 }
 
 .remote-tag {
@@ -3573,4 +3601,69 @@ code {
 .remote-card .sub-remote-link .srl-sep {
   opacity: 0.4;
   margin: 0 2px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   订阅附加统计：平均速度 / 检测流量 / 文件大小 + 地区数量
+   （报告页订阅排名与远程订阅卡片共用）
+════════════════════════════════════════════════════════════ */
+.tag-pill .loc-n {
+  margin-left: 4px;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.tag-pill.loc-more {
+  cursor: help;
+  opacity: 0.75;
+}
+
+.sub-extra-stats {
+  width: auto;
+  flex-basis: auto;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+
+  border-top: none;
+  padding-top: 0;
+  margin-bottom: 0;
+}
+
+.sub-extra-stats .ses-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.sub-extra-stats .ses-label {
+  opacity: 0.8;
+}
+
+.sub-extra-stats .ses-val {
+  color: var(--fg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sub-remote-link .srl-extra {
+  flex-basis: 100%;
+  padding-left: 28px; /* 与徽章对齐：徽章宽 20 + 间距 8 */
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sub-remote-link .srl-extra i {
+  font-style: normal;
+  opacity: 0.45;
+  margin: 0 5px;
+}
+
+.remote-card .sub-extra-stats {
+  margin-top: 0px;
 }

@@ -1991,6 +1991,117 @@ function getSubStateBadgeText(state) {
     }
 }
 
+/* ═══════════ 订阅附加统计：解析 / 格式化 / 渲染 ═══════════
+ * 报告中每个订阅带有（字符串形式，均为可选）：
+ *   avg_speed: "0.4 MB/s"   节点平均下载速度
+ *   traffic:   "6.75 MB"    该订阅的节点检测消耗的流量
+ *   file_size: "710 B"      订阅文件自身大小
+ *   locations: { SG: 1 }    该订阅检测通过节点的地区分布
+ * 远程订阅清单需要把多个订阅的这些值合并，所以先解析回数值再汇总。
+ */
+
+/* "6.75 MB" / "710 B" → 字节数（1024 进制）；无法解析返回 0 */
+function parseSizeBytes(str) {
+    const m = /^\s*([\d.]+)\s*([KMGTP]?)(?:i?B)?\s*$/i.exec(String(str ?? ''));
+    if (!m) return 0;
+    const exp = 'KMGTP'.indexOf(m[2].toUpperCase()) + 1;
+    return (parseFloat(m[1]) || 0) * Math.pow(1024, Math.max(0, exp));
+}
+
+function fmtBytes(n) {
+    n = Number(n) || 0;
+    if (n < 1024) return Math.round(n) + ' B';
+
+    const units = ['KB', 'MB', 'GB', 'TB', 'PB'];
+    let i = -1;
+
+    do {
+        n /= 1024;
+        i++;
+    } while (n >= 1024 && i < units.length - 1);
+
+    return n.toFixed(2).replace(/\.?0+$/, '') + ' ' + units[i];
+}
+
+/* "0.4 MB/s" / "85 KB/s" → KB/s；无法解析返回 0 */
+function parseSpeedKB(str) {
+    const m = /^\s*([\d.]+)\s*([KM])B\/s\s*$/i.exec(String(str ?? ''));
+    if (!m) return 0;
+
+    return (parseFloat(m[1]) || 0)
+        * (m[2].toUpperCase() === 'M' ? 1024 : 1);
+}
+
+/* KB/s → 与后端 avg_speed 相同的展示规则 */
+function fmtSpeed(kb) {
+    kb = Number(kb) || 0;
+    return kb < 100
+        ? Math.round(kb) + ' KB/s'
+        : (kb / 1024).toFixed(1) + ' MB/s';
+}
+
+/* 取订阅的地区分布，按数量降序。
+ * 优先 locations；旧版报告只有 top_locations 时兜底。
+ */
+function getSubLocations(subData) {
+    const loc = subData?.locations;
+
+    if (
+        loc &&
+        typeof loc === 'object' &&
+        !Array.isArray(loc) &&
+        Object.keys(loc).length
+    ) {
+        return Object.entries(loc)
+            .map(([k, v]) => [k, Number(v) || 0])
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    }
+
+    const legacy = Array.isArray(subData?.top_locations)
+        ? subData.top_locations.join('').split('|').filter(Boolean)
+        : [];
+
+    return legacy.map(k => [k, 0]);
+}
+
+/* 地区标签：数量降序，最多显示 limit 个，其余折叠为 "+N" */
+function buildLocPillsHtml(subData, limit = 8, iconHtml = '') {
+    const all = getSubLocations(subData);
+    if (!all.length) return '';
+
+    const shown = all.slice(0, limit);
+    const rest = all.slice(limit);
+
+    const pills = shown.map(([k, n]) =>
+        `<span class="tag-pill loc" title="${esc(k)}${n ? ' × ' + n : ''}">${iconHtml}<span class="loc-code">${esc(k)}</span>${n ? `<span class="loc-n">${n}</span>` : ''}</span>`
+    ).join('');
+
+    const more = rest.length
+        ? `<span class="tag-pill loc loc-more" title="${esc(rest.map(([k, n]) => k + (n ? ' × ' + n : '')).join('、'))}">+${rest.length}</span>`
+        : '';
+
+    return pills + more;
+}
+
+/* 平均速度 / 检测流量 / 文件大小 三项统计条 */
+function buildSubExtraStatsHtml(subData, opts = {}) {
+    const items = [
+        ['平均速度', subData?.avg_speed, '节点平均下载速度'],
+        ['检测流量', subData?.traffic, '检测该订阅的节点所消耗的流量'],
+        ['文件大小', subData?.file_size, opts.sizeTitle || '订阅文件大小'],
+    ].filter(([, v]) =>
+        v !== undefined &&
+        v !== null &&
+        String(v).trim() !== ''
+    );
+
+    if (!items.length) return '';
+
+    return `<div class="sub-extra-stats">${items.map(([label, v, tip]) =>
+        `<span class="ses-item" title="${esc(tip)}"><span class="ses-label">${label}</span><span class="ses-val">${esc(v)}</span></span>`
+    ).join('')}</div>`;
+}
+
 /* ═══════════ 远程订阅清单：与订阅报告数据的关联 / 聚合 ═══════════
  * 远程订阅拉取到的是「订阅链接列表」。后端报告 remote_subs 只记录
  *   { url, count, error?, urls: [...] }
@@ -2031,6 +2142,8 @@ function buildRemoteAggregate(entry, report) {
     });
 
     let success = 0, total = 0;
+    let trafficBytes = 0, sizeBytes = 0;
+    let speedWeighted = 0, speedWeight = 0; // 平均速度按各订阅存活节点数加权
     const protocols = {}, locations = {};
     const seen = new Set();
     const counts = new Map(); // 各评级/状态的订阅数量，用于小标签
@@ -2052,14 +2165,24 @@ function buildRemoteAggregate(entry, report) {
         seen.add(l.data.url);
         success += l.st.success;
         total += l.st.total;
-        for (const [k, v] of Object.entries(l.data.protocols || {})) protocols[k] = (protocols[k] || 0) + Number(v || 0);
+
+        trafficBytes += parseSizeBytes(l.data.traffic);
+        sizeBytes += parseSizeBytes(l.data.file_size);
+
+        const spd = parseSpeedKB(l.data.avg_speed);
+
+        if (spd > 0 && l.st.success > 0) {
+            speedWeighted += spd * l.st.success;
+            speedWeight += l.st.success;
+        }
+
+        for (const [k, v] of Object.entries(l.data.protocols || {}))
+            protocols[k] = (protocols[k] || 0) + Number(v || 0);
         for (const [k, v] of Object.entries(l.data.locations || {})) locations[k] = (locations[k] || 0) + Number(v || 0);
     }
 
     // 订阅链接按综合分降序，未匹配的排最后
     links.sort((a, b) => (b.st ? b.st.scoreNum : -1) - (a.st ? a.st.scoreNum : -1));
-
-    const topLocs = Object.entries(locations).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
 
     // 清单自身获取正常、但没有任何订阅取得节点时给出说明。
     // 文案刻意避开「链接失效」等会被 getSubReportState 判定为 dead 的字样。
@@ -2074,7 +2197,13 @@ function buildRemoteAggregate(entry, report) {
         error,
         stats: { success, total },
         protocols,
-        top_locations: [topLocs.join('|')],
+        locations,
+
+        // 以下三项与本地订阅同名同格式，缺失时留空，渲染层自动省略
+        avg_speed: speedWeight > 0 ? fmtSpeed(speedWeighted / speedWeight) : undefined,
+        traffic: trafficBytes > 0 ? fmtBytes(trafficBytes) : undefined,
+        file_size: sizeBytes > 0 ? fmtBytes(sizeBytes) : undefined,
+
         _remote: {
             count: Number(entry.count) || links.length,
             activeCount: links.filter(l => l.st && l.st.success > 0).length,
@@ -2101,7 +2230,7 @@ function buildRemoteLinksHtml(remote) {
             try { tag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); } catch (e) { tag = rawUrl.substring(hashIdx + 1); }
         }
 
-        let cls = 'tier-unknown', badge = '?', nums = '-';
+        let cls = 'tier-unknown', badge = '?', nums = '-', extra = '';
         let tip = '报告中无此订阅（可能被其他来源去重，或未被检测）';
         const st = l.st;
         if (st) {
@@ -2117,11 +2246,24 @@ function buildRemoteLinksHtml(remote) {
             nums = `<span class="srl-ok">${st.success}</span><span class="srl-sep">/</span>${st.total}`;
         }
 
+        const d = l.data;
+
+        const parts = [
+            d.avg_speed && `<span title="平均速度">${esc(d.avg_speed)}</span>`,
+            d.traffic && `<span title="检测流量">${esc(d.traffic)}</span>`,
+            d.file_size && `<span title="文件大小">${esc(d.file_size)}</span>`,
+        ].filter(Boolean);
+
+        if (parts.length) {
+            extra = `<span class="srl-extra">${parts.join('<i>·</i>')}</span>`;
+        }
+
         return `<div class="sub-remote-link ${cls}" title="${esc(tip + '\n' + rawUrl)}">
             <span class="srl-badge">${badge}</span>
             <span class="srl-url">${tag ? `<em>${esc(tag)}</em>` : ''}${esc(cleanUrl)}</span>
             <span class="srl-nums">${nums}</span>
-        </div>`;
+                ${extra}
+            </div>`;
     }).join('');
 
     return `<div class="sub-remote-box">
@@ -2135,6 +2277,8 @@ function buildRemoteLinksHtml(remote) {
 }
 
 window.matchSubUrl = matchSubUrl;
+window.buildLocPillsHtml = buildLocPillsHtml;
+window.buildSubExtraStatsHtml = buildSubExtraStatsHtml;
 window.buildRemoteAggregate = buildRemoteAggregate;
 window.buildRemoteLinksHtml = buildRemoteLinksHtml;
 
@@ -2192,7 +2336,7 @@ function renderRemoteSubs(remoteSubs, subs, subsBad) {
         }
 
         const protos = Object.entries(agg.protocols).sort((a, b) => b[1] - a[1]).slice(0, 4);
-        const locs = (agg.top_locations[0] || '').split('|').filter(Boolean);
+        const locPills = buildLocPillsHtml(agg, 8);
         const showErr = (st.state === 'temp' || st.state === 'dead' || st.state === 'empty') && !!st.errMsg;
 
         return `<div class="remote-card ${tierClass}" id="remoteCard${i}">
@@ -2213,10 +2357,12 @@ function renderRemoteSubs(remoteSubs, subs, subsBad) {
                 ${st.total > 0 ? `<span class="stats-group"><span class="stats-label">成功率</span><span class="stats-score">${fmtRate(st.rateNum)}</span></span>` : ''}
             </div>
 
-            ${(locs.length || protos.length) ? `<div class="tag-wrap remote-tags">
-                ${locs.map(l => `<span class="tag-pill loc">${esc(l)}</span>`).join('')}
+            ${(locPills || protos.length) ? `<div class="tag-wrap remote-tags">
+                ${locPills}
                 ${protos.map(([k, v]) => `<span class="tag-pill proto">${esc(k)}:${v}</span>`).join('')}
             </div>` : ''}
+
+            ${buildSubExtraStatsHtml(agg, { sizeTitle: '各订阅文件大小合计' })}
 
             ${showErr ? `<div class="remote-error" title="${esc(st.errMsg)}">${getSubStateIcon(st.state, 12)}<span>${esc(st.errMsg)}</span></div>` : ''}
 
@@ -2328,9 +2474,22 @@ function renderSubs(subs, subsBad, cfg) {
 
         // 2. 动态排序
         processedSubs.sort((a, b) => {
-            if (_currentSortMode === 'count') return b._success - a._success;
-            if (_currentSortMode === 'rate') return b._rate - a._rate;
-            return b._score - a._score;
+            if (_currentSortMode === 'count') {
+                return (b._success - a._success)
+                    || (b._score - a._score)
+                    || (b._rate - a._rate);
+            }
+
+            if (_currentSortMode === 'rate') {
+                return (b._rate - a._rate)
+                    || (b._score - a._score)
+                    || (b._success - a._success);
+            }
+
+            // 默认：综合分 → 存活数 → 成功率
+            return (b._score - a._score)
+                || (b._success - a._success)
+                || (b._rate - a._rate);
         });
 
         const maxRate = Math.max(...processedSubs.map(s => s._rate), 1);
@@ -2388,9 +2547,7 @@ function renderSubs(subs, subsBad, cfg) {
 
             const barPct = Math.min(100, s._rate / maxRate * 100);
 
-            const locs = Array.isArray(s.top_locations)
-                ? s.top_locations.join('').split('|').filter(Boolean)
-                : [];
+            const locPills = buildLocPillsHtml(s, 6);
 
             const protos = s.protocols
                 ? Object.entries(s.protocols).sort((a, b) => b[1] - a[1])
@@ -2446,10 +2603,7 @@ function renderSubs(subs, subsBad, cfg) {
             </div>
 
             <div class="sub-meta">
-                <div class="tag-wrap">
-                    ${locs.map(l => `<span class="tag-pill loc">${esc(l)}</span>`).join('')}
-                    ${protos.map(([k, v]) => `<span class="tag-pill proto">${esc(k)}:${v}</span>`).join('')}
-                </div>
+                ${buildSubExtraStatsHtml(s)}
 
                 <div class="stats-wrap">
                     <span class="stats-group survival-group">
@@ -2465,6 +2619,12 @@ function renderSubs(subs, subsBad, cfg) {
                         ${_currentSortMode === 'rate' ? `<span class="stats-label" style="margin-left:8px">成功率</span><span class="stats-score">${rateStr}</span>` : ''}
                     </span>
                 </div>
+
+                <div class="tag-wrap">
+                    ${locPills}
+                    ${protos.map(([k, v]) => `<span class="tag-pill proto">${esc(k)}:${v}</span>`).join('')}
+                </div>
+
             </div>
 
             ${s._state === 'temp' || s._state === 'dead' ? `
