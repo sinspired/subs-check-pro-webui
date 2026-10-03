@@ -2083,22 +2083,22 @@ function buildLocPillsHtml(subData, limit = 8, iconHtml = '') {
     return pills + more;
 }
 
-/* 平均速度 / 检测流量 / 文件大小 三项统计条 */
+/* 平均速度 / 检测流量 / 文件大小 三项统计条（统一胶囊样式） */
 function buildSubExtraStatsHtml(subData, opts = {}) {
+    const svgSpeed = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
+    const svgTraffic = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>`;
+    const svgFile = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
+
     const items = [
-        ['平均速度', subData?.avg_speed, '节点平均下载速度'],
-        ['检测流量', subData?.traffic, '检测该订阅的节点所消耗的流量'],
-        ['文件大小', subData?.file_size, opts.sizeTitle || '订阅文件大小'],
-    ].filter(([, v]) =>
-        v !== undefined &&
-        v !== null &&
-        String(v).trim() !== ''
-    );
+        { icon: svgSpeed, val: subData?.avg_speed, tip: '平均速度' },
+        { icon: svgTraffic, val: subData?.traffic, tip: '检测流量' },
+        { icon: svgFile, val: subData?.file_size, tip: opts.sizeTitle || '文件大小' },
+    ].filter(i => i.val !== undefined && i.val !== null && String(i.val).trim() !== '');
 
     if (!items.length) return '';
 
-    return `<div class="sub-extra-stats">${items.map(([label, v, tip]) =>
-        `<span class="ses-item" title="${esc(tip)}"><span class="ses-label">${label}</span><span class="ses-val">${esc(v)}</span></span>`
+    return `<div class="sub-extra-stats">${items.map(i =>
+        `<span class="ses-item" title="${esc(i.tip)}">${i.icon}<span>${esc(i.val)}</span></span>`
     ).join('')}</div>`;
 }
 
@@ -2206,7 +2206,7 @@ function buildRemoteAggregate(entry, report) {
 
         _remote: {
             count: Number(entry.count) || links.length,
-            activeCount: links.filter(l => l.st && l.st.success > 0).length,
+            activeCount: links.filter(l => l.st && l.st.total > 0).length, // 修改为 total > 0 即视为链接存活
             links,
             chips,
         },
@@ -2246,30 +2246,36 @@ function buildRemoteLinksHtml(remote) {
             nums = `<span class="srl-ok">${st.success}</span><span class="srl-sep">/</span>${st.total}`;
         }
 
-        const d = l.data;
+        const d = l.data || {}; // 安全兜底，防止解析空数据导致整个卡片白屏报错
+
+        const svgSpeed = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
+        const svgTraffic = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>`;
+        const svgFile = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
+        const copyIcon = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 
         const parts = [
-            d.avg_speed && `<span title="平均速度">${esc(d.avg_speed)}</span>`,
-            d.traffic && `<span title="检测流量">${esc(d.traffic)}</span>`,
-            d.file_size && `<span title="文件大小">${esc(d.file_size)}</span>`,
+            d.avg_speed && `<span class="srl-tag" title="平均速度">${svgSpeed}<span>${esc(d.avg_speed)}</span></span>`,
+            d.traffic && `<span class="srl-tag" title="检测流量">${svgTraffic}<span>${esc(d.traffic)}</span></span>`,
+            d.file_size && `<span class="srl-tag" title="文件大小">${svgFile}<span>${esc(d.file_size)}</span></span>`,
         ].filter(Boolean);
-
-        if (parts.length) {
-            extra = `<span class="srl-extra">${parts.join('<i>·</i>')}</span>`;
-        }
 
         return `<div class="sub-remote-link ${cls}" title="${esc(tip + '\n' + rawUrl)}">
             <span class="srl-badge">${badge}</span>
-            <span class="srl-url">${tag ? `<em>${esc(tag)}</em>` : ''}${esc(cleanUrl)}</span>
-            <span class="srl-nums">${nums}</span>
-                ${extra}
-            </div>`;
+            <div class="sub-url-box">
+                <span class="srl-url">${tag ? `<em>${esc(tag)}</em>` : ''}${esc(cleanUrl)}</span>
+                <button class="sub-copy-btn" onclick="window._copySingleUrl(event, '${esc(rawUrl)}')" title="复制链接">${copyIcon}</button>
+            </div>
+            <div class="srl-bottom-row">
+                <div class="srl-extra-tags">${parts.join('')}</div>
+                <span class="srl-nums">${nums}</span>
+            </div>
+        </div>`;
     }).join('');
 
     return `<div class="sub-remote-box">
         <div class="sub-remote-head">
             <span class="srh-title">订阅链接明细</span>
-            <span class="srh-meta">${remote.activeCount} / ${remote.links.length} 个有存活节点</span>
+            <span class="srh-meta">${remote.activeCount} / ${remote.links.length} 个链接存活</span>
         </div>
         <div class="sub-remote-chips">${chips}</div>
         <div class="sub-remote-list">${rows}</div>
@@ -2339,6 +2345,16 @@ function renderRemoteSubs(remoteSubs, subs, subsBad) {
         const locPills = buildLocPillsHtml(agg, 8);
         const showErr = (st.state === 'temp' || st.state === 'dead' || st.state === 'empty') && !!st.errMsg;
 
+        const tagsHtml = (nameTag || locPills || protos.length) ? `<div class="tag-wrap remote-tags" style="margin-top:10px;">
+                ${nameTag ? `<span class="remote-tag">${esc(nameTag)}</span>` : ''}
+                ${locPills}
+                ${protos.map(([k, v]) => `<span class="tag-pill proto">${esc(k)}:${v}</span>`).join('')}
+            </div>` : '';
+
+        const speedHtml = agg.avg_speed
+            ? `<div class="rs-item" title="所有节点平均下载速度"><div class="rs-label">平均速度</div><div class="rs-val">${esc(agg.avg_speed)}</div></div>`
+            : `<div class="rs-item" title="暂无测速数据"><div class="rs-label">平均速度</div><div class="rs-val">-</div></div>`;
+
         return `<div class="remote-card ${tierClass}" id="remoteCard${i}">
             <div class="remote-head" onclick="toggleRemoteCard('remoteCard${i}')">
                 <span class="remote-badge" title="${esc(tip)}">${isGrade ? esc(badge) : getSubStateIcon(st.state, 13)}</span>
@@ -2349,20 +2365,18 @@ function renderRemoteSubs(remoteSubs, subs, subsBad) {
                 ${chevron}
             </div>
 
-            <div class="remote-summary">
-                ${nameTag ? `<span class="remote-tag">${esc(nameTag)}</span>` : ''}
-                <span class="stats-group"><span class="stats-label">订阅</span><span class="stats-success">${remote.count}</span></span>
-                <span class="stats-group"><span class="stats-label">有存活</span><span class="stats-success">${remote.activeCount}</span></span>
-                <span class="stats-group"><span class="stats-label">节点存活</span><span class="stats-success">${st.success}</span><span style="opacity:0.4;margin:0 3px">/</span><span class="stats-total">${st.total}</span></span>
-                ${st.total > 0 ? `<span class="stats-group"><span class="stats-label">成功率</span><span class="stats-score">${fmtRate(st.rateNum)}</span></span>` : ''}
+            ${tagsHtml}
+
+            <div class="remote-stats-board">
+                <div class="rs-grid">
+                    <div class="rs-item" title="存活订阅 / 总订阅"><div class="rs-label">链接存活</div><div class="rs-val" style="color:var(--tc)">${remote.activeCount}<span class="rs-sub">/${remote.count}</span></div></div>
+                    <div class="rs-item" title="存活节点 / 总节点"><div class="rs-label">节点存活</div><div class="rs-val" style="color:var(--tc)">${st.success}<span class="rs-sub">/${st.total}</span></div></div>
+                    <div class="rs-item" title="聚合成功率"><div class="rs-label">成功率</div><div class="rs-val">${st.total > 0 ? fmtRate(st.rateNum) : '-'}</div></div>
+                    ${speedHtml}
+                    <div class="rs-item" title="消耗流量合计"><div class="rs-label">检测流量</div><div class="rs-val">${esc(agg.traffic || '-')}</div></div>
+                    <div class="rs-item" title="文件大小合计"><div class="rs-label">文件总计</div><div class="rs-val">${esc(agg.file_size || '-')}</div></div>
+                </div>
             </div>
-
-            ${(locPills || protos.length) ? `<div class="tag-wrap remote-tags">
-                ${locPills}
-                ${protos.map(([k, v]) => `<span class="tag-pill proto">${esc(k)}:${v}</span>`).join('')}
-            </div>` : ''}
-
-            ${buildSubExtraStatsHtml(agg, { sizeTitle: '各订阅文件大小合计' })}
 
             ${showErr ? `<div class="remote-error" title="${esc(st.errMsg)}">${getSubStateIcon(st.state, 12)}<span>${esc(st.errMsg)}</span></div>` : ''}
 

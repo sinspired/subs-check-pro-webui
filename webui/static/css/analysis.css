@@ -3410,13 +3410,69 @@ code {
   transform: rotate(180deg);
 }
 
-.remote-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
+/* ── 远程订阅卡片专属网格统计仪表盘 ── */
+.remote-stats-board {
   margin-top: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 8px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--input-bg) 50%, transparent);
+}
+
+.rs-grid {
+  display: grid;
+  /* 默认（小屏）为 3 列 */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+/* 当屏幕宽度大于 720px (大屏/PC) 时，切换为一行 6 列 */
+@media (min-width: 721px) {
+  .rs-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.rs-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  background: var(--card);
+  min-width: 0;
+  transition: background 0.15s;
+}
+
+.rs-item:hover {
+  background: color-mix(in srgb, var(--bg-hover) 60%, var(--card));
+}
+
+.rs-label {
+  font-size: 9.5px;
+  color: var(--muted);
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.rs-val {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--fg);
+  font-family: var(--font-mono, monospace);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.rs-sub {
   font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  opacity: 0.6;
 }
 
 .remote-tag {
@@ -3472,11 +3528,8 @@ code {
   .remote-card {
     padding: 10px 12px;
   }
-  .remote-summary {
-    gap: 4px 10px;
-  }
   .remote-card .sub-remote-list {
-    max-height: 280px;
+    max-height: 38vh; /* 优化小屏被截断的问题，改为按视口比例高度 */
   }
 }
 
@@ -3544,6 +3597,7 @@ code {
 
 .remote-card .sub-remote-link {
   display: flex;
+  flex-wrap: wrap; /* <-- 必须加上折行，否则 URL 会被挤压到宽度为 0 导致隐身 */
   align-items: center;
   gap: 8px;
   padding: 5px 0;
@@ -3621,12 +3675,10 @@ code {
 .sub-extra-stats {
   width: auto;
   flex-basis: auto;
-
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 14px;
-
+  gap: 6px;
   border-top: none;
   padding-top: 0;
   margin-bottom: 0;
@@ -3636,32 +3688,62 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 9.5px;
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
   white-space: nowrap;
 }
 
-.sub-extra-stats .ses-label {
-  opacity: 0.8;
+.sub-extra-stats .ses-item svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0.65;
 }
 
-.sub-extra-stats .ses-val {
-  color: var(--fg);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.sub-remote-link .srl-extra {
+/* ── 订阅链接明细 - 底部统计行 ── */
+.srl-bottom-row {
   flex-basis: 100%;
-  padding-left: 28px; /* 与徽章对齐：徽章宽 20 + 间距 8 */
-  font-size: 10px;
-  line-height: 1.4;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+  padding-left: 28px; /* 与上方的徽章左侧对齐：20px宽度 + 8px间距 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 2px;
+  margin-bottom: 2px;
 }
 
-.sub-remote-link .srl-extra i {
-  font-style: normal;
-  opacity: 0.45;
-  margin: 0 5px;
+.srl-extra-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1; /* 占据左侧空间 */
+  min-width: 0;
+}
+
+.srl-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 9.5px;
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.srl-tag svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0.65;
 }
 
 .remote-card .sub-extra-stats {
