@@ -2589,14 +2589,19 @@ function mkUrlList(field, values) {
     wrap.classList.toggle('wrap-mode', wrapOn);
     wrapToggle.classList.toggle('active', wrapOn);
     wrapToggle.textContent = wrapOn ? '→ 单行' : '↵ 折行';
-    wrap.querySelectorAll('.cfg-url-input').forEach(t => {
-      if (wrapOn) {
-        t.style.height = 'auto';
-        t.style.height = Math.min(t.scrollHeight, 300) + 'px';
-      } else {
-        t.style.height = '';
-      }
-    });
+
+    // 将 DOM 操作的 读/写 分离，避免循环中的强制同步重排 (Layout Thrashing)
+    const inputs = Array.from(wrap.querySelectorAll('.cfg-url-input'));
+    if (wrapOn) {
+      // 批量纯写操作
+      inputs.forEach(t => { t.style.height = 'auto'; });
+      // 批量纯读操作 (只在这里触发一次重排)
+      const heights = inputs.map(t => Math.min(t.scrollHeight, 300));
+      // 批量纯写操作
+      inputs.forEach((t, i) => { t.style.height = heights[i] + 'px'; });
+    } else {
+      inputs.forEach(t => { t.style.height = ''; });
+    }
   });
 
   const addBtnTop = el('button', { class: 'cfg-url-add cfg-url-add-top', type: 'button', textContent: '↓ 插入' });
