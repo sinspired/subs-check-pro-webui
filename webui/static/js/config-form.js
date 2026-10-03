@@ -2652,16 +2652,14 @@ function mkUrlList(field, values) {
   let _touchOffsetY = 0;
 
   function _getRowFromPoint(x, y) {
-    // 隐藏 clone 防止 elementFromPoint 命中它
-    if (_touchClone) _touchClone.style.display = 'none';
+    // _touchClone 已经设置了穿透，直接拿元素即可，消灭频繁的 display 显隐重排
     const el = document.elementFromPoint(x, y);
-    if (_touchClone) _touchClone.style.display = '';
     return el?.closest('.cfg-url-item') ?? null;
   }
 
+
   function _onTouchStart(e, row) {
     if (!e || !e.target) return;
-    // 只响应把手触发的触摸
     if (!e.target.closest('.cfg-url-drag')) return;
     e.preventDefault();
 
@@ -2671,7 +2669,6 @@ function mkUrlList(field, values) {
     _touchOffsetX = touch.clientX - rect.left;
     _touchOffsetY = touch.clientY - rect.top;
 
-    // 创建跟手幽灵
     _touchClone = row.cloneNode(true);
     Object.assign(_touchClone.style, {
       position: 'fixed',
@@ -2680,10 +2677,11 @@ function mkUrlList(field, values) {
       left: (touch.clientX - _touchOffsetX) + 'px',
       top: (touch.clientY - _touchOffsetY) + 'px',
       opacity: '0.85',
-      pointerEvents: 'none',
       boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
       borderRadius: '6px',
     });
+    // 强制声明 pointer-events 为 none，这是让 elementFromPoint 流畅工作的关键
+    _touchClone.style.setProperty('pointer-events', 'none', 'important');
     document.body.appendChild(_touchClone);
     row.classList.add('dragging');
   }
