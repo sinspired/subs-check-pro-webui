@@ -3633,3 +3633,143 @@ textarea.cfg-expandable-input:focus {
     transform: translate(-50%, -50%) scale(1) !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   远程订阅清单悬浮窗：订阅链接明细
+   复用本地订阅悬浮窗的外壳与评级色（--tc），仅新增明细区块
+════════════════════════════════════════════════════════════ */
+
+/* 订阅链接明细（远程订阅清单） */
+#subStatsTooltip .sub-remote-box {
+  margin-top: 12px;
+  padding: 10px 12px 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--fg) 2%, transparent);
+}
+
+#subStatsTooltip .sub-remote-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#subStatsTooltip .sub-remote-head .srh-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+#subStatsTooltip .sub-remote-head .srh-meta {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+#subStatsTooltip .sub-remote-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+#subStatsTooltip .sub-remote-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  color: var(--tc, var(--muted));
+  background: color-mix(in srgb, var(--tc, var(--muted)) 12%, transparent);
+}
+
+#subStatsTooltip .sub-remote-chip b {
+  font-weight: 800;
+}
+
+#subStatsTooltip .sub-remote-list {
+  max-height: 200px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
+#subStatsTooltip .sub-remote-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px dashed color-mix(in srgb, var(--border) 70%, transparent);
+  font-size: 11px;
+}
+
+#subStatsTooltip .sub-remote-link:first-child {
+  border-top: none;
+}
+
+#subStatsTooltip .sub-remote-link .srl-badge {
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--tc, var(--muted));
+  background: color-mix(in srgb, var(--tc, var(--muted)) 14%, transparent);
+}
+
+#subStatsTooltip .sub-remote-link .srl-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
+  color: var(--muted);
+}
+
+#subStatsTooltip .sub-remote-link .srl-url em {
+  font-style: normal;
+  font-weight: 700;
+  margin-right: 6px;
+  color: var(--tc, var(--fg));
+}
+
+#subStatsTooltip .sub-remote-link .srl-nums {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+#subStatsTooltip .sub-remote-link .srl-ok {
+  color: var(--fg);
+  font-weight: 700;
+}
+
+#subStatsTooltip .sub-remote-link .srl-sep {
+  opacity: 0.4;
+  margin: 0 2px;
+}
+
+/* 未匹配到报告数据的订阅链接 */
+#subStatsTooltip .sub-remote-link.tier-unknown,
+#subStatsTooltip .sub-remote-chip.tier-unknown {
+  --tc: var(--muted, #94a3b8);
+}
+
+@media (max-width: 640px) {
+  #subStatsTooltip .sub-remote-list {
+    max-height: 32vh;
+  }
+}

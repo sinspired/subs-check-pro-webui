@@ -1071,7 +1071,7 @@ function renderReport(r, cfg) {
     const geoCount = Object.keys(ga.geography_distribution || {}).length, protoCount = Object.keys(ga.protocol_distribution || {}).length;
     _sb('sb-geo', geoCount); _sb('sb-proto', protoCount); _sb('sb-subs', sr.length);
     renderOverview(r, ci, ga, sr.length, geoCount, protoCount, cfg);
-    renderGeo(ga); renderProto(ga); renderSubs(sr, sb, cfg); renderConfig(ci, ga, sr, sb, cfg);
+    renderGeo(ga); renderProto(ga); renderSubs(sr, sb, cfg); renderRemoteSubs(r.remote_subs || [], sr, sb); renderConfig(ci, ga, sr, sb, cfg);
 }
 function _sb(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
 
@@ -1989,6 +1989,247 @@ function getSubStateBadgeText(state) {
         default:
             return '';
     }
+}
+
+/* ═══════════ 远程订阅清单：与订阅报告数据的关联 / 聚合 ═══════════
+ * 远程订阅拉取到的是「订阅链接列表」。后端报告 remote_subs 只记录
+ *   { url, count, error?, urls: [...] }
+ * 每个订阅链接自身的统计已在 subs_ranking / subs_ranking_bad 中，这里按 URL 关联并聚合。
+ * 以下函数同时被报告页（renderRemoteSubs）与配置页悬浮窗（config-form.js）使用。
+ */
+
+// 将配置中的 {Ymd} 等占位符转换为通配符做容错匹配，并无视两边的 #Tag。
+function matchSubUrl(cfgUrlRaw, reportUrls) {
+    const cfgBase = String(cfgUrlRaw || '').split('#')[0].trim();
+    if (!cfgBase) return null;
+
+    // 对基础字符串进行正则转义，然后将 {字母数字_} 替换为 .* 通配符
+    let regexStr = cfgBase.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    regexStr = regexStr.replace(/\\\{[a-zA-Z0-9_]+\\\}/g, '.*');
+
+    const regex = new RegExp('^' + regexStr + '$', 'i');
+
+    for (const rUrl of reportUrls) {
+        const rBase = String(rUrl || '').split('#')[0].trim();
+        if (cfgBase === rBase || regex.test(rBase)) return rUrl;
+    }
+    return null;
+}
+
+// 把 report.remote_subs 的一个条目聚合成与本地订阅同构的 subData，
+// 评级 / 状态 / 环形图等逻辑可直接复用 getSubReportState。
+//   entry:  { url, count, error?, urls }
+//   report: 含 subs_ranking / subs_ranking_bad 的报告对象
+function buildRemoteAggregate(entry, report) {
+    const allSubs = [...(report.subs_ranking || []), ...(report.subs_ranking_bad || [])];
+    const reportUrls = allSubs.map(s => s.url);
+
+    const links = (entry.urls || []).map(u => {
+        const matched = matchSubUrl(u, reportUrls);
+        const data = matched ? allSubs.find(s => s.url === matched) : null;
+        return { url: u, data, st: data ? getSubReportState(data) : null };
+    });
+
+    let success = 0, total = 0;
+    const protocols = {}, locations = {};
+    const seen = new Set();
+    const counts = new Map(); // 各评级/状态的订阅数量，用于小标签
+
+    for (const l of links) {
+        // 评级/状态分布：清单里列了几次就算几次
+        const key = l.st
+            ? (l.st.state === 'grade' ? 'tier-' + l.st.tier.key : 'tier-' + l.st.state)
+            : 'tier-unknown';
+        const label = l.st
+            ? (l.st.state === 'grade' ? l.st.tier.label : getSubStateBadgeText(l.st.state))
+            : '?';
+        const c = counts.get(key) || { cls: key, label, n: 0 };
+        c.n++;
+        counts.set(key, c);
+
+        // 节点数按订阅去重累计，避免清单重复列出同一订阅时翻倍
+        if (!l.data || seen.has(l.data.url)) continue;
+        seen.add(l.data.url);
+        success += l.st.success;
+        total += l.st.total;
+        for (const [k, v] of Object.entries(l.data.protocols || {})) protocols[k] = (protocols[k] || 0) + Number(v || 0);
+        for (const [k, v] of Object.entries(l.data.locations || {})) locations[k] = (locations[k] || 0) + Number(v || 0);
+    }
+
+    // 订阅链接按综合分降序，未匹配的排最后
+    links.sort((a, b) => (b.st ? b.st.scoreNum : -1) - (a.st ? a.st.scoreNum : -1));
+
+    const topLocs = Object.entries(locations).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
+
+    // 清单自身获取正常、但没有任何订阅取得节点时给出说明。
+    // 文案刻意避开「链接失效」等会被 getSubReportState 判定为 dead 的字样。
+    let error = entry.error || '';
+    if (!error && links.length > 0 && total === 0) error = `${links.length} 个订阅均未取得节点`;
+
+    const order = ['tier-s', 'tier-a', 'tier-b', 'tier-c', 'tier-silent', 'tier-empty', 'tier-temp', 'tier-dead', 'tier-unknown'];
+    const chips = [...counts.values()].sort((a, b) => order.indexOf(a.cls) - order.indexOf(b.cls));
+
+    return {
+        url: entry.url,
+        error,
+        stats: { success, total },
+        protocols,
+        top_locations: [topLocs.join('|')],
+        _remote: {
+            count: Number(entry.count) || links.length,
+            activeCount: links.filter(l => l.st && l.st.success > 0).length,
+            links,
+            chips,
+        },
+    };
+}
+
+// 「订阅链接明细」区块（小标签 + 逐条链接）。报告页卡片与配置页悬浮窗共用。
+function buildRemoteLinksHtml(remote) {
+    if (!remote || !remote.links.length) return '';
+
+    const chips = remote.chips.map(c =>
+        `<span class="sub-remote-chip ${c.cls}" title="${esc(c.label)} × ${c.n}"><b>${esc(c.label)}</b>${c.n}</span>`
+    ).join('');
+
+    const rows = remote.links.map(l => {
+        const rawUrl = l.url || '';
+        const hashIdx = rawUrl.lastIndexOf('#');
+        const cleanUrl = hashIdx !== -1 ? rawUrl.substring(0, hashIdx) : rawUrl;
+        let tag = '';
+        if (hashIdx !== -1) {
+            try { tag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); } catch (e) { tag = rawUrl.substring(hashIdx + 1); }
+        }
+
+        let cls = 'tier-unknown', badge = '?', nums = '-';
+        let tip = '报告中无此订阅（可能被其他来源去重，或未被检测）';
+        const st = l.st;
+        if (st) {
+            if (st.state === 'grade') {
+                cls = 'tier-' + st.tier.key;
+                badge = esc(st.tier.label);
+                tip = `${st.tier.label} 级 | 存活 ${st.success}/${st.total} | ${fmtRate(st.rateNum)}`;
+            } else {
+                cls = 'tier-' + st.state;
+                badge = getSubStateIcon(st.state, 12);
+                tip = getSubStateBadgeText(st.state) + (st.errMsg ? ' | ' + st.errMsg : ` | 节点总数 ${st.total}`);
+            }
+            nums = `<span class="srl-ok">${st.success}</span><span class="srl-sep">/</span>${st.total}`;
+        }
+
+        return `<div class="sub-remote-link ${cls}" title="${esc(tip + '\n' + rawUrl)}">
+            <span class="srl-badge">${badge}</span>
+            <span class="srl-url">${tag ? `<em>${esc(tag)}</em>` : ''}${esc(cleanUrl)}</span>
+            <span class="srl-nums">${nums}</span>
+        </div>`;
+    }).join('');
+
+    return `<div class="sub-remote-box">
+        <div class="sub-remote-head">
+            <span class="srh-title">订阅链接明细</span>
+            <span class="srh-meta">${remote.activeCount} / ${remote.links.length} 个有存活节点</span>
+        </div>
+        <div class="sub-remote-chips">${chips}</div>
+        <div class="sub-remote-list">${rows}</div>
+    </div>`;
+}
+
+window.matchSubUrl = matchSubUrl;
+window.buildRemoteAggregate = buildRemoteAggregate;
+window.buildRemoteLinksHtml = buildRemoteLinksHtml;
+
+window.toggleRemoteCard = function (id) {
+    const card = document.getElementById(id);
+    if (card) card.classList.toggle('open');
+};
+
+// 报告页「远程订阅」区块：每个远程订阅清单一张可折叠卡片，
+// 头部展示拉取到的订阅链接总数与聚合统计，展开后列出每个订阅链接的情况。
+function renderRemoteSubs(remoteSubs, subs, subsBad) {
+    let box = document.getElementById('remoteContent');
+    if (!box) {
+        // 页面 HTML 没有预留容器时，动态挂在失效/沉默订阅区块之后
+        const anchor = document.getElementById('badContent');
+        if (!anchor) return;
+        box = document.createElement('div');
+        box.id = 'remoteContent';
+        anchor.insertAdjacentElement('afterend', box);
+    }
+
+    if (!Array.isArray(remoteSubs) || !remoteSubs.length) {
+        box.innerHTML = '';
+        return;
+    }
+
+    const report = { subs_ranking: subs || [], subs_ranking_bad: subsBad || [] };
+    const chevron = '<svg class="toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+    const copyIcon = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
+    let totalLinks = 0;
+
+    const cards = remoteSubs.map((entry, i) => {
+        const agg = buildRemoteAggregate(entry, report);
+        const st = getSubReportState(agg);
+        const remote = agg._remote;
+        totalLinks += remote.count;
+
+        const isGrade = st.state === 'grade';
+        const tierClass = isGrade ? `tier-${st.tier.key}` : `tier-${st.state}`;
+        const badge = isGrade ? st.tier.label : getSubStateBadgeText(st.state);
+        const tip = isGrade
+            ? `${st.tier.label} 级（聚合综合分: ${st.scoreNum.toFixed(1)}）`
+            : st.state === 'silent' ? '沉默 | 订阅有节点，但当前没有可用节点'
+                : st.state === 'empty' ? `无节点 | ${st.errMsg || '未获取到任何节点'}`
+                    : st.state === 'temp' ? `异常 | ${st.errMsg || '临时异常'}`
+                        : `失效 | ${st.errMsg || '链接已失效'}`;
+
+        const rawUrl = entry.url || '';
+        let nameTag = '', cleanUrl = rawUrl;
+        const hashIdx = rawUrl.lastIndexOf('#');
+        if (hashIdx !== -1) {
+            try { nameTag = decodeURIComponent(rawUrl.substring(hashIdx + 1)); } catch (e) { nameTag = rawUrl.substring(hashIdx + 1); }
+            cleanUrl = rawUrl.substring(0, hashIdx);
+        }
+
+        const protos = Object.entries(agg.protocols).sort((a, b) => b[1] - a[1]).slice(0, 4);
+        const locs = (agg.top_locations[0] || '').split('|').filter(Boolean);
+        const showErr = (st.state === 'temp' || st.state === 'dead' || st.state === 'empty') && !!st.errMsg;
+
+        return `<div class="remote-card ${tierClass}" id="remoteCard${i}">
+            <div class="remote-head" onclick="toggleRemoteCard('remoteCard${i}')">
+                <span class="remote-badge" title="${esc(tip)}">${isGrade ? esc(badge) : getSubStateIcon(st.state, 13)}</span>
+                <div class="sub-url-box">
+                    <span class="sub-url js-truncate" data-full-text="${esc(cleanUrl)}" title="${esc(rawUrl)}"></span>
+                    <button class="sub-copy-btn" onclick="window._copySingleUrl(event, '${esc(rawUrl)}')" title="复制链接">${copyIcon}</button>
+                </div>
+                ${chevron}
+            </div>
+
+            <div class="remote-summary">
+                ${nameTag ? `<span class="remote-tag">${esc(nameTag)}</span>` : ''}
+                <span class="stats-group"><span class="stats-label">订阅</span><span class="stats-success">${remote.count}</span></span>
+                <span class="stats-group"><span class="stats-label">有存活</span><span class="stats-success">${remote.activeCount}</span></span>
+                <span class="stats-group"><span class="stats-label">节点存活</span><span class="stats-success">${st.success}</span><span style="opacity:0.4;margin:0 3px">/</span><span class="stats-total">${st.total}</span></span>
+                ${st.total > 0 ? `<span class="stats-group"><span class="stats-label">成功率</span><span class="stats-score">${fmtRate(st.rateNum)}</span></span>` : ''}
+            </div>
+
+            ${(locs.length || protos.length) ? `<div class="tag-wrap remote-tags">
+                ${locs.map(l => `<span class="tag-pill loc">${esc(l)}</span>`).join('')}
+                ${protos.map(([k, v]) => `<span class="tag-pill proto">${esc(k)}:${v}</span>`).join('')}
+            </div>` : ''}
+
+            ${showErr ? `<div class="remote-error" title="${esc(st.errMsg)}">${getSubStateIcon(st.state, 12)}<span>${esc(st.errMsg)}</span></div>` : ''}
+
+            <div class="remote-body">${buildRemoteLinksHtml(remote)}</div>
+        </div>`;
+    }).join('');
+
+    box.innerHTML = `<div class="section-title" id="remoteTitle">远程订阅（${remoteSubs.length} 个清单，共 ${totalLinks} 个订阅链接）</div>
+        <div class="remote-list">${cards}</div>`;
+
+    requestAnimationFrame(() => {
+        box.querySelectorAll('.js-truncate').forEach(el => _urlTruncator.observe(el));
+    });
 }
 
 let _currentSortMode = 'score'; // 默认排序：综合分

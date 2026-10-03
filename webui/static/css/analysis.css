@@ -3298,3 +3298,279 @@ code {
     margin-bottom: 12px;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   远程订阅清单（报告页）
+   每个远程订阅一张可折叠卡片：头部为聚合评级 + 清单地址，
+   摘要行为订阅数量/节点存活，展开后列出每个订阅链接的情况
+════════════════════════════════════════════════════════════ */
+
+/* 评级 / 状态主题色（与报告页订阅排名保持同一色板） */
+.remote-card,
+.remote-card .sub-remote-link,
+.remote-card .sub-remote-chip {
+  --tc: var(--muted);
+}
+.remote-card.tier-s, .remote-card .tier-s { --tc: #10b981; }
+.remote-card.tier-a, .remote-card .tier-a { --tc: #84cc16; }
+.remote-card.tier-b, .remote-card .tier-b { --tc: #eab308; }
+.remote-card.tier-c, .remote-card .tier-c { --tc: #f97316; }
+.remote-card.tier-silent, .remote-card .tier-silent { --tc: var(--muted); }
+.remote-card.tier-empty, .remote-card .tier-empty { --tc: #64748b; }
+.remote-card.tier-temp, .remote-card .tier-temp { --tc: var(--warning, #f59e0b); }
+.remote-card.tier-dead, .remote-card .tier-dead { --tc: var(--danger, #ef4444); }
+
+.remote-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.remote-card {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 15%, transparent);
+  overflow: hidden;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.remote-card:hover {
+  border-color: color-mix(in srgb, var(--tc) 25%, transparent);
+}
+
+.remote-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.remote-head .sub-url-box {
+  flex: 1;
+  min-width: 0;
+}
+
+.remote-badge {
+  flex-shrink: 0;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--tc);
+  background: color-mix(in srgb, var(--tc) 14%, transparent);
+}
+
+.remote-head .toggle-chevron {
+  color: var(--muted);
+}
+
+.remote-card.open .remote-head .toggle-chevron {
+  transform: rotate(180deg);
+}
+
+.remote-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 10px;
+  font-size: 11.5px;
+}
+
+.remote-tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--tc);
+  background: color-mix(in srgb, var(--tc) 10%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remote-tags {
+  margin-top: 8px;
+}
+
+.remote-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--tc);
+}
+
+.remote-error span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remote-body {
+  display: none;
+}
+
+.remote-card.open .remote-body {
+  display: block;
+}
+
+/* 报告页空间更充裕，链接明细列表可以更高 */
+.remote-card .sub-remote-list {
+  max-height: 360px;
+}
+
+@media (max-width: 540px) {
+  .remote-card {
+    padding: 10px 12px;
+  }
+  .remote-summary {
+    gap: 4px 10px;
+  }
+  .remote-card .sub-remote-list {
+    max-height: 280px;
+  }
+}
+
+/* 订阅链接明细（远程订阅清单） */
+.remote-card .sub-remote-box {
+  margin-top: 12px;
+  padding: 10px 12px 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--fg) 2%, transparent);
+}
+
+.remote-card .sub-remote-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.remote-card .sub-remote-head .srh-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.remote-card .sub-remote-head .srh-meta {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.remote-card .sub-remote-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.remote-card .sub-remote-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  color: var(--tc, var(--muted));
+  background: color-mix(in srgb, var(--tc, var(--muted)) 12%, transparent);
+}
+
+.remote-card .sub-remote-chip b {
+  font-weight: 800;
+}
+
+.remote-card .sub-remote-list {
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
+.remote-card .sub-remote-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px dashed color-mix(in srgb, var(--border) 70%, transparent);
+  font-size: 11px;
+}
+
+.remote-card .sub-remote-link:first-child {
+  border-top: none;
+}
+
+.remote-card .sub-remote-link .srl-badge {
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--tc, var(--muted));
+  background: color-mix(in srgb, var(--tc, var(--muted)) 14%, transparent);
+}
+
+.remote-card .sub-remote-link .srl-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
+  color: var(--muted);
+}
+
+.remote-card .sub-remote-link .srl-url em {
+  font-style: normal;
+  font-weight: 700;
+  margin-right: 6px;
+  color: var(--tc, var(--fg));
+}
+
+.remote-card .sub-remote-link .srl-nums {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.remote-card .sub-remote-link .srl-ok {
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.remote-card .sub-remote-link .srl-sep {
+  opacity: 0.4;
+  margin: 0 2px;
+}

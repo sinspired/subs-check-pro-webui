@@ -2204,20 +2204,37 @@ window._copySubUrl = async function (btn, url) {
   }
 };
 
-function _showSubTooltip(btn, subData, checkTime) {
-  const closeSubTooltip = () => {
-    if (_subTooltipEl) _subTooltipEl.classList.remove('visible');
-    if (_subTooltipOverlayEl) {
-      _subTooltipOverlayEl.classList.remove('visible');
-      setTimeout(() => { _subTooltipOverlayEl.style.display = 'none'; }, 200);
-    }
-    window.removeEventListener('scroll', _tooltipScrollHandler, true);
-  };
+// 关闭悬浮窗（模块级，避免每次打开都重新创建闭包）
+function _closeSubTooltip() {
+  if (_subTooltipEl) _subTooltipEl.classList.remove('visible');
+  if (_subTooltipOverlayEl) {
+    _subTooltipOverlayEl.classList.remove('visible');
+    setTimeout(() => {
+      // 200ms 内若又打开了新的悬浮窗，则不要把遮罩收掉
+      if (_subTooltipEl && !_subTooltipEl.classList.contains('visible')) {
+        _subTooltipOverlayEl.style.display = 'none';
+      }
+    }, 200);
+  }
+  window.removeEventListener('scroll', _tooltipScrollHandler, true);
+}
 
+// 配置面板滚动时关闭悬浮窗（悬浮窗内部滚动不触发）
+function _tooltipScrollHandler(e) {
+  if (!_subTooltipEl || _subTooltipEl.contains(e.target)) return;
+  const tableWrapper = document.getElementById('cfgPanels');
+  if (tableWrapper && (e.target === tableWrapper || tableWrapper.contains(e.target))) {
+    _closeSubTooltip();
+  }
+}
+
+// 悬浮窗通用外壳：负责创建 DOM、写入内容、定位与显示。
+// 本地订阅（_showSubTooltip）和远程订阅清单共用同一套外壳与样式。
+function _openSubTooltip(btn, html) {
   if (!_subTooltipEl) {
     _subTooltipOverlayEl = el('div', { id: 'subStatsOverlay' });
     document.body.appendChild(_subTooltipOverlayEl);
-    _subTooltipOverlayEl.addEventListener('click', closeSubTooltip);
+    _subTooltipOverlayEl.addEventListener('click', _closeSubTooltip);
 
     _subTooltipEl = el('div', { id: 'subStatsTooltip' });
     document.body.appendChild(_subTooltipEl);
@@ -2226,29 +2243,58 @@ function _showSubTooltip(btn, subData, checkTime) {
       if (_subTooltipEl.classList.contains('visible')) {
         if (e.target.closest('.sub-tooltip-close-btn') ||
           (!e.target.closest('#subStatsTooltip') && !e.target.closest('.cfg-url-btn-tier'))) {
-          closeSubTooltip();
+          _closeSubTooltip();
         }
       }
     });
   }
 
-  const _tooltipScrollHandler = (e) => {
-    if (_subTooltipEl.contains(e.target)) return;
-
-    const tableWrapper =
-      document.getElementById('cfgPanels');
-
-    if (
-      tableWrapper &&
-      (
-        e.target === tableWrapper ||
-        tableWrapper.contains(e.target)
-      )
-    ) {
-      closeSubTooltip();
-    }
-  };
+  // 同一函数引用重复 addEventListener 是幂等的，不会叠加监听
   window.addEventListener('scroll', _tooltipScrollHandler, true);
+
+  _subTooltipEl.innerHTML = html;
+
+  requestAnimationFrame(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    if (vw <= 640) {
+      _subTooltipOverlayEl.style.display = 'block';
+      requestAnimationFrame(() => { _subTooltipOverlayEl.classList.add('visible'); });
+
+      _subTooltipEl.classList.add('is-mobile-modal');
+    } else {
+      _subTooltipEl.classList.remove('is-mobile-modal');
+
+      const rect = btn.getBoundingClientRect();
+      const elRect = _subTooltipEl.getBoundingClientRect();
+      const margin = 10;
+      let left = rect.left - elRect.width - margin;
+
+      if (left < margin) {
+        left = rect.right + margin;
+        if (left + elRect.width > vw - margin) left = vw / 2 - elRect.width / 2;
+      }
+
+      let top = rect.top;
+      if (top + elRect.height > vh - margin) top = vh - elRect.height - margin;
+      if (top < margin) top = margin;
+
+      _subTooltipEl.style.left = left + 'px';
+      _subTooltipEl.style.top = top + 'px';
+    }
+
+    _subTooltipEl.classList.add('visible');
+  });
+}
+
+/* ───────────── 订阅链接匹配 / 远程订阅聚合 ─────────────
+ * 实现位于 analysis.js（报告页与此处共用），这里只做委托，保证两处逻辑一致。 */
+const matchSubUrl = (cfgUrlRaw, reportUrls) => window.matchSubUrl(cfgUrlRaw, reportUrls);
+const buildRemoteAggregate = (entry, report) => window.buildRemoteAggregate(entry, report);
+const _buildRemoteLinksHtml = (remote) => window.buildRemoteLinksHtml ? window.buildRemoteLinksHtml(remote) : '';
+
+function _showSubTooltip(btn, subData, checkTime) {
 
   const fmtRateFn = window.fmtRate || (r => Number(r).toFixed(1) + '%');
   const escapeHtml = window.esc || (str => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
@@ -2306,7 +2352,9 @@ function _showSubTooltip(btn, subData, checkTime) {
 
 
   // 彻底剥离行内样式
-  _subTooltipEl.innerHTML = `
+  const remote = subData._remote || null;
+
+  const html = `
 <div class="sub-item ${tierClass}">
     <button class="sub-tooltip-close-btn">×</button>
 
@@ -2347,7 +2395,9 @@ function _showSubTooltip(btn, subData, checkTime) {
         </div>
         <div class="sub-hero-divider"></div>
         <div class="sub-hero-middle">
-            <div class="sub-info-row"><span class="info-label">综合评分</span><span class="info-value score-val">${isGrade ? scoreNum.toFixed(2) : '-'}</span></div>
+            ${remote
+      ? `<div class="sub-info-row" title="精确值: ${remote.count}"><span class="info-label">订阅链接</span><span class="info-value">${formatNum(remote.count)}</span></div>`
+      : `<div class="sub-info-row"><span class="info-label">综合评分</span><span class="info-value score-val">${isGrade ? scoreNum.toFixed(2) : '-'}</span></div>`}
             <div class="sub-info-row" title="精确值: ${success}"><span class="info-label">有效节点</span><span
                     class="info-value success-val">${formatNum(success)}</span></div>
             <div class="sub-info-row" title="精确值: ${total}"><span class="info-label">节点总数</span><span
@@ -2371,6 +2421,8 @@ function _showSubTooltip(btn, subData, checkTime) {
                 class="p-val">${v}</span></span>`).join('')}
     </div>` : ''}
 
+    ${_buildRemoteLinksHtml(remote)}
+
     ${checkTime ? `<div class="sub-time-footer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
@@ -2379,38 +2431,7 @@ function _showSubTooltip(btn, subData, checkTime) {
 </div>
   `;
 
-  requestAnimationFrame(() => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    if (vw <= 640) {
-      _subTooltipOverlayEl.style.display = 'block';
-      requestAnimationFrame(() => { _subTooltipOverlayEl.classList.add('visible'); });
-
-      _subTooltipEl.classList.add('is-mobile-modal');
-    } else {
-      _subTooltipEl.classList.remove('is-mobile-modal');
-
-      const rect = btn.getBoundingClientRect();
-      const elRect = _subTooltipEl.getBoundingClientRect();
-      const margin = 10;
-      let left = rect.left - elRect.width - margin;
-
-      if (left < margin) {
-        left = rect.right + margin;
-        if (left + elRect.width > vw - margin) left = vw / 2 - elRect.width / 2;
-      }
-
-      let top = rect.top;
-      if (top + elRect.height > vh - margin) top = vh - elRect.height - margin;
-      if (top < margin) top = margin;
-
-      _subTooltipEl.style.left = left + 'px';
-      _subTooltipEl.style.top = top + 'px';
-    }
-
-    _subTooltipEl.classList.add('visible');
-  });
+  _openSubTooltip(btn, html);
 }
 
 function mkUrlList(field, values) {
@@ -2681,26 +2702,25 @@ function mkUrlList(field, values) {
 
       inputWrap.append(iconEl, inp);
       row.append(handle, inputWrap, del);
-    } else if (field.key === 'sub-urls') {
-      // 匹配工具函数：将配置中的 {Ymd} / {ymd1} 等变量转换为正则进行容错匹配，并无视两边的 #Tag
-      const matchSubUrl = (cfgUrlRaw, reportUrls) => {
-        const cfgBase = cfgUrlRaw.split('#')[0].trim();
+    } else if (field.key === 'sub-urls' || field.key === 'sub-urls-remote') {
+      // 远程订阅清单：报告里存的是「清单 → 订阅链接」关系，需聚合其下各订阅的统计
+      const isRemote = field.key === 'sub-urls-remote';
 
-        // 对基础字符串进行正则转义，然后将 {字母数字_} 替换为 .* 通配符
-        let regexStr = cfgBase.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-        regexStr = regexStr.replace(/\\\{[a-zA-Z0-9_]+\\\}/g, '.*');
-
-        const regex = new RegExp('^' + regexStr + '$', 'i');
-
-        for (const rUrl of reportUrls) {
-          const rBase = rUrl.split('#')[0].trim();
-
-          if (cfgBase === rBase || regex.test(rBase)) {
-            return rUrl;
-          }
+      // 按输入框地址从报告中取数据。
+      // 本地订阅直接取对应条目；远程订阅返回聚合后的 subData（带 _remote 明细）。
+      const lookupSubData = (report, currentUrl) => {
+        if (isRemote) {
+          const remotes = report.remote_subs || [];
+          const matchedUrl = matchSubUrl(currentUrl, remotes.map(r => r.url));
+          const entry = matchedUrl ? remotes.find(r => r.url === matchedUrl) : null;
+          return { matchedUrl, subData: entry ? buildRemoteAggregate(entry, report) : null };
         }
-
-        return null;
+        const allSubs = [
+          ...(report.subs_ranking || []),
+          ...(report.subs_ranking_bad || [])
+        ];
+        const matchedUrl = matchSubUrl(currentUrl, allSubs.map(s => s.url));
+        return { matchedUrl, subData: matchedUrl ? allSubs.find(s => s.url === matchedUrl) : null };
       };
 
       // 合并后的多功能徽章按钮
@@ -2744,7 +2764,8 @@ function mkUrlList(field, values) {
           statsBtn.className = `cfg-url-btn-tier tier-${tier.key}`;
           statsBtn.innerHTML = tier.label;
           statsBtn.title =
-            `评级: ${tier.label} | 综合分: ${scoreNum.toFixed(1)} | 有效: ${success}/${total}`;
+            `评级: ${tier.label} | 综合分: ${scoreNum.toFixed(1)} | 有效: ${success}/${total}` +
+            (subData._remote ? ` | 订阅链接: ${subData._remote.count}` : '');
 
         } else if (state === 'silent') {
 
@@ -2810,20 +2831,12 @@ function mkUrlList(field, values) {
             return;
           }
 
-          const allSubs = [
-            ...(report.subs_ranking || []),
-            ...(report.subs_ranking_bad || [])
-          ];
+          const { matchedUrl, subData } = lookupSubData(report, currentUrl);
 
-          const reportUrls = allSubs.map(s => s.url);
-          const matchedUrl = matchSubUrl(currentUrl, reportUrls);
-
-          if (!matchedUrl) {
+          if (!matchedUrl || !subData) {
             updateStatsButton(null);
             return;
           }
-
-          const subData = allSubs.find(s => s.url === matchedUrl);
 
           // 防止异步获取报告期间用户已经修改了输入框
           if (currentUrl !== inp.value.trim()) return;
@@ -2903,13 +2916,7 @@ function mkUrlList(field, values) {
           );
         }
 
-        const allSubs = [
-          ...(report.subs_ranking || []),
-          ...(report.subs_ranking_bad || [])
-        ];
-
-        const reportUrls = allSubs.map(s => s.url);
-        const matchedUrl = matchSubUrl(currentUrl, reportUrls);
+        const { matchedUrl, subData } = lookupSubData(report, currentUrl);
 
         if (!matchedUrl) {
           statsBtn.className = 'cfg-url-btn-tier tier-unknown';
@@ -2919,13 +2926,13 @@ function mkUrlList(field, values) {
           statsBtn.title = '暂无数据';
 
           return window.showToast?.(
-            '无该订阅数据。或该订阅由于网络异常被拦截。',
+            isRemote
+              ? '无该远程订阅数据，请先运行一次检测。'
+              : '无该订阅数据。或该订阅由于网络异常被拦截。',
             'info',
             4000
           );
         }
-
-        const subData = allSubs.find(s => s.url === matchedUrl);
 
         if (!subData) {
           statsBtn.className = 'cfg-url-btn-tier tier-unknown';
