@@ -962,6 +962,10 @@ async function loadReport() {
     const [reportResult, cfgResult] = await Promise.all([sfetch('/api/analysis-report'), sfetch('/api/config')]);
     if (!reportResult.ok) { if (reportResult.status !== 401) showRetryArea(`加载失败（HTTP ${reportResult.status}），请检查服务是否正常。`); return; }
     if (!reportResult.payload?.report) { showRetryArea('尚未生成检测报告，请先在主界面运行一次节点检测。', 'No Data'); return; }
+
+    // 让 showLoading 的 DOM 骨架先渲染到屏幕上
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     try {
         const report = YAML.parse(reportResult.payload.report);
         let cfg = {};
