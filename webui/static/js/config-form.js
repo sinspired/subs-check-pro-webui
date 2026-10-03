@@ -2079,13 +2079,12 @@ async function _getReportData() {
   _reportPromise = (async () => {
     try {
       const res = await w.sfetch('/api/analysis-report');
-      if (res?.ok && res.payload?.report) {
+      if (res?.ok && (res.payload?.report || res.payload.report_data)) {
 
         // 给主线程让渡约 50ms，让面板切换动画先跑完，避免被解析工作锁死
         await new Promise(resolve => setTimeout(resolve, 50));
 
-        const yamlParse = window.YAML ? window.YAML.parse : (window.safeParse || JSON.parse);
-        _cachedReportData = yamlParse(res.payload.report);
+        _cachedReportData = res.payload.report_data || YAML.parse(res.payload.report);
         _reportCacheTime = Date.now();
         return _cachedReportData;
       }
