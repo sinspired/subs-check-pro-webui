@@ -3965,24 +3965,28 @@ function buildPanel(tabId) {
   const panel = document.getElementById(`panel-${tabId}`); if (!panel) return;
   const schema = SCHEMA.find(s => s.tab === tabId); if (!schema) return;
   panel.innerHTML = '';
+
+  // 使用 DocumentFragment 在内存中组装 DOM，避免直接操作面板引发的疯狂重绘
+  const frag = document.createDocumentFragment();
+
   for (const sec of schema.sections) {
     if (sec.conditional) {
       const group = el('div', { class: 'cfg-cond-group', 'data-cond': sec.conditional });
       group.appendChild(el('div', { class: 'cfg-section', textContent: sec.title }));
       sec.fields.forEach(f => group.appendChild(mkField(f, _cfg[f.key])));
       group.style.display = 'none';
-      panel.appendChild(group);
+      frag.appendChild(group);
     } else {
-      panel.appendChild(el('div', { class: 'cfg-section', textContent: sec.title }));
-      sec.fields.forEach(f => panel.appendChild(mkField(f, _cfg[f.key])));
+      frag.appendChild(el('div', { class: 'cfg-section', textContent: sec.title }));
+      sec.fields.forEach(f => frag.appendChild(mkField(f, _cfg[f.key])));
     }
   }
 
   /* 存储：条件分组切换 */
   if (tabId === 'storage') {
-    const sel = panel.querySelector('select.cfg-select-native[data-key="save-method"]');
+    const sel = frag.querySelector('select.cfg-select-native[data-key="save-method"]');
     if (sel) {
-      const sync = m => panel.querySelectorAll('.cfg-cond-group[data-cond]').forEach(g => {
+      const sync = m => frag.querySelectorAll('.cfg-cond-group[data-cond]').forEach(g => {
         g.style.display = (g.dataset.cond === m) ? '' : 'none';
       });
       sel.addEventListener('change', () => sync(sel.value));
@@ -3990,19 +3994,22 @@ function buildPanel(tabId) {
     }
 
     /* DNS 解析及节点裂变联动 */
-    _bindDnsResolve(panel);
+    // 注意：传给联动的参数从 panel 变成了 frag
+    _bindDnsResolve(frag);
   }
 
   /* 任务：Cron ↔ 检测间隔联动 */
   if (tabId === 'schedule') {
-    _bindCronInterval(panel);
+    _bindCronInterval(frag);
   }
 
   /* 检测：ISP 状态联动 */
   if (tabId === 'detection') {
-    _bindIspCheck(panel);
+    _bindIspCheck(frag);
   }
 
+  // 所有节点拼装完毕，一次性上树
+  panel.appendChild(frag);
   _built.add(tabId);
 }
 
