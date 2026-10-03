@@ -484,12 +484,12 @@ h1 svg {
 }
 
 .section-title {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--fg);
-  margin: 18px 0 16px 8px;
+  margin: 24px 0 16px 4px;
   display: flex;
   align-items: center;
   gap: 8px;

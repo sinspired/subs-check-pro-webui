@@ -1167,7 +1167,7 @@ function renderOverview(r, ci, ga, subCount, geoCount, protoCount, cfg) {
     // 解锁标签
     const unlockData = parseUnlockFromSummary((r.summary || '').trim());
     document.getElementById('unlockSection').innerHTML = unlockData.length
-        ? `<div class="section-title" style="margin-bottom:8px">媒体 &amp; AI 解锁</div><div class="unlock-row" style="margin-bottom:16px">${unlockData.map(u => `<span class="unlock-tag"><span class="ut-dot" style="background:${u.color}"></span>${u.name}<span class="ut-count" style="color:${u.color}">${u.count}</span></span>`).join('')}</div>` : '';
+        ? `<div class="section-title">媒体 &amp; AI 解锁</div><div class="unlock-row" style="margin-bottom:16px">${unlockData.map(u => `<span class="unlock-tag"><span class="ut-dot" style="background:${u.color}"></span>${u.name}<span class="ut-count" style="color:${u.color}">${u.count}</span></span>`).join('')}</div>` : '';
 
     // 配置快览面板
     const cfgPanel = buildCfgStatusPanel(cfg, ci);
@@ -1206,7 +1206,7 @@ function renderOverview(r, ci, ga, subCount, geoCount, protoCount, cfg) {
         </div>`;
 
     document.getElementById('overviewExtra').innerHTML = `
-        <div class="section-title" style="margin-top:4px">概况</div>
+        <div class="section-title">概况</div>
         <div class="overview-grid-3">${qualityPanel}${cfgPanel}${navPanel}</div>`;
 }
 
@@ -1384,10 +1384,10 @@ function renderGeo(ga) {
 
     geoEl.innerHTML = `
         <div style="padding:14px 16px 0">
-            <div class="section-title" style="margin-bottom:8px">大区分布</div>
+            <div class="section-title" >大区分布</div>
             <div class="geo-region-bar">${regionBar}</div>
             <div class="geo-region-legend">${regionLegend}</div>
-            <div class="section-title" style="margin-bottom:8px">Top ${top10.length}</div>
+            <div class="section-title" >Top ${top10.length}</div>
             <div class="geo-top-list">${topRows}</div>
         </div>
         ${restHTML}`;
