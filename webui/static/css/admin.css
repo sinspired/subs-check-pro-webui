@@ -75,7 +75,9 @@
   /* 玻璃效果 */
   --glass-bg: rgba(255, 255, 255, 0.06);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+  --glass-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 6px 18px rgba(2, 6, 23, 0.06);
   --glass-blur: 10px;
 
   --header-height: 60px;
@@ -132,7 +134,9 @@
 
   --glass-bg: rgba(255, 255, 255, 0.02);
   --glass-border: rgba(255, 255, 255, 0.04);
-  --glass-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  --glass-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 6px 18px rgba(0, 0, 0, 0.3);
   --glass-blur: 12px;
 
   --bg-hover-1: rgba(3, 232, 209, 0.08);
@@ -659,8 +663,9 @@ header {
   border: 1px solid var(--border);
   padding: 12px;
   overflow: hidden;
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 15%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 /* 主体布局 */
@@ -794,8 +799,9 @@ main {
   border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   border-radius: 0 0 12px 12px;
   box-sizing: content-box;
-  box-shadow: 2px 2px 10px
-    color-mix(in srgb, var(--card-shadow) 10%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
   background: var(--input-bg);
   align-items: center;
   text-align: center;
@@ -803,8 +809,9 @@ main {
 
 .sb-status-row:hover {
   background: var(--bg-hover);
-  box-shadow: 4px 4px 10px
-    color-mix(in srgb, var(--card-shadow) 15%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, white 3%, transparent),
+    0 8px 20px color-mix(in srgb, var(--card-shadow) 10%, transparent);
 }
 
 #versionInline.sb-ver-val,
