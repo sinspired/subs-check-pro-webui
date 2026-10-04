@@ -2174,14 +2174,13 @@ let _subTooltipOverlayEl = null;
 window._copySubUrl = async function (btn, url) {
   let ok = false;
   if (navigator.clipboard && window.isSecureContext) {
-    try { await navigator.clipboard.writeText(url); ok = true; } catch (e) { }
+    try { await navigator.clipboard.writeText(url); ok = true; } catch (e) { /* fall through */ }
   }
   if (!ok) {
-    // 兼容 iOS/老旧浏览器的兜底方案
     const ta = document.createElement('textarea');
     ta.value = url;
     ta.setAttribute('readonly', '');
-    ta.style.cssText = 'position:absolute;top:' + (window.scrollY || document.documentElement.scrollTop) + 'px;left:0;width:1px;height:1px;padding:0;border:none;outline:none;box-shadow:none;background:transparent;opacity:0';
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:none;outline:none;opacity:0;';
     document.body.appendChild(ta);
     const isIOS = /ipad|iphone/i.test(navigator.userAgent);
     if (isIOS) {
@@ -2191,14 +2190,18 @@ window._copySubUrl = async function (btn, url) {
     } else {
       ta.select();
     }
-    try { ok = document.execCommand('copy'); } catch (e) { }
+    try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ }
     document.body.removeChild(ta);
   }
 
   if (ok) {
     const oldHtml = btn.innerHTML;
     btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-    setTimeout(() => { btn.innerHTML = oldHtml; }, 1500);
+    window.showToast?.('已复制链接', 'success', 1500);
+    setTimeout(() => {
+      // 悬浮窗可能已被关掉，节点可能已不在 DOM
+      if (btn.isConnected) btn.innerHTML = oldHtml;
+    }, 1500);
   } else {
     window.showToast?.('复制失败，请手动选取', 'warn');
   }
@@ -2240,12 +2243,14 @@ function _openSubTooltip(btn, html) {
     document.body.appendChild(_subTooltipEl);
 
     document.addEventListener('click', (e) => {
-      if (_subTooltipEl.classList.contains('visible')) {
-        if (e.target.closest('.sub-tooltip-close-btn') ||
-          (!e.target.closest('#subStatsTooltip') && !e.target.closest('.cfg-url-btn-tier'))) {
-          _closeSubTooltip();
-        }
+      if (!_subTooltipEl?.classList.contains('visible')) return;
+      if (e.target.closest('.sub-tooltip-close-btn')) {
+        _closeSubTooltip();
+        return;
       }
+      // 点在悬浮窗内或触发按钮上 → 不关
+      if (e.target.closest('#subStatsTooltip') || e.target.closest('.cfg-url-btn-tier')) return;
+      _closeSubTooltip();
     });
   }
 
@@ -2266,27 +2271,27 @@ function _openSubTooltip(btn, html) {
     } else {
       _subTooltipEl.classList.remove('is-mobile-modal');
 
-    const rect = btn.getBoundingClientRect();
-    const elRect = _subTooltipEl.getBoundingClientRect();
-    const margin = 10;
-    const viewW = window.innerWidth;
-    const viewH = window.innerHeight;
+      const rect = btn.getBoundingClientRect();
+      const elRect = _subTooltipEl.getBoundingClientRect();
+      const margin = 10;
+      const viewW = window.innerWidth;
+      const viewH = window.innerHeight;
 
-    let left;
-    if (viewW <= 768) {
-      left = (viewW - elRect.width) / 2;
-    } else if (rect.left - elRect.width - margin >= margin) {
-      left = rect.left - elRect.width - margin;
-    } else if (rect.right + elRect.width + margin <= viewW - margin) {
-      left = rect.right + margin;
-    } else {
-      left = (viewW - elRect.width) / 2;
-    }
+      let left;
+      if (viewW <= 768) {
+        left = (viewW - elRect.width) / 2;
+      } else if (rect.left - elRect.width - margin >= margin) {
+        left = rect.left - elRect.width - margin;
+      } else if (rect.right + elRect.width + margin <= viewW - margin) {
+        left = rect.right + margin;
+      } else {
+        left = (viewW - elRect.width) / 2;
+      }
 
-    left = Math.max(margin, Math.min(left, viewW - elRect.width - margin));
+      left = Math.max(margin, Math.min(left, viewW - elRect.width - margin));
 
-    let top = rect.top + rect.height / 2 - elRect.height / 2;
-    top = Math.max(margin, Math.min(top, viewH - elRect.height - margin));
+      let top = rect.top + rect.height / 2 - elRect.height / 2;
+      top = Math.max(margin, Math.min(top, viewH - elRect.height - margin));
 
       _subTooltipEl.style.left = left + 'px';
       _subTooltipEl.style.top = top + 'px';
@@ -2352,8 +2357,8 @@ function _showSubTooltip(btn, subData, checkTime) {
 
   const extraStats = window.buildSubExtraStatsHtml
     ? window.buildSubExtraStatsHtml(subData, {
-        sizeTitle: remote ? '各订阅文件大小合计' : '订阅文件大小'
-      })
+      sizeTitle: remote ? '各订阅文件大小合计' : '订阅文件大小'
+    })
     : '';
 
   let rawUrl = subData.url || '';
@@ -2391,8 +2396,7 @@ function _showSubTooltip(btn, subData, checkTime) {
         <div class="sub-tooltip-copy-text">
             ${escapeHtml(rawUrl)}
         </div>
-        <button class="sub-tooltip-copy-action" onclick="window._copySubUrl(this, '${escapeHtml(rawUrl)}')"
-            title="复制完整链接">
+        <button type="button" class="sub-tooltip-copy-action" title="复制完整链接">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2" />
@@ -2465,6 +2469,16 @@ function _showSubTooltip(btn, subData, checkTime) {
   `;
 
   _openSubTooltip(btn, html);
+
+  // 绑定复制：避免 inline onclick（单引号 URL 会炸）+ 阻止冒泡以免关窗
+  const copyBtn = _subTooltipEl?.querySelector('.sub-tooltip-copy-action');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window._copySubUrl(copyBtn, rawUrl);
+    });
+  }
 }
 
 function mkUrlList(field, values) {
