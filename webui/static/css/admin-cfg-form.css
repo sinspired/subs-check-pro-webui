@@ -3507,7 +3507,8 @@ textarea.cfg-expandable-input:focus {
   column-gap: 4px;
   row-gap: 4px;
   padding: 5px 0;
-  border-bottom: 1px dashed color-mix(in srgb, var(--border) 50%, transparent);
+  font-size: 11px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--border) 100%, transparent);
 }
 
 #subStatsTooltip .sub-remote-link:last-child {
@@ -3578,22 +3579,42 @@ textarea.cfg-expandable-input:focus {
   grid-template-columns: repeat(3, 1fr);
   margin-bottom: 12px;
   overflow: hidden;
-  /* border: 1px solid color-mix(in srgb, var(--border) 65%, transparent); */
-  border-radius: 9px;
-  background: transparent !important;
+  border: none;
+  padding: 1px;
 }
 
-#subStatsTooltip .ses-item {
-  min-width: 0;
-  padding: 6px 8px;
-  border-radius: 14px;
+.sub-extra-stats {
+  width: auto;
+  flex-basis: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 0;
+  margin-bottom: 0;
+  z-index: 99999;
+}
+
+.sub-extra-stats .ses-item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 99px;
+  font-size: 9.5px;
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
 }
 
-#subStatsTooltip .ses-item + .ses-item {
-  border-left: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+.sub-extra-stats .ses-item svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0.65;
 }
 
 #subStatsTooltip .ses-label {
