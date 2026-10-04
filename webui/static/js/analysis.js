@@ -2740,11 +2740,14 @@ function renderBadItem(s, type) {
     }
 
     let tagColorClass = 'bad-tag';
+    let tagBadCountClass = 'bad-count'
 
     if (state === 'dead') {
         tagColorClass = 'dead-tag';
+        tagBadCountClass = 'bad-count-hidden'
     } else if (state === 'temp') {
         tagColorClass = 'temp-tag';
+        tagBadCountClass = 'bad-count-hidden'
     } else if (state === 'empty') {
         tagColorClass = 'empty-tag';
     } else if (state === 'silent') {
@@ -2756,7 +2759,7 @@ function renderBadItem(s, type) {
         !!errMsg;
 
     const errText = showError
-        ? `<span class="bad-error" title="${esc(errMsg)}">${esc(errMsg)}</span>`
+        ? `<span class="bad-error ${tagColorClass}" title="${esc(errMsg)}">${esc(errMsg)}</span>`
         : '';
 
     const stateTip = state === 'silent'
@@ -2774,7 +2777,7 @@ function renderBadItem(s, type) {
                        <span class="tag-text">${esc(nameTag || '无标签')}</span>
                      </div>
                      <div class="bad-status-wrap">
-                       <span class="bad-count">${success}/${total}</span>
+                       <span class="bad-count ${tagBadCountClass}">${success}/${total}</span>
                        ${errText}
                      </div>
                 </div>
