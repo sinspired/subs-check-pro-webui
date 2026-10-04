@@ -2406,7 +2406,7 @@ img.link-icon {
   overflow-x: hidden;
   font-family: var(--font-mono);
   font-size: 13px;
-  opacity: 0.7;
+  opacity: 0.8;
   white-space: pre-wrap;
   word-break: break-word;
   cursor: text;
@@ -3613,7 +3613,7 @@ img.link-icon {
   }
 
   main {
-    padding: var(--gap) 8px;
+    padding:0 8px;
     height: auto;
   }
 
@@ -3848,7 +3848,7 @@ img.link-icon {
   }
 
   main {
-    padding: var(--gap) 6px;
+    padding: 0 6px;
   }
 
   header.card {
