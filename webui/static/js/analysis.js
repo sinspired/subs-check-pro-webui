@@ -2083,7 +2083,7 @@ function buildLocPillsHtml(subData, limit = 8, iconHtml = '') {
     return pills + more;
 }
 
-/* 平均速度 / 检测流量 / 文件大小 三项统计条（统一胶囊样式） */
+/* 平均速度 / 消耗流量 / 文件大小 三项统计条（统一胶囊样式） */
 function buildSubExtraStatsHtml(subData, opts = {}) {
     const svgSpeed = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
     const svgTraffic = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>`;
@@ -2091,7 +2091,7 @@ function buildSubExtraStatsHtml(subData, opts = {}) {
 
     const items = [
         { icon: svgSpeed, val: subData?.avg_speed, tip: '平均速度' },
-        { icon: svgTraffic, val: subData?.traffic, tip: '检测流量' },
+        { icon: svgTraffic, val: subData?.traffic, tip: '消耗流量' },
         { icon: svgFile, val: subData?.file_size, tip: opts.sizeTitle || '文件大小' },
     ].filter(i => i.val !== undefined && i.val !== null && String(i.val).trim() !== '');
 
@@ -2255,7 +2255,7 @@ function buildRemoteLinksHtml(remote) {
 
         const parts = [
             d.avg_speed && `<span class="srl-tag" title="平均速度">${svgSpeed}<span>${esc(d.avg_speed)}</span></span>`,
-            d.traffic && `<span class="srl-tag" title="检测流量">${svgTraffic}<span>${esc(d.traffic)}</span></span>`,
+            d.traffic && `<span class="srl-tag" title="消耗流量">${svgTraffic}<span>${esc(d.traffic)}</span></span>`,
             d.file_size && `<span class="srl-tag" title="文件大小">${svgFile}<span>${esc(d.file_size)}</span></span>`,
         ].filter(Boolean);
 
@@ -2373,7 +2373,7 @@ function renderRemoteSubs(remoteSubs, subs, subsBad) {
                     <div class="rs-item" title="存活节点 / 总节点"><div class="rs-label">节点存活</div><div class="rs-val" style="color:var(--tc)">${st.success}<span class="rs-sub">/${st.total}</span></div></div>
                     <div class="rs-item" title="聚合成功率"><div class="rs-label">成功率</div><div class="rs-val">${st.total > 0 ? fmtRate(st.rateNum) : '-'}</div></div>
                     ${speedHtml}
-                    <div class="rs-item" title="消耗流量合计"><div class="rs-label">检测流量</div><div class="rs-val">${esc(agg.traffic || '-')}</div></div>
+                    <div class="rs-item" title="消耗流量合计"><div class="rs-label">消耗流量</div><div class="rs-val">${esc(agg.traffic || '-')}</div></div>
                     <div class="rs-item" title="文件大小合计"><div class="rs-label">文件总计</div><div class="rs-val">${esc(agg.file_size || '-')}</div></div>
                 </div>
             </div>
