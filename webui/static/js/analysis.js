@@ -2240,7 +2240,7 @@ function buildRemoteLinksHtml(remote) {
                 tip = `${st.tier.label} 级 | 存活 ${st.success}/${st.total} | ${fmtRate(st.rateNum)}`;
             } else {
                 cls = 'tier-' + st.state;
-                badge = getSubStateIcon(st.state, 12);
+                badge = getSubStateIcon(st.state, 10);
                 tip = getSubStateBadgeText(st.state) + (st.errMsg ? ' | ' + st.errMsg : ` | 节点总数 ${st.total}`);
             }
             nums = `<span class="srl-ok">${st.success}</span><span class="srl-sep">/</span>${st.total}`;

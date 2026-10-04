@@ -135,62 +135,6 @@
 }
 
 /* ════════════════════════════════════════════════════════════
-   小屏（≤540px）— 合并块
-════════════════════════════════════════════════════════════ */
-@media (max-width: 540px) {
-  .cfg-mode-btn {
-    padding: 3px 6px;
-    gap: 0;
-  }
-
-  .cfg-mode-seg .seg-divider {
-    margin: 0 1px;
-  }
-
-  .title-with-icon {
-    padding-right: 6px;
-    margin-right: 1px;
-  }
-
-  #splitDivider,
-  .cfg-mode-btn span {
-    /* display: none !important; */
-    display: block;
-  }
-}
-
-/* ════════════════════════════════════════════════════════════
-   小屏（≤540px）— 合并块
-════════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  /* 预览面板铺满全屏 */
-  .cfg-preview-panel {
-    position: fixed !important;
-    inset: 12px !important;
-    width: auto !important;
-    max-height: none !important;
-    border-radius: 16px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .pv-body {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    max-height: none !important;
-  }
-
-  .pv-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .pv-card:last-child:nth-child(odd) {
-    grid-column: 1;
-  }
-}
-
-/* ════════════════════════════════════════════════════════════
    双模式切换（表单 ↔ YAML）
 ════════════════════════════════════════════════════════════ */
 .editor-mode-yaml .cfg-tab-bar {
@@ -284,13 +228,6 @@
     color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
-@media (max-width: 1099px) {
-  .cfg-tab {
-    padding: 4px 8px;
-    font-size: 11.5px;
-  }
-}
-
 /* ════════════════════════════════════════════════════════════
    面板容器
 ════════════════════════════════════════════════════════════ */
@@ -316,50 +253,6 @@
 
 .cfg-panels-wrap::-webkit-scrollbar {
   width: 4px;
-}
-
-@media (min-width: 1100px) {
-  .cfg-panels-wrap.split-mode {
-    display: flex;
-    gap: 0;
-    overflow: hidden;
-    padding: 0;
-  }
-
-  .cfg-panels-wrap.split-mode .cfg-panel.active,
-  .cfg-panels-wrap.split-mode .cfg-panel.active-right {
-    flex: 1 1 0;
-    min-width: 0;
-    max-width: 560px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    min-height: 0;
-    padding: 0 8px 14px 14px;
-    scrollbar-width: thin;
-  }
-
-  .cfg-panels-wrap.split-mode .cfg-panel.active-right {
-    border-left: 1px solid var(--border);
-  }
-
-  .cfg-panels-wrap:not(.split-mode) .cfg-panel.active {
-    width: 100%;
-  }
-
-  /* 双栏时右侧控件列缩窄，防止标签被挤压 */
-  .cfg-panels-wrap.split-mode .cfg-field {
-    grid-template-columns: 1fr 0.8fr;
-  }
-
-  .cfg-panels-wrap.split-mode .cfg-field.cfg-field--toggle {
-    grid-template-columns: 1fr auto;
-  }
-
-  /* full-width 字段不受双栏列宽影响，始终单列铺满 */
-  .cfg-panels-wrap.split-mode .cfg-field.full-width {
-    grid-template-columns: 1fr;
-    /* 特异性 (0,4,0)，覆盖上条 */
-  }
 }
 
 .cfg-panel {
@@ -2090,16 +1983,6 @@ textarea.cfg-expandable-input:focus {
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 480px) {
-  .pv-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .pv-card:last-child:nth-child(odd) {
-    grid-column: 1/-1;
-  }
-}
-
 .pv-card {
   padding: 12px 14px;
   border-radius: 10px;
@@ -2235,79 +2118,6 @@ textarea.cfg-expandable-input:focus {
 
 .pv-footer-link:hover {
   text-decoration: underline;
-}
-
-/* ════════════════════════════════════════════════════════════
-   移动端（≤1099px）
-════════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  .cfg-tab-bar {
-    gap: 2px;
-    margin: 2px -12px 0;
-    padding: 6px 12px 8px;
-    background: var(--gutter-bg);
-  }
-
-  .cfg-tab {
-    padding: 3px 8px;
-    font-size: 11.5px;
-    border-radius: 8px;
-  }
-
-  .cfg-tab svg {
-    width: 11px;
-    height: 11px;
-    stroke-width: 1.2;
-    flex-shrink: 0;
-  }
-
-  .cfg-tab.active svg {
-    stroke-width: 2;
-  }
-
-  /* iOS 防自动缩放 */
-  .cfg-input,
-  .cfg-pw-input,
-  .cfg-number-wrap input[type='number'],
-  .cfg-sel-trigger,
-  .cfg-url-item .cfg-url-input,
-  .cfg-cron-display,
-  .cfg-cron-input {
-    font-size: 16px !important;
-  }
-
-  .cfg-step-btn {
-    width: 32px;
-    height: 34px;
-    font-size: 18px;
-  }
-
-  textarea.cfg-expandable-input {
-    height: 36px;
-    line-height: 1.2;
-    padding-top: 7px;
-    padding-bottom: 7px;
-  }
-
-  textarea.cfg-expandable-input:focus {
-    min-height: 36px;
-  }
-
-  .cfg-url-item .cfg-url-input {
-    height: 36px;
-    /* 增加移动端输入框基础高度 */
-    line-height: 1.2;
-    /* 恢复正常行高，防止字体基线下沉 */
-    padding-top: 7px;
-    /* 重新分配内边距实现几何居中 (38-2-22.4)/2 ≈ 7 */
-    padding-bottom: 7px;
-  }
-
-  /* 同步增加 focus 和 折行模式下的最小高度限制 */
-  .cfg-url-item .cfg-url-input:focus,
-  .cfg-url-list.wrap-mode .cfg-url-input {
-    min-height: 36px;
-  }
 }
 
 /* 代理检测按钮 */
@@ -2532,17 +2342,6 @@ textarea.cfg-expandable-input:focus {
   opacity: 0.95;
 }
 
-@media (max-width: 768px) {
-  #miniHoverTooltip {
-    width: 85vw !important;
-    max-width: 320px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-    /* 增加阴影深度，突出悬浮感 */
-    padding: 20px;
-    /* 稍微加大内边距 */
-  }
-}
-
 /* ════════════════════════════════════════════════════════════
    Tooltip 内部增强标签徽章
 ════════════════════════════════════════════════════════════ */
@@ -2692,7 +2491,7 @@ textarea.cfg-expandable-input:focus {
   position: fixed;
   z-index: 9999;
   min-width: 320px;
-  max-width: 400px;
+  max-width: 480px;
   width: max-content;
   opacity: 0;
   transform: scale(0.96) translateY(4px);
@@ -3470,55 +3269,6 @@ textarea.cfg-expandable-input:focus {
   color: var(--muted, #94a3b8);
 }
 
-/* 移动端 Tooltip */
-@media (max-width: 768px) {
-  #subStatsTooltip {
-    min-width: 0 !important;
-    width: calc(100vw - 20px) !important;
-    max-width: calc(100vw - 20px) !important;
-    max-height: calc(100dvh - 20px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  #subStatsTooltip .sub-item {
-    padding: 14px;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
-  }
-
-  #subStatsTooltip .sub-corner-tag {
-    margin: -14px 0 12px -14px;
-  }
-
-  #subStatsTooltip .sub-stats-hero {
-    gap: 12px;
-    padding: 12px;
-  }
-}
-
-@media (max-width: 420px) {
-  #subStatsTooltip .sub-stats-hero {
-    gap: 10px;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-
-  #subStatsTooltip .sub-tier-row {
-    gap: 6px;
-  }
-
-  #subStatsTooltip .sub-tier-label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  #subStatsTooltip .sub-tier-summary {
-    flex-shrink: 0;
-    gap: 4px;
-  }
-}
-
 /* ================= 订阅详情：背景模糊遮罩层 ================= */
 #subStatsOverlay {
   position: fixed;
@@ -3596,20 +3346,6 @@ textarea.cfg-expandable-input:focus {
   color: var(--fg);
 }
 
-/* ================= 订阅详情：移动端弹窗居中与边距优化 ================= */
-@media (max-width: 640px) {
-  #subStatsTooltip.is-mobile-modal {
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) scale(0.96) !important;
-    width: calc(100vw - 24px) !important; /* 左右各留出 12px 空隙 */
-    z-index: 99999;
-  }
-  #subStatsTooltip.is-mobile-modal.visible {
-    transform: translate(-50%, -50%) scale(1) !important;
-  }
-}
-
 /* ════════════════════════════════════════════════════════════
    远程订阅清单悬浮窗：订阅链接明细
    复用本地订阅悬浮窗的外壳与评级色（--tc），仅新增明细区块
@@ -3617,10 +3353,10 @@ textarea.cfg-expandable-input:focus {
 
 /* 订阅链接明细（远程订阅清单） */
 #subStatsTooltip .sub-remote-box {
-  margin-top: 12px;
-  padding: 10px 12px 8px;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  border-radius: 10px;
+  margin-top: 10px;
+  padding: 8px 10px 4px;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 8px;
   background: color-mix(in srgb, var(--fg) 2%, transparent);
 }
 
@@ -3628,19 +3364,19 @@ textarea.cfg-expandable-input:focus {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 #subStatsTooltip .sub-remote-head .srh-title {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--muted);
 }
 
 #subStatsTooltip .sub-remote-head .srh-meta {
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -3648,61 +3384,149 @@ textarea.cfg-expandable-input:focus {
 #subStatsTooltip .sub-remote-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--border) 100%, transparent);
 }
 
 #subStatsTooltip .sub-remote-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 99px;
-  font-size: 10.5px;
-  line-height: 1.5;
+  gap: 3px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
-  color: var(--tc, var(--muted));
-  background: color-mix(in srgb, var(--tc, var(--muted)) 12%, transparent);
+  color: color-mix(in srgb, var(--tc, var(--muted)) 90%, var(--fg));
+  background: color-mix(in srgb, var(--tc, var(--muted)) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tc, var(--muted)) 25%, transparent);
 }
 
 #subStatsTooltip .sub-remote-chip b {
-  font-weight: 800;
+  font-weight: 700;
+}
+
+#subStatsTooltip .sub-url-box {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+#subStatsTooltip .sub-copy-btn {
+  background: none;
+  border: none;
+  color: color-mix(in srgb, var(--fg) 50%, transparent);
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  transition:
+    color 0.2s,
+    background 0.2s;
+  margin-left: 2px;
+  border-radius: 4px;
+}
+
+#subStatsTooltip .sub-copy-btn:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+/* ── 订阅链接明细 - 底部统计行 ── */
+#subStatsTooltip .srl-bottom-row {
+  flex-basis: 100%;
+  padding-left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  font-size: 9px;
+}
+
+#subStatsTooltip .srl-extra-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+#subStatsTooltip .srl-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border-radius: 99px;
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+#subStatsTooltip .srl-tag svg {
+  width: 10px;
+  height: 10px;
+  opacity: 0.65;
 }
 
 #subStatsTooltip .sub-remote-list {
-  max-height: 200px;
+  max-height: 220px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  margin: 0 -4px;
-  padding: 0 4px;
+  margin: 0 -2px;
+  padding: 0 2px;
+}
+
+#subStatsTooltip .sub-remote-list::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+#subStatsTooltip .sub-remote-list::-webkit-scrollbar-thumb {
+  background: var(--scroll-bg);
+  border-radius: 10px;
+}
+#subStatsTooltip .sub-remote-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+#subStatsTooltip .sub-remote-list::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent);
 }
 
 #subStatsTooltip .sub-remote-link {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  column-gap: 4px;
+  row-gap: 4px;
   padding: 5px 0;
-  border-top: 1px dashed color-mix(in srgb, var(--border) 70%, transparent);
-  font-size: 11px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--border) 50%, transparent);
 }
 
-#subStatsTooltip .sub-remote-link:first-child {
-  border-top: none;
+#subStatsTooltip .sub-remote-link:last-child {
+  border-bottom: none;
 }
 
 #subStatsTooltip .sub-remote-link .srl-badge {
   flex-shrink: 0;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  font-size: 10.5px;
+  border-radius: 4px;
+  font-size: 9.5px;
   font-weight: 800;
   color: var(--tc, var(--muted));
-  background: color-mix(in srgb, var(--tc, var(--muted)) 14%, transparent);
+  background: color-mix(in srgb, var(--tc, var(--muted)) 12%, transparent);
 }
 
 #subStatsTooltip .sub-remote-link .srl-url {
@@ -3724,6 +3548,7 @@ textarea.cfg-expandable-input:focus {
 
 #subStatsTooltip .sub-remote-link .srl-nums {
   flex-shrink: 0;
+  font-size: 10.5px;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
@@ -3744,11 +3569,6 @@ textarea.cfg-expandable-input:focus {
   --tc: var(--muted, #94a3b8);
 }
 
-@media (max-width: 640px) {
-  #subStatsTooltip .sub-remote-list {
-    max-height: 32vh;
-  }
-}
 /* ════════════════════════════════════════════════════════════
    悬浮窗：附加统计卡片
    平均速度 / 检测流量 / 文件大小
@@ -3758,17 +3578,18 @@ textarea.cfg-expandable-input:focus {
   grid-template-columns: repeat(3, 1fr);
   margin-bottom: 12px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  /* border: 1px solid color-mix(in srgb, var(--border) 65%, transparent); */
   border-radius: 9px;
-  background: color-mix(in srgb, var(--fg) 2%, transparent);
+  background: transparent !important;
 }
 
 #subStatsTooltip .ses-item {
   min-width: 0;
-  padding: 9px 10px;
+  padding: 6px 8px;
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 #subStatsTooltip .ses-item + .ses-item {
@@ -3802,8 +3623,260 @@ textarea.cfg-expandable-input:focus {
   opacity: 0.75;
 }
 
-@media (max-width: 640px) {
+@media (min-width: 480px) {
+  .pv-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pv-card:last-child:nth-child(odd) {
+    grid-column: 1/-1;
+  }
+}
+
+@media (min-width: 1100px) {
+  .cfg-tab {
+    padding: 4px 8px;
+    font-size: 11.5px;
+  }
+  .cfg-panels-wrap.split-mode {
+    display: flex;
+    gap: 0;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .cfg-panels-wrap.split-mode .cfg-panel.active,
+  .cfg-panels-wrap.split-mode .cfg-panel.active-right {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 560px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    padding: 0 8px 14px 14px;
+    scrollbar-width: thin;
+  }
+
+  .cfg-panels-wrap.split-mode .cfg-panel.active-right {
+    border-left: 1px solid var(--border);
+  }
+
+  .cfg-panels-wrap:not(.split-mode) .cfg-panel.active {
+    width: 100%;
+  }
+
+  /* 双栏时右侧控件列缩窄，防止标签被挤压 */
+  .cfg-panels-wrap.split-mode .cfg-field {
+    grid-template-columns: 1fr 0.8fr;
+  }
+
+  .cfg-panels-wrap.split-mode .cfg-field.cfg-field--toggle {
+    grid-template-columns: 1fr auto;
+  }
+
+  /* full-width 字段不受双栏列宽影响，始终单列铺满 */
+  .cfg-panels-wrap.split-mode .cfg-field.full-width {
+    grid-template-columns: 1fr;
+    /* 特异性 (0,4,0)，覆盖上条 */
+  }
+}
+
+@media (max-width: 768px) {
+  .cfg-tab-bar {
+    gap: 2px;
+    margin: 2px -12px 0;
+    padding: 6px 12px 8px;
+    background: var(--gutter-bg);
+  }
+
+  .cfg-tab {
+    padding: 3px 8px;
+    font-size: 11.5px;
+    border-radius: 8px;
+  }
+
+  .cfg-tab svg {
+    width: 11px;
+    height: 11px;
+    stroke-width: 1.2;
+    flex-shrink: 0;
+  }
+
+  .cfg-tab.active svg {
+    stroke-width: 2;
+  }
+
+  /* iOS 防自动缩放 */
+  .cfg-input,
+  .cfg-pw-input,
+  .cfg-number-wrap input[type='number'],
+  .cfg-sel-trigger,
+  .cfg-url-item .cfg-url-input,
+  .cfg-cron-display,
+  .cfg-cron-input {
+    font-size: 16px !important;
+  }
+
+  .cfg-step-btn {
+    width: 32px;
+    height: 34px;
+    font-size: 18px;
+  }
+
+  textarea.cfg-expandable-input {
+    height: 36px;
+    line-height: 1.2;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  textarea.cfg-expandable-input:focus {
+    min-height: 36px;
+  }
+
+  .cfg-url-item .cfg-url-input {
+    height: 36px;
+    /* 增加移动端输入框基础高度 */
+    line-height: 1.2;
+    /* 恢复正常行高，防止字体基线下沉 */
+    padding-top: 7px;
+    /* 重新分配内边距实现几何居中 (38-2-22.4)/2 ≈ 7 */
+    padding-bottom: 7px;
+  }
+
+  /* 同步增加 focus 和 折行模式下的最小高度限制 */
+  .cfg-url-item .cfg-url-input:focus,
+  .cfg-url-list.wrap-mode .cfg-url-input {
+    min-height: 36px;
+  }
+
+  /* 预览面板铺满全屏 */
+  .cfg-preview-panel {
+    position: fixed !important;
+    inset: 12px !important;
+    width: auto !important;
+    max-height: none !important;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .pv-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    max-height: none !important;
+  }
+
+  .pv-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pv-card:last-child:nth-child(odd) {
+    grid-column: 1;
+  }
+
+  #miniHoverTooltip {
+    width: 85vw !important;
+    max-width: 320px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    /* 增加阴影深度，突出悬浮感 */
+    padding: 20px;
+    /* 稍微加大内边距 */
+  }
+}
+
+/* 移动端 Tooltip */
+@media (max-width: 768px) {
+  #subStatsTooltip.is-mobile-modal {
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) scale(0.96) !important;
+    width: calc(100vw - 12px) !important; /* 左右各留出 12px 空隙 */
+    max-width: calc(100vw - 12px) !important;
+    z-index: 99999;
+  }
+  #subStatsTooltip.is-mobile-modal.visible {
+    transform: translate(-50%, -50%) scale(1) !important;
+  }
+
+  #subStatsTooltip {
+    min-width: 0 !important;
+    width: calc(100vw - 10px) !important;
+    max-width: calc(100vw - 10px) !important;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  #subStatsTooltip .sub-item {
+    padding: 12px;
+    box-shadow: none;
+  }
+
+  #subStatsTooltip .sub-corner-tag {
+    margin: -14px 0 12px -14px;
+  }
+
+  #subStatsTooltip .sub-stats-hero {
+    gap: 12px;
+    padding: 8px 12px;
+  }
+
+  #subStatsTooltip .srl-tag svg {
+    width: 8px;
+    height: 8px;
+    opacity: 0.65;
+  }
+
+  .sub-tooltip-copy-box {
+    margin-top: 6px;
+    padding: 4px 8px;
+  }
+
   #subStatsTooltip .sub-remote-list {
-    max-height: 40vh;
+    max-height: 32vh;
+  }
+}
+
+@media (max-width: 540px) {
+  .cfg-mode-btn {
+    padding: 3px 6px;
+    gap: 0;
+  }
+
+  .cfg-mode-seg .seg-divider {
+    margin: 0 1px;
+  }
+
+  .title-with-icon {
+    padding-right: 6px;
+    margin-right: 1px;
+  }
+
+  #splitDivider,
+  .cfg-mode-btn span {
+    display: block;
+  }
+
+  #subStatsTooltip .sub-stats-hero {
+    gap: 10px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  #subStatsTooltip .sub-tier-row {
+    gap: 6px;
+  }
+
+  #subStatsTooltip .sub-tier-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #subStatsTooltip .sub-tier-summary {
+    flex-shrink: 0;
+    gap: 4px;
   }
 }
