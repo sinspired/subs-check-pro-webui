@@ -840,31 +840,31 @@ h1 svg {
 .quality-item.card-cf {
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--chip-cf) 28%, transparent),
-    color-mix(in srgb, var(--chip-cf) 10%, transparent)
+    color-mix(in srgb, var(--chip-cf) 10%, transparent),
+    color-mix(in srgb, var(--chip-cf) 2%, transparent)
   );
   box-shadow:
-    0 0 0 1px color-mix(in srgb, white 3%, transparent),
-    0 8px 20px color-mix(in srgb, var(--chip-cf) 10%, transparent);
+    0 0 0 1px color-mix(in srgb, white 1%, transparent),
+    0 8px 20px color-mix(in srgb, var(--chip-cf) 5%, transparent);
 }
 
 .quality-item.card-vps {
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--chip-vps) 28%, transparent),
-    color-mix(in srgb, var(--chip-vps) 10%, transparent)
+    color-mix(in srgb, var(--chip-vps) 10%, transparent),
+    color-mix(in srgb, var(--chip-vps) 2%, transparent)
   );
   box-shadow:
-    0 0 0 1px color-mix(in srgb, white 3%, transparent),
-    0 8px 20px color-mix(in srgb, var(--chip-vps) 10%, transparent);
+    0 0 0 1px color-mix(in srgb, white 1%, transparent),
+    0 8px 20px color-mix(in srgb, var(--chip-vps) 5%, transparent);
 }
 
 .quality-item.card-cf {
-  border: 1px solid color-mix(in srgb, var(--chip-cf) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chip-cf) 10%, transparent);
 }
 
 .quality-item.card-vps {
-  border: 1px solid color-mix(in srgb, var(--chip-vps) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chip-vps) 10%, transparent);
 }
 
 .quality-item.card-cf .quality-val {
@@ -1871,20 +1871,31 @@ h1 svg {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--fg);
+  background: var(--fg-accent);
   pointer-events: none;
   z-index: 2;
+
+  animation: rulerDotBreath 2s ease-in-out infinite;
+
   transition:
-    width 0.12s,
-    height 0.12s,
     box-shadow 0.12s;
 }
 
 .ruler-dot-hit:hover + .ruler-dot,
 .ruler-dot-hit.dragging + .ruler-dot {
-  width: 11px;
-  height: 11px;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fg) 15%, transparent);
+  animation: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fg-accent) 15%, transparent);
+}
+
+@keyframes rulerDotBreath {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--fg-accent) 0%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--fg-accent) 12%, transparent);
+  }
 }
 
 /* ── SVG 尺子及文字样式 ── */
@@ -3599,7 +3610,7 @@ code {
   display: flex;
   flex-wrap: wrap; /* <-- 必须加上折行，否则 URL 会被挤压到宽度为 0 导致隐身 */
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 5px 0;
   border-top: 1px dashed color-mix(in srgb, var(--border) 70%, transparent);
   font-size: 11px;
@@ -3708,12 +3719,13 @@ code {
 /* ── 订阅链接明细 - 底部统计行 ── */
 .srl-bottom-row {
   flex-basis: 100%;
-  padding-left: 28px; /* 与上方的徽章左侧对齐：20px宽度 + 8px间距 */
+  padding-left: 24px; /* 与上方的徽章左侧对齐：20px宽度 + 8px间距 */
+  padding-right: 4px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 2px;
+  margin-top: -2px;
   margin-bottom: 2px;
 }
 

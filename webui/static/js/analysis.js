@@ -2460,9 +2460,9 @@ function renderSubs(subs, subsBad, cfg) {
           <span class="btn-text">YAML 格式</span>
         </button>
         <div class="copy-scope">
-          <label title="同时包含非活跃订阅">
+          <label title="同时包含沉默订阅">
             <input type="checkbox" id="copyIncludeBad">
-            <span class="scope-text">含非活跃订阅</span>
+            <span class="scope-text">含沉默订阅</span>
           </label>
         </div>
       </div>` : '';
@@ -2871,7 +2871,7 @@ function initThresholdSlider(subs, cfg) {
 
     <a href="javascript:void(0)"
        onclick="window._setFilterMode('score')"
-       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'score' ? 'var(--fg)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'score' ? '700' : '600'}">
+       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'score' ? 'var(--fg-accent)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'score' ? '700' : '600'}">
         综合分
     </a>
 
@@ -2879,7 +2879,7 @@ function initThresholdSlider(subs, cfg) {
 
     <a href="javascript:void(0)"
        onclick="window._setFilterMode('count')"
-       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'count' ? 'var(--fg)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'count' ? '700' : '600'}">
+       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'count' ? 'var(--fg-accent)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'count' ? '700' : '600'}">
         存活数
     </a>
 
@@ -2887,7 +2887,7 @@ function initThresholdSlider(subs, cfg) {
 
     <a href="javascript:void(0)"
        onclick="window._setFilterMode('rate')"
-       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'rate' ? 'var(--fg)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'rate' ? '700' : '600'}">
+       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'rate' ? 'var(--fg-accentt)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'rate' ? '700' : '600'}">
         成功率
     </a>
 </span>
