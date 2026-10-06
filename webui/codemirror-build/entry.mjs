@@ -60,7 +60,9 @@ const configCompletions = [
   { label: "enhanced-tag", type: "property", detail: "增强位置显示开关", section: "节点标签", isArray: false },
   { label: "maxmind-db-path", type: "property", detail: "MaxMind 地理数据库路径", section: "节点标签", isArray: false },
   { label: "output-dir", type: "property", detail: "输出目录", section: "输出设置", isArray: false },
-  { label: "keep-success-proxies", type: "property", detail: "保留之前测试成功的节点", section: "节点处理", isArray: false },
+  { label: "load-last-result", type: "property", detail: "是否加载上次检测结果(all.yaml)", section: "节点处理", isArray: false },
+  { label: "load-history-result", type: "property", detail: "是否加载历史检测结果(history.yaml)", section: "节点处理", isArray: false },
+  { label: "save-history-result", type: "property", detail: "是否保存历史检测结果(history.yaml)", section: "节点处理", isArray: false },
   { label: "listen-port", type: "property", detail: "WebUI端口", section: "Web UI", isArray: false },
   { label: "enable-web-ui", type: "property", detail: "是否启用Web控制面板", section: "Web UI", isArray: false },
   { label: "api-key", type: "property", detail: "Web控制面板的api-key", section: "Web UI", isArray: false },
@@ -170,9 +172,17 @@ const valueCompletions = {
     { label: "true", detail: "启用增强位置标签（默认）" },
     { label: "false", detail: "禁用" }
   ],
-  "keep-success-proxies": [
-    { label: "true", detail: "保留之前测试成功的节点（默认）" },
-    { label: "false", detail: "不保留" }
+  "load-last-result": [
+    { label: "true", detail: "是否加载上次检测结果(all.yaml)" },
+    { label: "false", detail: "不加载" }
+  ],
+  "load-history-result": [
+    { label: "true", detail: "是否加载历史检测结果(history.yaml)" },
+    { label: "false", detail: "不加载" }
+  ],
+  "save-history-result": [
+    { label: "true", detail: "是否保存历史检测结果(history.yaml)" },
+    { label: "false", detail: "不保存" }
   ],
   "enable-web-ui": [
     { label: "true", detail: "启用 Web 控制面板（默认）" },
@@ -595,7 +605,7 @@ const placeholderMatcher = new MatchDecorator({
   regexp: new RegExp(
     [
       // 匹配所有 configCompletions 中的 label
-      '(?<=^[ \t]*)(print-progress|progress-mode|update|update-on-startup|cron-check-update|prerelease|update-timeout|concurrent|alive-concurrent|speed-concurrent|media-concurrent|ipv6|check-interval|cron-expression|success-limit|timeout|speed-test-url|min-speed|download-timeout|download-mb|total-speed-limit|threshold|gc-threshold|rename-node|node-prefix|node-type|node-loc|isp-check|isp-timeout|isp-check-api-key-ipapi|isp-check-api-key-proxycheck|isp-check-api-key-iplocate|isp-check-api-key-ipdata|media-check|platforms|media-check-timeout|drop-bad-cf-nodes|enhanced-tag|maxmind-db-path|output-dir|keep-success-proxies|listen-port|enable-web-ui|api-key|share-password|callback-script|apprise-api-server|recipient-url|notify-title|sub-store-port|sub-store-path|mihomo-overwrite-url|singbox-latest|singbox-extra|sub-store-sync-cron|sub-store-produce-cron|sub-store-push-service|save-method|webdav-url|webdav-username|webdav-password|github-gist-id|github-token|github-api-mirror|worker-url|worker-token|s3-endpoint|s3-access-id|s3-secret-key|s3-bucket|s3-use-ssl|s3-bucket-lookup|system-proxy|github-proxy|ghproxy-group|sub-urls-retry|sub-urls-timeout|sub-urls-stats|success-rate|subs-parse-batch|subs-dedupe-batch|memory-limit-mb|gc-percent|sub-urls-remote|sub-urls|sub-process|resolve-domain|node-split|regex-filter-keep|regex-filter|regex-sort|sub-info|version|json|js|enable|provider|edns|concurrency|type|cache|cache-ttl)(?=\s*:\s*)',
+      '(?<=^[ \t]*)(print-progress|progress-mode|update|update-on-startup|cron-check-update|prerelease|update-timeout|concurrent|alive-concurrent|speed-concurrent|media-concurrent|ipv6|check-interval|cron-expression|success-limit|timeout|speed-test-url|min-speed|download-timeout|download-mb|total-speed-limit|threshold|gc-threshold|rename-node|node-prefix|node-type|node-loc|isp-check|isp-timeout|isp-check-api-key-ipapi|isp-check-api-key-proxycheck|isp-check-api-key-iplocate|isp-check-api-key-ipdata|media-check|platforms|media-check-timeout|drop-bad-cf-nodes|enhanced-tag|maxmind-db-path|output-dir|load-last-result|load-history-result|save-history-result|listen-port|enable-web-ui|api-key|share-password|callback-script|apprise-api-server|recipient-url|notify-title|sub-store-port|sub-store-path|mihomo-overwrite-url|singbox-latest|singbox-extra|sub-store-sync-cron|sub-store-produce-cron|sub-store-push-service|save-method|webdav-url|webdav-username|webdav-password|github-gist-id|github-token|github-api-mirror|worker-url|worker-token|s3-endpoint|s3-access-id|s3-secret-key|s3-bucket|s3-use-ssl|s3-bucket-lookup|system-proxy|github-proxy|ghproxy-group|sub-urls-retry|sub-urls-timeout|sub-urls-stats|success-rate|subs-parse-batch|subs-dedupe-batch|memory-limit-mb|gc-percent|sub-urls-remote|sub-urls|sub-process|resolve-domain|node-split|regex-filter-keep|regex-filter|regex-sort|sub-info|version|json|js|enable|provider|edns|concurrency|type|cache|cache-ttl)(?=\s*:\s*)',
 
       // 列表项：- openai / - "openai"
       '(?<=^[ \\t]*-\\s*["\']?)(openai|iprisk|gemini|copilot|tiktok|youtube|disney|netflix|x|ss|trojan|vless|vmess|shadowsocks)(?=["\']?\\b)',

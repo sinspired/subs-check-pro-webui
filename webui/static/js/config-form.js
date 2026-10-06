@@ -613,7 +613,9 @@ const SCHEMA = [
       {
         title: '功能开关',
         fields: [
-          { key: 'keep-success-proxies', label: '保留历次成功节点', type: 'toggle', hint: '防上游更新丢失节点，建议开启' },
+          { key: 'load-last-result', label: '加载上次检测结果', type: 'toggle', hint: '加载 all.yaml 作为订阅' },
+          { key: 'load-history-result', label: '加载历史检测结果', type: 'toggle', hint: '加载 history.yaml 作为订阅' },
+          { key: 'save-history-result', label: '保存历史检测结果', type: 'toggle', hint: '如开启加载历史检测结果，则自动保存' },
           { key: 'rename-node', label: '重命名节点', type: 'toggle', hint: '根据节点 IP 归属地自动重命名' },
           {
             key: 'enhanced-tag', label: '增强位置标签', type: 'toggle', hint: '添加 KR¹-US⁰，SG² 类角标',
