@@ -2253,6 +2253,7 @@ img.link-icon {
   gap: 8px;
   align-items: center;
   user-select: none;
+  min-width: 0;
 }
 
 .title-text {
@@ -2270,6 +2271,9 @@ img.link-icon {
   font-size: 12px;
   background: transparent;
   color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .card-tip {
@@ -3613,7 +3617,7 @@ img.link-icon {
   }
 
   main {
-    padding:0 8px;
+    padding: 0 8px;
     height: auto;
   }
 
@@ -3673,6 +3677,13 @@ img.link-icon {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  .logsCard .title-text.hidden,
+  .editorCard .title-text.hidden,
+  #clearLogsBtn.hidden,
+  #refreshLogs.hidden {
+    display: none;
   }
 
   .logs-wrapper {

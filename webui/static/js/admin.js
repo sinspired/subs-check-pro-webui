@@ -95,6 +95,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     versionBadge: $('#version-badge'),
     versionLogin: $(`#version-login`),
     toggleBtn: $('#btnToggleCheck'),
+    logsCardTitle: $('#logsCardTitle'),
     clearLogsBtn: $(`#clearLogsBtn`),
     refreshLogsBtn: $('#refreshLogs'),
     saveCfgBtn: $('#saveCfg'),
@@ -924,6 +925,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const lastChecked = d.lastCheck && typeof d.lastCheck.total === 'number'
 
       if (checking) {
+        els.logsCardTitle.classList.add('hidden')
+        els.clearLogsBtn.classList.add('hidden')
+        els.refreshLogsBtn.classList.add('hidden')
         const processed = d.progress || 0
         const total = d.proxyCount || 0
 
@@ -1024,6 +1028,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         if (realStartTime && !checkStartTime) checkStartTime = realStartTime
 
       } else {
+        els.logsCardTitle.classList.remove('hidden')
+        els.clearLogsBtn.classList.remove('hidden')
+        els.refreshLogsBtn.classList.add('hidden')
         // ==================== 空闲状态 ====================
         loadStatus.cachedStats = null; // 检测结束时清空状态缓存
 
