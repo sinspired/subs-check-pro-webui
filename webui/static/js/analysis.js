@@ -1119,8 +1119,6 @@ function buildCfgStatusPanel(cfg, ci) {
         ['最低速度', minSpeed > 0 ? `${minSpeed} KB/s` : '未设置', minSpeed > 0 ? 'ok' : 'warn', minSpeed > 0 ? SVG_OK : SVG_WARN],
         ['测速超时', dlTimeout > 0 ? `${dlTimeout}s` : '未设置', dlTimeout > 0 ? 'ok' : 'warn', dlTimeout > 0 ? SVG_OK : SVG_WARN],
         ['加载上次检测结果', loadLastResult ? '已开启' : '已关闭', loadLastResult ? 'ok' : 'warn', loadLastResult ? SVG_OK : SVG_WARN],
-        ['加载历史检测结果', loadHistoryResult ? '已开启' : '已关闭', '已设置'],
-        ['保存历史检测结果', saveHistoryResult ? '已开启' : '已关闭', '已设置'],
         ['自动更新', autoUpdate ? '已开启' : '已关闭', autoUpdate ? 'ok' : 'warn', autoUpdate ? SVG_OK : SVG_WARN],
         ['存储方式', saveMethod, saveMethod !== 'local' ? 'ok' : 'muted-v', SVG_DASH],
         ['检测周期', scheduleStr, scheduleStr !== '未设置' ? 'ok' : 'warn', scheduleStr !== '未设置' ? SVG_OK : SVG_WARN],
