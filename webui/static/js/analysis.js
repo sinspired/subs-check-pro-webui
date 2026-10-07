@@ -1086,9 +1086,7 @@ function buildCfgStatusPanel(cfg, ci) {
     const recipientUrl = cfg['recipient-url'];
     const speedTestUrl = cfg['speed-test-url'] || '';
     const mediaCheck = cfg['media-check'] !== false;
-    const loadLastResult = cfg['load-last-result'] !== false;
-    const loadHistoryResult = cfg['load-history-result'] !== false;
-    const saveHistoryResult = cfg['save-history-result'] !== false;
+    const useLastResult = cfg['use-last-result'] !== false;
     const autoUpdate = cfg['update'] !== false;
     const minSpeed = parseInt(cfg['min-speed']) || 0;
     const dlTimeout = parseInt(cfg['download-timeout']) || 0;
@@ -1118,7 +1116,7 @@ function buildCfgStatusPanel(cfg, ci) {
         ['测速功能', speedTestUrl ? '已启用' : '已关闭', speedTestUrl ? 'ok' : 'warn', speedTestUrl ? SVG_OK : SVG_WARN],
         ['最低速度', minSpeed > 0 ? `${minSpeed} KB/s` : '未设置', minSpeed > 0 ? 'ok' : 'warn', minSpeed > 0 ? SVG_OK : SVG_WARN],
         ['测速超时', dlTimeout > 0 ? `${dlTimeout}s` : '未设置', dlTimeout > 0 ? 'ok' : 'warn', dlTimeout > 0 ? SVG_OK : SVG_WARN],
-        ['加载上次检测结果', loadLastResult ? '已开启' : '已关闭', loadLastResult ? 'ok' : 'warn', loadLastResult ? SVG_OK : SVG_WARN],
+        ['加载上次检测结果', useLastResult ? '已开启' : '已关闭', useLastResult ? 'ok' : 'warn', useLastResult ? SVG_OK : SVG_WARN],
         ['自动更新', autoUpdate ? '已开启' : '已关闭', autoUpdate ? 'ok' : 'warn', autoUpdate ? SVG_OK : SVG_WARN],
         ['存储方式', saveMethod, saveMethod !== 'local' ? 'ok' : 'muted-v', SVG_DASH],
         ['检测周期', scheduleStr, scheduleStr !== '未设置' ? 'ok' : 'warn', scheduleStr !== '未设置' ? SVG_OK : SVG_WARN],
@@ -3065,9 +3063,8 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     const mediaCheck = cfg['media-check'] !== false;
     const nodePrefix = cfg['node-prefix'] || '';
     const autoUpdate = cfg['update'] !== false;
-    const loadLastResult = cfg['load-last-result'] !== false;
-    const loadHistoryResult = cfg['load-history-result'] !== false;
-    const saveHistoryResult = cfg['save-history-result'] !== false;
+    const useLastResult = cfg['use-last-result'] !== false;
+    const useHistoryResult = cfg['use-history-result'] !== false;
     const minSpeed = parseInt(cfg['min-speed']) || 0;
     const dlTimeout = parseInt(cfg['download-timeout']) || 0;
     const dlMb = parseInt(cfg['download-mb']) || 0;
@@ -3129,9 +3126,8 @@ function renderConfig(ci, ga, sr, sb, cfg) {
         { k: '流媒体检测', v: mediaCheck ? '开启' : '关闭', cls: mediaCheck ? 'ok' : 'warn' },
         { k: '测速功能', v: speedTestUrl ? '已启用' : '关闭', cls: speedTestUrl ? 'ok' : 'warn' },
         { k: '自动更新', v: autoUpdate ? '开启' : '关闭', cls: autoUpdate ? 'ok' : 'warn' },
-        { k: '加载上次检测结果', v: loadLastResult ? '开启' : '关闭', cls: loadLastResult ? 'ok' : 'warn' },
-        { k: '加载历史检测结果', v: loadHistoryResult ? '开启' : '关闭', },
-        { k: '保存历史检测结果', v: saveHistoryResult ? '开启' : '关闭', },
+        { k: '加载上次检测结果', v: useLastResult ? '开启' : '关闭', cls: useLastResult ? 'ok' : 'warn' },
+        { k: '加载并保存历史检测结果', v: useHistoryResult ? '开启' : '关闭', },
         { k: '存储方式', v: saveMethod === 'local' ? '本地' : saveMethod, cls: 'ok' },
         { k: '节点前缀', v: nodePrefix ? esc(nodePrefix) : '无前缀', cls: 'ok' },
         { k: '去重释放', v: subsDedupeBatch > 0 ? subsDedupeBatch : '已禁用', cls: subsDedupeBatch > 0 ? (subsDedupeBatch < 20000 ? 'warn' : 'ok') : 'warn' },
@@ -3278,11 +3274,11 @@ function renderConfig(ci, ga, sr, sb, cfg) {
     }
 
     // 5. 加载上次检测结果及历史结果加载和保存，避免冗余设置
-    if (loadLastResult) {
-        suggests.push({ l: 'good', t: '<code>load-last-result: true</code> 已开启，每次检测加载上次检测结果' });
-        if (hasLocalhostAll) suggests.push({ l: 'warn', t: '检测到 <code>sub-urls</code> 中包含 <code>127.0.0.1/all.yaml</code>。已启用 <code>load-last-result</code> 时，程序会自动加载上次检测结果，无需再订阅本地 all.yaml，可移除该条目以减少冗余。' });
+    if (useLastResult) {
+        suggests.push({ l: 'good', t: '<code>use-last-result: true</code> 已开启，每次检测加载上次检测结果' });
+        if (hasLocalhostAll) suggests.push({ l: 'warn', t: '检测到 <code>sub-urls</code> 中包含 <code>127.0.0.1/all.yaml</code>。已启用 <code>use-last-result</code> 时，程序会自动加载上次检测结果，无需再订阅本地 all.yaml，可移除该条目以减少冗余。' });
     } else {
-        suggests.push({ l: 'info', tab: 'detection', t: '<code>load-last-result: false</code>，每次检测不加载上次检测结果，上游订阅临时沉默时可用节点可能清零' });
+        suggests.push({ l: 'info', tab: 'detection', t: '<code>use-last-result: false</code>，每次检测不加载上次检测结果，上游订阅临时沉默时可用节点可能清零' });
     }
 
     // 6. 并发数
