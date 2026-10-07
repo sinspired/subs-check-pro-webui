@@ -462,7 +462,8 @@ const SCHEMA = [
             key: 'concurrent',
             label: '基准并发',
             type: 'number', min: 1, max: 100, placeholder: '20',
-            hint: '拉取订阅的并发数；并作为自动并发的计算基准'
+            hint: '拉取订阅的并发数；并作为自动并发的计算基准',
+            default: 20,
           },
           {
             key: 'github-token', label: ' GitHub 密钥', type: 'password', fullWidth: true, placeholder: 'GITHUB_TOKEN', hint: '用来提高订阅拉取成功率，提升 GitHub 速率限制',
@@ -504,8 +505,9 @@ const SCHEMA = [
       {
         title: '拉取参数',
         fields: [
-          { key: 'sub-urls-retry', label: '重试次数', type: 'number', min: 1, max: 5, placeholder: '3', hint: '获取订阅失败重试次数' },
-          { key: 'sub-urls-timeout', label: '下载超时 (s)', type: 'number', min: 5, max: 30, placeholder: '10', hint: '建议 10–60' },
+          { key: 'sub-urls-retry', label: '重试次数', type: 'number', min: 1, max: 5, placeholder: '3', hint: '获取订阅失败重试次数', default: 3, },
+          { key: 'sub-urls-timeout', label: '下载超时 (s)', type: 'number', min: 5, max: 30, placeholder: '10', hint: '建议 10–60', default: 10, },
+          { key: 'sub-url-max-size-mb', label: '订阅大小上限 (MB/s)', type: 'number', min: 0, max: 500, placeholder: '50', hint: '建议 1–100', default: 50, },
           {
             key: 'success-rate', label: '成功率提醒阈值 (‰)', type: 'number', min: 0.01, max: 1000, placeholder: '0', hint: '低于此值将打印成功率信息，并写入统计文件',
             hintExamples: [
@@ -560,21 +562,21 @@ const SCHEMA = [
       {
         title: '并发控制',
         fields: [
-          { key: 'alive-concurrent', label: '测活并发', type: 'number', min: 0, max: 1000, placeholder: '200', hint: '0 = 自动；建议 10–300' },
-          { key: 'speed-concurrent', label: '测速并发', type: 'number', min: 0, max: 64, placeholder: '8', hint: '0 = 自动；建议 4–32' },
-          { key: 'media-concurrent', label: '媒体并发', type: 'number', min: 0, max: 200, placeholder: '50', hint: '0 = 自动；建议 10–200' },
+          { key: 'alive-concurrent', label: '测活并发', type: 'number', min: 0, max: 1000, placeholder: '200', hint: '0 = 自动；建议 10–300', default: 100, },
+          { key: 'speed-concurrent', label: '测速并发', type: 'number', min: 0, max: 64, placeholder: '8', hint: '0 = 自动；建议 4–32', default: 8, },
+          { key: 'media-concurrent', label: '媒体并发', type: 'number', min: 0, max: 200, placeholder: '50', hint: '0 = 自动；建议 10–200', default: 16, },
         ],
       },
       {
         title: '节点要求',
         fields: [
-          { key: 'success-limit', label: '节点数量上限', type: 'number', min: 0, placeholder: '200', hint: '0 = 不限制，建议 100-200' },
+          { key: 'success-limit', label: '节点数量上限', type: 'number', min: 0, placeholder: '200', hint: '0 = 不限制，建议 100-200', default: 100, },
         ],
       },
       {
         title: '延迟参数',
         fields: [
-          { key: 'timeout', label: '超时时间 (ms)', type: 'number', min: 1000, max: 15000, placeholder: '6000', hint: '节点延迟上限，建议 3000–10000' },
+          { key: 'timeout', label: '超时时间 (ms)', type: 'number', min: 1000, max: 15000, placeholder: '6000', hint: '节点延迟上限，建议 3000–10000', default: 6000, },
         ],
       },
       {
@@ -585,9 +587,9 @@ const SCHEMA = [
             placeholder: 'random',
             hint: "random = 内置测速池随机轮询；留空关闭测速；支持自定义测速 URL",
           },
-          { key: 'min-speed', label: '最低速度 (KB/s)', type: 'number', min: 0, placeholder: '128', hint: '低于此值的节点将被丢弃，0 = 不过滤' },
-          { key: 'download-timeout', label: '下载超时 (s)', type: 'number', min: 0, max: 30, placeholder: '10', hint: '测速单节点超时，建议 10s' },
-          { key: 'download-mb', label: '单节点上限 (MB)', type: 'number', min: 0, max: 100, placeholder: '20', default: 20, hint: '每节点最大下载量，0 = 不限' },
+          { key: 'min-speed', label: '最低速度 (KB/s)', type: 'number', min: 0, placeholder: '128', hint: '低于此值的节点将被丢弃，0 = 不过滤', default: 128, },
+          { key: 'download-timeout', label: '下载超时 (s)', type: 'number', min: 0, max: 30, placeholder: '10', hint: '测速单节点超时，建议 10s', default: 10, },
+          { key: 'download-mb', label: '单节点上限 (MB)', type: 'number', min: 0, max: 100, placeholder: '20', default: 20, hint: '每节点最大下载量，0 = 不限', default: 20, },
           { key: 'total-speed-limit', label: '总带宽 (MB/s)', type: 'number', min: 0, max: 2000, placeholder: '0', hint: '全局测速带宽上限，0 = 不限' },
         ],
       },
@@ -597,7 +599,7 @@ const SCHEMA = [
           {
             key: 'media-check', label: '流媒体检测', type: 'toggle', hint: '检测流媒体和 AI 服务解锁情况'
           },
-          { key: 'media-check-timeout', label: '检测超时 (s)', type: 'number', min: 0, max: 30, placeholder: '10', hint: '流媒体、AI解锁检测超时，建议 5-10s' },
+          { key: 'media-check-timeout', label: '检测超时 (s)', type: 'number', min: 0, max: 30, placeholder: '10', hint: '流媒体、AI解锁检测超时，建议 5-10s', default: 10, },
           {
             key: 'platforms', label: '检测平台', type: 'chips',
             options: ['iprisk', 'openai', 'gemini', 'copilot', 'youtube', 'tiktok', 'netflix', 'disney', 'x'],
@@ -613,15 +615,15 @@ const SCHEMA = [
       {
         title: '功能开关',
         fields: [
-          { key: 'use-last-result', label: '加载上次检测结果', type: 'toggle', hint: '加载 all.yaml 作为订阅' },
-          { key: 'use-history-result', label: '加载并保存历史检测结果', type: 'toggle', hint: '加载 history.yaml 作为订阅' },
-          { key: 'rename-node', label: '重命名节点', type: 'toggle', hint: '根据节点 IP 归属地自动重命名' },
+          { key: 'use-last-result', label: '加载上次检测结果', type: 'toggle', hint: '加载 all.yaml 作为订阅', default: false, },
+          { key: 'use-history-result', label: '加载并保存历史检测结果', type: 'toggle', hint: '加载 history.yaml 作为订阅', default: false, },
+          { key: 'rename-node', label: '重命名节点', type: 'toggle', hint: '根据节点 IP 归属地自动重命名', default: true, },
           {
-            key: 'enhanced-tag', label: '增强位置标签', type: 'toggle', hint: '添加 KR¹-US⁰，SG² 类角标',
+            key: 'enhanced-tag', label: '增强位置标签', type: 'toggle', hint: '添加 KR¹-US⁰，SG² 类角标', default: true,
             links: [{ label: '标签说明', miniInfo: 'enhanced-tag', icon: 'docs' }],
           },
-          { key: 'drop-bad-cf-nodes', label: '丢弃 CF 不可达', type: 'toggle', hint: '可能误杀，谨慎开启' },
-          { key: 'ipv6', label: '启用 IPv6', type: 'toggle', hint: '建议关闭' },
+          { key: 'drop-bad-cf-nodes', label: '丢弃 CF 不可达', type: 'toggle', hint: '可能误杀，谨慎开启', default: false, },
+          { key: 'ipv6', label: '启用 IPv6', type: 'toggle', hint: '建议关闭', default: false, },
         ],
       },
       {
@@ -1303,6 +1305,19 @@ const FIELD_VALIDATORS = {
     if (n > 10) return { level: 'warn', msg: `重试 ${n} 次过多，如果节点失效，重试太多次会严重拖慢运行速度` };
     if (n > 5) return { level: 'info', msg: '建议重试次数不要超过 5 次' };
     return null;
+  },
+
+  'sub-url-max-size-mb': v => {
+    const n = Number(v);
+
+    if (!v || Number.isNaN(n)) return null;
+    if (n <= 20)
+      return { level: 'warn', msg: `每个订阅链接大小限制 ${n} MB` };
+    if (n <= 50)
+      return { level: 'warn', msg: `每个订阅链接大小限制 ${n} MB，请注意异常链接` };
+    if (n <= 100)
+      return { level: 'warn', msg: `每个订阅链接大小限制 ${n} MB，拉取速度将更慢` };
+    return { level: 'warn', msg: `每个订阅链接大小限制 ${n} MB，请注意恶意链接` };
   },
 
   /* success-rate 校验：入参为界面显示值（0–100%），存储值为其 ÷1000 */
