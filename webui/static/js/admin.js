@@ -1030,7 +1030,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       } else {
         els.logsCardTitle.classList.remove('hidden')
         els.clearLogsBtn.classList.remove('hidden')
-        els.refreshLogsBtn.classList.add('hidden')
+        els.refreshLogsBtn.classList.remove('hidden')
         // ==================== 空闲状态 ====================
         loadStatus.cachedStats = null; // 检测结束时清空状态缓存
 
