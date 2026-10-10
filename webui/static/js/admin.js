@@ -3250,6 +3250,20 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
     els.refreshLogsBtn?.addEventListener('click', () => {
       showToast('正在刷新日志...', 'info')
+
+      // 1. 恢复自动滚动状态，并隐藏“暂停滚动”提示胶囊
+      autoScrollLog = true
+      document.getElementById('logScrollBadge')?.classList.remove('visible')
+
+      // 2. 清空本地旧日志缓存，确保能够触发全量重绘
+      lastLogLines = []
+
+      // 3. 立即滚动到底部并加上 loading 态，提升视觉反馈
+      if (els.logContainer) {
+        els.logContainer.classList.add('loading')
+        els.logContainer.scrollTop = els.logContainer.scrollHeight
+      }
+
       loadLogsIncremental(false)
     })
 
