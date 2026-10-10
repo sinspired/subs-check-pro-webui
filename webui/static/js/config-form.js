@@ -4027,7 +4027,7 @@ function buildPanel(tabId) {
   const schema = SCHEMA.find(s => s.tab === tabId); if (!schema) return;
   panel.innerHTML = '';
 
-  // 使用 DocumentFragment 在内存中组装 DOM，避免直接操作面板引发的疯狂重绘
+  // 使用 DocumentFragment 在内存中组装 DOM，避免引发疯狂重绘
   const frag = document.createDocumentFragment();
 
   for (const sec of schema.sections) {
@@ -4043,11 +4043,16 @@ function buildPanel(tabId) {
     }
   }
 
+  // 所有节点拼装完毕后，先一次性上树！
+  // 必须在绑定事件前进行，因为 appendChild 后 frag 会被清空
+  panel.appendChild(frag);
+
   /* 存储：条件分组切换 */
   if (tabId === 'storage') {
-    const sel = frag.querySelector('select.cfg-select-native[data-key="save-method"]');
+    // 节点已上树，改回使用 panel 进行查询和绑定
+    const sel = panel.querySelector('select.cfg-select-native[data-key="save-method"]');
     if (sel) {
-      const sync = m => frag.querySelectorAll('.cfg-cond-group[data-cond]').forEach(g => {
+      const sync = m => panel.querySelectorAll('.cfg-cond-group[data-cond]').forEach(g => {
         g.style.display = (g.dataset.cond === m) ? '' : 'none';
       });
       sel.addEventListener('change', () => sync(sel.value));
@@ -4055,25 +4060,21 @@ function buildPanel(tabId) {
     }
 
     /* DNS 解析及节点裂变联动 */
-    // 注意：传给联动的参数从 panel 变成了 frag
-    _bindDnsResolve(frag);
+    _bindDnsResolve(panel);
   }
 
   /* 任务：Cron ↔ 检测间隔联动 */
   if (tabId === 'schedule') {
-    _bindCronInterval(frag);
+    _bindCronInterval(panel);
   }
 
   /* 检测：ISP 状态联动 */
   if (tabId === 'detection') {
-    _bindIspCheck(frag);
+    _bindIspCheck(panel);
   }
 
-  // 所有节点拼装完毕，一次性上树
-  panel.appendChild(frag);
   _built.add(tabId);
 }
-
 
 /* ════════════════════════════════════════════════════════════
    模式切换按钮外观同步
