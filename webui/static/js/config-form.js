@@ -1603,6 +1603,14 @@ function _validatePortField(v) {
   return { level: 'ok', msg: `监听 ${ipPart}${port}` };
 }
 
+function _formatBytes(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 /** 端口冲突校验 */
 function _checkPortConflict(currentVal, otherKey, otherName) {
   const thisPort = String(currentVal).replace(/^.*:/, '');
@@ -2093,6 +2101,9 @@ export function invalidateReportCache() {
   // 强行让当前界面上所有的订阅地址栏触发专属刷新事件
   document.querySelectorAll('.cfg-url-input').forEach(inp => {
     inp.dispatchEvent(new Event('scp-refresh-stats'));
+  });
+  document.querySelectorAll('.cfg-url-list').forEach(list => {
+    list.dispatchEvent(new Event('scp-refresh-stats'));
   });
 }
 
@@ -3476,25 +3487,126 @@ function mkField(fieldDef, value) {
   if (fieldDef.type === 'url-list') {
     const toggle = ctrl?._wrapToggle;
 
-    // 数量徽章
+    // 数量徽章与体积徽章
     const countBadge = el('span', { class: 'cfg-url-count' });
+    const sizeBadge = el('span', { class: 'cfg-url-size' });
+    sizeBadge.style.display = 'none';
+
     const updateCount = () => {
-      const n = ctrl
+      const inputs = ctrl
         ? [...ctrl.querySelectorAll('.cfg-url-item .cfg-url-input')]
-          .filter(t => t.value.trim() !== '').length
-        : 0;
+          .filter(t => t.value.trim() !== '')
+        : [];
+      const n = inputs.length;
+
+      // 更新数量徽章
       countBadge.textContent = n;
       countBadge.style.display = n > 0 ? '' : 'none';
+
+      // 没输入内容时直接隐藏体积徽章
+      if (n === 0) {
+        sizeBadge.style.display = 'none';
+        return;
+      }
+
+      // 仅在本地订阅和远程清单上触发体积计算
+      if (fieldDef.key === 'sub-urls' || fieldDef.key === 'sub-urls-remote') {
+        _getReportData().then(report => {
+          if (!report) {
+            sizeBadge.style.display = 'none';
+            return;
+          }
+
+          const formatBytes = (bytes) => {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+          };
+
+          // 解析诸如 "6.75 MB"、"710 B" 的格式化文本回真实字节数
+          const parseSizeToBytes = (val) => {
+            if (!val) return 0;
+            if (typeof val === 'number') return val;
+            const m = /^\s*([\d.]+)\s*([KMGTP]?)(?:i?B)?\s*$/i.exec(String(val));
+            if (!m) return 0;
+            const exp = 'KMGTP'.indexOf(m[2].toUpperCase()) + 1;
+            return (parseFloat(m[1]) || 0) * Math.pow(1024, Math.max(0, exp));
+          };
+
+          let totalBytes = 0;
+          let foundAnySize = false;
+
+          const isRemote = fieldDef.key === 'sub-urls-remote';
+          const allSubs = [
+            ...(report.subs_ranking || []),
+            ...(report.subs_ranking_bad || [])
+          ];
+
+          inputs.forEach(t => {
+            const currentUrl = t.value.trim();
+
+            if (isRemote) {
+              const remotes = report.remote_subs || [];
+              const matchedUrl = matchSubUrl(currentUrl, remotes.map(r => r.url));
+              const entry = matchedUrl ? remotes.find(r => r.url === matchedUrl) : null;
+
+              if (entry) {
+                // 借助已有的 buildRemoteAggregate 函数直接获取聚合统计
+                const agg = buildRemoteAggregate(entry, report);
+                if (agg && agg.file_size) {
+                  totalBytes += parseSizeToBytes(agg.file_size);
+                  foundAnySize = true;
+                } else if (entry.bytes || entry.size) { // 兜底容错
+                  totalBytes += Number(entry.bytes || entry.size) || 0;
+                  foundAnySize = true;
+                }
+              }
+            } else {
+              const matchedUrl = matchSubUrl(currentUrl, allSubs.map(s => s.url));
+              const subData = matchedUrl ? allSubs.find(s => s.url === matchedUrl) : null;
+
+              if (subData) {
+                // 处理本地订阅体积（存在于 file_size 文本字段里）
+                if (subData.file_size) {
+                  totalBytes += parseSizeToBytes(subData.file_size);
+                  foundAnySize = true;
+                } else if (subData.bytes || subData.size) { // 兜底容错
+                  totalBytes += Number(subData.bytes || subData.size) || 0;
+                  foundAnySize = true;
+                }
+              }
+            }
+          });
+
+          // 独立更新体积徽章
+          if (foundAnySize) {
+            sizeBadge.textContent = formatBytes(totalBytes);
+            sizeBadge.style.display = '';
+          } else {
+            sizeBadge.style.display = 'none';
+          }
+        }).catch(err => {
+          console.error('Failed to calculate sub volume:', err);
+          sizeBadge.style.display = 'none';
+        });
+      }
     };
+
     updateCount();
     ctrl?.addEventListener('input', updateCount);
-    new MutationObserver(updateCount).observe(ctrl, { childList: true, subtree: false });
+    ctrl?.addEventListener('scp-refresh-stats', updateCount);
+    if (ctrl) {
+      new MutationObserver(updateCount).observe(ctrl, { childList: true, subtree: false });
+    }
 
     const labelText = labelRow.querySelector('.cfg-label-text');
     if (labelText) {
       const group = el('span', { class: 'cfg-label-group' });
       labelText.replaceWith(group);
-      group.append(labelText, countBadge);
+      // 将数量徽章和体积徽章一并插入
+      group.append(labelText, countBadge, sizeBadge);
     }
 
     // 右侧按钮容器：测试 + 折行
@@ -3516,7 +3628,9 @@ function mkField(fieldDef, value) {
         testBtn.style.display = n > 0 ? '' : 'none';
       };
       ctrl?.addEventListener('input', syncBtn);
-      new MutationObserver(syncBtn).observe(ctrl, { childList: true, subtree: false });
+      if (ctrl) {
+        new MutationObserver(syncBtn).observe(ctrl, { childList: true, subtree: false });
+      }
       syncBtn();
 
       testBtn.addEventListener('click', async () => {

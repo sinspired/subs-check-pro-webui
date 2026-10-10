@@ -2246,20 +2246,44 @@ textarea.cfg-expandable-input:focus {
   height: 14px;
   padding: 0 4px;
   border-radius: 99px;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 600;
   font-family: inherit;
   line-height: 1;
-  color: var(--muted);
-  background: color-mix(in srgb, var(--fg) 5%, transparent);
+  color: var(--fg);
+  background: color-mix(in srgb, var(--success) 5%, transparent);
   border: 1px solid color-mix(in srgb, var(--fg) 30%, transparent);
   opacity: 0.55;
   user-select: none;
   transition: opacity 0.15s;
 }
 
-.cfg-field:hover .cfg-url-count {
-  opacity: 0.8;
+.cfg-url-size {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 99px;
+  font-size: 9px;
+  font-weight: 400;
+  font-family: inherit;
+  line-height: 1;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--danger) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fg) 30%, transparent);
+  opacity: 0.55;
+  user-select: none;
+  transition: opacity 0.15s;
+}
+
+.cfg-url-count:hover {
+  opacity: 1;
+}
+
+.cfg-url-size:hover {
+  opacity: 1;
 }
 
 /* 右侧按钮组：测试 + 折行，贴右对齐 */
