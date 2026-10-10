@@ -1081,7 +1081,7 @@ main {
 
 /* 适配深浅色的悬停背景 */
 #shareMenu .menu-content .list-item:hover {
-  background-color: color-mix(in srgb, var(--fg) 6%, transparent);
+  background-color: color-mix(in srgb, var(--bg) 6%, transparent);
 }
 
 #shareMenu .menu-content .list-item:first-of-type {
