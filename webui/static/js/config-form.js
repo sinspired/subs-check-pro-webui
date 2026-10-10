@@ -775,7 +775,19 @@ const SCHEMA = [
       {
         title: '覆写规则 (Sub-Store)',
         fields: [
-          { key: 'mihomo-overwrite-url', label: 'Mihomo 覆写 URL', type: 'text', fullWidth: true, placeholder: 'http://127.0.0.1:8199/Mihomo-Rules-CDN.yaml', default: 'http://127.0.0.1:8199/Mihomo-Rules-CDN.yaml', hint: '用于生成带指定规则的 mihomo/clash.meta 订阅链接，包含分组、分流等；自定义规则使用内置文件服务', links: [{ label: '内置文件服务', href: '/files', icon: 'files' }], },
+          {
+            key: 'mihomo-overwrite-url',
+            label: 'Mihomo 覆写 URL',
+            type: 'text',
+            fullWidth: true,
+            get placeholder() {
+              const port = (typeof _getLiveVal === 'function' ? String(_getLiveVal('listen-port', ':8199')) : String(_cfg?.['listen-port'] || ':8199')).replace(/^.*:/, '') || '8199';
+              return `http://127.0.0.1:${port}/Mihomo-Rules-CDN.yaml`;
+            },
+            get default() { return this.placeholder; },
+            hint: '用于生成带指定规则的 mihomo/clash.meta 订阅链接，包含分组、分流等；自定义规则使用内置文件服务',
+            links: [{ label: '内置文件服务', href: '/files', icon: 'files' }],
+          },
         ],
       },
       {
@@ -1486,11 +1498,19 @@ const SPECIAL_INPUT_VALUES = {
   'sub-store-port': [
     { value: '', label: '禁用 Sub Store 服务', hint: '未设置端口，Sub Store 服务禁用' },
   ],
-  'mihomo-overwrite-url': [
-    { value: 'http://127.0.0.1:8199/Mihomo-Rules-CDN.yaml', label: 'PRO', hint: 'PRO' },
-    { value: 'http://127.0.0.1:8199/Mihomo-Rules-Lite-CDN.yaml', label: 'PRO-Lite', hint: 'PRO 精简' },
-    { value: 'http://127.0.0.1:8199/ACL4SSR_Online_Full.yaml', label: 'ACL4SSR', hint: '经典' },
-  ],
+  get 'mihomo-overwrite-url'() {
+    // 动态获取当前表单的 listen-port，并提取纯端口号
+    const listenPort = typeof _getLiveVal === 'function'
+      ? String(_getLiveVal('listen-port', ':8199'))
+      : String(_cfg?.['listen-port'] || ':8199');
+    const port = listenPort.replace(/^.*:/, '') || '8199';
+
+    return [
+      { value: `http://127.0.0.1:${port}/Mihomo-Rules-CDN.yaml`, label: 'PRO', hint: 'PRO' },
+      { value: `http://127.0.0.1:${port}/Mihomo-Rules-Lite-CDN.yaml`, label: 'PRO-Lite', hint: 'PRO 精简' },
+      { value: `http://127.0.0.1:${port}/ACL4SSR_Online_Full.yaml`, label: 'ACL4SSR', hint: '经典' },
+    ];
+  }
 };
 
 /* ═══════════════════════════ Cron 段元数据 ═══════════════════════════ */
