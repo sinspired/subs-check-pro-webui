@@ -899,7 +899,7 @@ async function sfetch(url, opts = {}) {
             return { ok: false, status: 401, payload }
         }
         if (r.ok) {
-            console.log("获取报告成功")
+            // console.log("获取报告成功")
             resetApiFailures()
             return { ok: true, status: r.status, payload }
         }
