@@ -562,6 +562,9 @@ const SCHEMA = [
       {
         title: '并发控制',
         fields: [
+          {
+            key: 'net-guard', label: '网络拥塞保护', type: 'toggle', default: false, hint: '检测时探测网络拥堵情况，将自动调整并发参数'
+          },
           { key: 'alive-concurrent', label: '测活并发', type: 'number', min: 0, max: 1000, placeholder: '200', hint: '0 = 自动；建议 10–300', default: 100, },
           { key: 'speed-concurrent', label: '测速并发', type: 'number', min: 0, max: 64, placeholder: '8', hint: '0 = 自动；建议 4–32', default: 8, },
           { key: 'media-concurrent', label: '媒体并发', type: 'number', min: 0, max: 200, placeholder: '50', hint: '0 = 自动；建议 10–200', default: 16, },
