@@ -1353,7 +1353,7 @@ h1 svg {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  max-width: 400px;
+  max-width: 500px;
   justify-content: flex-end;
   pointer-events: none;
 }
@@ -1388,7 +1388,19 @@ h1 svg {
   pointer-events: none;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
+  .map-overlay-legend {
+    gap: 4px;
+    max-width: 500px;
+  }
+  .map-overlay-item {
+    padding: 2px 6px;
+  }
+  .map-overlay-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 1px;
+  }
   .map-origin-hint {
     display: none;
   }
