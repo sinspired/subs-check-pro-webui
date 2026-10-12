@@ -813,7 +813,7 @@ const SCHEMA = [
             label: 'Worker 地址',
             type: 'text',
             placeholder: 'https://example.worker.dev',
-            hint: '将测速结果推送到 Cloudflare Worker的地址',
+            hint: '将检测结果推送到 Cloudflare Worker 的 R2 存储',
             links: [
               {
                 label: 'R2 文档',
