@@ -721,7 +721,7 @@ const SCHEMA = [
             ],
           },
           {
-            key: 'output-dir', label: '输出目录', type: 'text', placeholder: '/data/output',
+            key: 'output-dir', label: '本地存储目录', type: 'text', placeholder: '/data/output',
             hint: '留空 = 程序目录 /output',
             links: [{ label: '内置文件服务', href: '/files', icon: 'files' }],
           },
