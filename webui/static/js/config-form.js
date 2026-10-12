@@ -820,6 +820,11 @@ const SCHEMA = [
                 href: 'https://developers.cloudflare.com/r2/',
                 icon: 'link',
               },
+              {
+                label: '申请免费域名',
+                href: 'https://dashboard.digitalplat.org/signup?ref=HZcosTVlmQ',
+                icon: 'link'
+              },
             ],
           },
           {
