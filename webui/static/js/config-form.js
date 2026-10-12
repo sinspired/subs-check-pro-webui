@@ -3543,6 +3543,89 @@ function _mkProxyTestBtn(getProxyVal) {
   return wrap;
 }
 
+// _mkGhProxyTestBtn GitHub 代理检测按钮
+function _mkGhProxyTestBtn() {
+  const wrap = el('div', { class: 'cfg-proxy-test-wrap' });
+
+  const btn = el('button', {
+    type: 'button',
+    class: 'cfg-proxy-test-btn',
+    title: '从配置和代理组中寻找最佳代理',
+  });
+  btn.innerHTML = `${_SVG_PROXY_TEST}<span>检测</span>`;
+
+  const badge = el('span', { class: 'cfg-proxy-test-badge' });
+  badge.style.display = 'none';
+
+  wrap.append(btn, badge);
+
+  // 状态渲染
+  function setState(state, msg = '') {
+    btn.disabled = state === 'loading';
+    btn.classList.remove('state-ok', 'state-error', 'state-warn');
+    badge.style.display = msg ? '' : 'none';
+    badge.className = 'cfg-proxy-test-badge';
+
+    switch (state) {
+      case 'loading':
+        btn.innerHTML = `${typeof _SVG_SPIN !== 'undefined' ? _SVG_SPIN : '⏳'}<span>检测中…</span>`;
+        break;
+      case 'ok':
+        btn.innerHTML = `${_SVG_PROXY_TEST}<span>检测</span>`;
+        btn.classList.add('state-ok');
+        badge.classList.add('badge-ok');
+        badge.textContent = msg;
+        break;
+      case 'error':
+        btn.innerHTML = `${_SVG_PROXY_TEST}<span>检测</span>`;
+        btn.classList.add('state-error');
+        badge.classList.add('badge-error');
+        badge.textContent = msg;
+        break;
+      default:
+        btn.innerHTML = `${_SVG_PROXY_TEST}<span>检测</span>`;
+        badge.style.display = 'none';
+    }
+  }
+
+  // 点击处理
+  btn.addEventListener('click', async () => {
+    setState('loading');
+
+    const result = await w.sfetch('/api/proxy/check-github', {
+      method: 'POST',
+    });
+
+    if (!result?.ok) {
+      setState('error', `接口错误 HTTP ${result?.status}`);
+      return;
+    }
+
+    const data = result.payload;
+    if (data?.ok) {
+      const speed = data.speed_kbps > 1024
+        ? `${(data.speed_kbps / 1024).toFixed(1)}MB/s`
+        : `${Math.round(data.speed_kbps)}KB/s`;
+      setState('ok', `✓ ${data.latency_ms}ms · ${speed}`);
+
+      // 相对定位寻找输入框，且不再硬编码 textarea（兼顾健壮性）
+      const inp = wrap.closest('.cfg-field')?.querySelector('[data-key="github-proxy"]');
+      if (inp && inp.value !== data.proxy_used) {
+        inp.value = data.proxy_used;
+        // 触发 input 事件以联动其他UI，触发 change 事件以激活配置保存防抖
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    } else {
+      const short = (data?.error ?? '未知错误').slice(0, 50);
+      badge.title = data?.error ?? '';
+      setState('error', `✗ ${short}`);
+    }
+  });
+
+  return wrap;
+}
+
 // _mkSubStoreUpdateBtn Sub-Store 立即更新按钮
 function _mkSubStoreUpdateBtn() {
   const btn = el('button', {
@@ -3657,10 +3740,14 @@ function mkField(fieldDef, value) {
     // system-proxy 专属：代理检测按钮
     if (fieldDef.key === 'system-proxy') {
       const testBtn = _mkProxyTestBtn(() => {
-        // 读取当前输入框的值（textarea）
         const inp = row.querySelector(`textarea[data-key="system-proxy"], input[data-key="system-proxy"]`);
         return inp?.value?.trim() ?? '';
       });
+      labelRow.appendChild(testBtn);
+
+    } else if (fieldDef.key === 'github-proxy') {
+      // github-proxy 专属：GitHub 代理检测按钮
+      const testBtn = _mkGhProxyTestBtn();
       labelRow.appendChild(testBtn);
     }
 
