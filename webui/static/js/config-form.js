@@ -1034,7 +1034,7 @@ const SCHEMA = [
           { key: 'sub-store-port', label: '监听端口', type: 'text', placeholder: ':8299', hint: 'Sub-Store 的启动端口，为空则不启动sub-store' },
           { key: 'sub-store-path', label: '访问路径', type: 'text', placeholder: '/sub-store-path', hint: '建议设置以避免泄露；留空自动生成随机路径' },
           { key: 'sub-store-sync-cron', label: '定时同步 Gist', type: 'cron', fullWidth: true, placeholder: '55 5-23/2 * * *', hint: '定时将订阅/文件上传到私有 Gist. 在前端, 叫做 同步 或 同步配置.', },
-          { key: 'sub-store-produce-cron', label: '定时缓存订阅', type: 'text', fullWidth: true, placeholder: '0 */2 * * *,sub,sub', hint: ' 0 */2 * * *,sub,sub_A;0 */3 * * *,col,col_B = 每 2 小时处理一次单条订阅 sub_A，每 3 小时处理一次组合订阅 col_B。', },
+          { key: 'sub-store-produce-cron', label: '定时缓存订阅', type: 'produce-cron', fullWidth: true, placeholder: '0 */2 * * *,sub,sub_A', hint: ' 0 */2 * * *,sub,sub_A;0 */3 * * *,col,col_B = 每 2 小时处理一次单条订阅 sub_A，每 3 小时处理一次组合订阅 col_B。', },
           { key: 'sub-store-push-service', label: 'Push 推送服务', type: 'text', fullWidth: true, placeholder: 'https://push.example.com', hint: '例如：Bark: https://api.day.app/XXXXXXXXXXXX/[推送标题]/[推送内容]，在拉取失败时发送通知', },
         ],
       },
@@ -1381,6 +1381,30 @@ const FIELD_VALIDATORS = {
     const r = _validatePortField(v);
     if (!r || r.level !== 'ok') return r;
     return _checkPortConflict(v, 'listen-port', '主监听') || r;
+  },
+  'sub-store-produce-cron': v => {
+    const raw = String(v).trim();
+    if (!raw) return null;
+    const rules = raw.split(';');
+    for (const rule of rules) {
+      if (!rule.trim()) continue;
+      const parts = rule.trim().split(',');
+      if (parts.length < 3) return { level: 'warn', msg: `规则 "${rule}" 格式不完整，应为 "cron表达式,类型,名称"` };
+      const expr = parts[0].trim();
+      const type = parts[1].trim();
+      const name = parts.slice(2).join(',').trim(); // 防止名字里有逗号被错误截断
+
+      if (!_isValidCron(expr)) {
+        return { level: 'warn', msg: `Cron 表达式 "${expr}" 无效` };
+      }
+      if (type !== 'sub' && type !== 'col') {
+        return { level: 'warn', msg: `类型应为 sub (单条) 或 col (组合)，当前为 "${type}"` };
+      }
+      if (!name) {
+        return { level: 'warn', msg: `订阅名称不能为空` };
+      }
+    }
+    return { level: 'ok', msg: '缓存策略语法合法' };
   },
   'sub-process.node-split': v => {
     if (v) {
@@ -3231,6 +3255,171 @@ function mkCronInput(field, value) {
   return wrap;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Produce Cron 高亮输入控件
+   针对格式：cron,type,name;cron,type,name
+═══════════════════════════════════════════════════════════════ */
+function mkProduceCronInput(field, value) {
+  const wrap = el('div', { class: 'cfg-cron-wrap' });
+
+  /* 真实 input */
+  const inp = el('input', {
+    class: 'cfg-input cfg-cron-input',
+    type: 'text',
+    'data-key': field.key,
+    placeholder: field.placeholder ?? '0 */2 * * *,sub,sub_A',
+    spellcheck: 'false',
+    autocomplete: 'off',
+    autocorrect: 'off',
+    autocapitalize: 'none',
+  });
+  inp.value = value ?? '';
+
+  /* 着色展示层 */
+  const display = el('div', {
+    class: 'cfg-cron-display',
+    tabindex: '0',
+    role: 'textbox',
+    'aria-label': `${field.label}，点击编辑`,
+  });
+  display.style.flexWrap = 'wrap';
+  display.style.height = 'auto';
+  display.style.minHeight = '34px';
+
+  function renderDisplay() {
+    display.className = 'cfg-cron-display';
+    display.innerHTML = '';
+
+    const raw = inp.value.trim();
+    if (!raw) {
+      display.appendChild(el('span', { class: 'cfg-cron-placeholder', textContent: field.placeholder }));
+      return;
+    }
+
+    const rules = raw.split(';');
+    let hasError = false;
+
+    rules.forEach((rule, rIdx) => {
+      const trimmedRule = rule.trim();
+      if (!trimmedRule) return;
+
+      const ruleWrap = el('div', { style: 'display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;background:color-mix(in srgb, var(--fg) 3%, transparent);padding:3px 6px;border-radius:6px;border:1px solid color-mix(in srgb, var(--border) 60%, transparent);margin-right:2px;margin-bottom:2px;' });
+
+      const parts = trimmedRule.split(',');
+      if (parts.length >= 3) {
+        const expr = parts[0].trim();
+        const type = parts[1].trim();
+        const name = parts.slice(2).join(',').trim();
+
+        // 1. Cron 部分 (继承原生 Cron 色彩)
+        const cronInfo = _parseCronValue(expr);
+        if (cronInfo.valid) {
+          cronInfo.parts.forEach((part, i) => {
+            ruleWrap.appendChild(el('span', {
+              class: `cfg-cron-seg cfg-cron-seg-${i}`,
+              textContent: part,
+              title: _CRON_SEGMENTS[i]?.title,
+            }));
+          });
+        } else {
+          hasError = true;
+          ruleWrap.appendChild(el('span', { class: 'cfg-cron-raw-text', style: 'color:var(--danger);', textContent: expr }));
+        }
+
+        // 2. 逗号分隔符
+        ruleWrap.appendChild(el('span', { style: 'color:var(--muted);opacity:0.5;', textContent: ',' }));
+
+        // 3. 订阅类型 (sub / col 自动上色)
+        const typeIsValid = type === 'sub' || type === 'col';
+        if (!typeIsValid) hasError = true;
+        const typeBg = type === 'sub' ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : (type === 'col' ? 'color-mix(in srgb, var(--cron-1) 15%, transparent)' : 'color-mix(in srgb, var(--danger) 15%, transparent)');
+        const typeColor = type === 'sub' ? 'var(--accent)' : (type === 'col' ? 'var(--cron-1)' : 'var(--danger)');
+        ruleWrap.appendChild(el('span', {
+          style: `background:${typeBg};color:${typeColor};padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;`,
+          textContent: type
+        }));
+
+        // 4. 逗号分隔符
+        ruleWrap.appendChild(el('span', { style: 'color:var(--muted);opacity:0.5;', textContent: ',' }));
+
+        // 5. 订阅名称
+        if (!name) hasError = true;
+        ruleWrap.appendChild(el('span', {
+          style: `color:var(--fg);font-size:12px;font-weight:600;padding:1px 2px;`,
+          textContent: name || '?'
+        }));
+
+      } else {
+        hasError = true;
+        ruleWrap.appendChild(el('span', { class: 'cfg-cron-raw-text', style: 'color:var(--danger);', textContent: trimmedRule }));
+      }
+
+      display.appendChild(ruleWrap);
+
+      // 分号间隔符
+      if (rIdx < rules.length - 1) {
+        display.appendChild(el('span', { style: 'color:var(--muted);font-weight:bold;opacity:0.6;margin-right:4px;', textContent: ';' }));
+      }
+    });
+
+    if (hasError) {
+      display.classList.add('cfg-cron-display--error');
+    }
+  }
+
+  function enterEditMode() {
+    display.style.display = 'none';
+    inp.style.display = '';
+    requestAnimationFrame(() => { inp.focus(); inp.select(); });
+  }
+
+  function exitEditMode() {
+    inp.classList.remove('cfg-cron-input--error');
+    inp.style.display = 'none';
+    display.style.display = 'flex';
+    renderDisplay();
+  }
+
+  let _toastTimer = null;
+  inp.addEventListener('input', () => {
+    const raw = inp.value.trim();
+    let err = null;
+    if (raw) {
+      const rules = raw.split(';');
+      for (const rule of rules) {
+        if (!rule.trim()) continue;
+        const parts = rule.trim().split(',');
+        if (parts.length < 3) { err = `规则 "${rule}" 应包含 cron表达式, 类型, 名称`; break; }
+        const expr = parts[0].trim();
+        const type = parts[1].trim();
+        const name = parts.slice(2).join(',').trim();
+        const cronErr = _validateCronPartial(expr);
+        if (cronErr) { err = cronErr; break; }
+        if (type && type !== 'sub' && type !== 'col') { err = '类型应为 sub 或 col'; break; }
+      }
+    }
+    inp.classList.toggle('cfg-cron-input--error', err !== null);
+    clearTimeout(_toastTimer);
+    if (!err) return;
+    _toastTimer = setTimeout(() => {
+      window.showToast?.(`格式错误：${err}`, 'warn', 3000);
+    }, 700);
+  });
+
+  inp.addEventListener('blur', exitEditMode);
+  display.addEventListener('click', enterEditMode);
+  display.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === 'F2' || (e.key === ' ' && !e.ctrlKey)) { e.preventDefault(); enterEditMode(); }
+  });
+
+  inp.addEventListener('cfg-cron-refresh', renderDisplay);
+
+  inp.style.display = 'none';
+  wrap.append(display, inp);
+  requestAnimationFrame(renderDisplay);
+  return wrap;
+}
+
 function renderHintBlock(fieldDef) {
   const wrap = el('span', { class: 'cfg-label-hint' });
   if (fieldDef.hint) {
@@ -3494,6 +3683,7 @@ function mkField(fieldDef, value) {
     case 'chips': ctrl = mkChips(fieldDef, displayValue); break;
     case 'url-list': ctrl = mkUrlList(fieldDef, displayValue); break;
     case 'cron': ctrl = mkCronInput(fieldDef, displayValue); break;
+    case 'produce-cron': ctrl = mkProduceCronInput(fieldDef, displayValue); break;
     default: ctrl = mkInput(fieldDef, displayValue); break;
   }
   ctrlWrap.appendChild(ctrl);
