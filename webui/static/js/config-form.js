@@ -721,46 +721,158 @@ const SCHEMA = [
             ],
           },
           {
-            key: 'output-dir', label: '本地存储目录', type: 'text', placeholder: '/data/output',
+            key: 'output-dir',
+            label: '本地存储目录',
+            type: 'text',
+            placeholder: '/data/output',
             hint: '留空 = 程序目录 /output',
             links: [{ label: '内置文件服务', href: '/files', icon: 'files' }],
           },
         ],
       },
+
       {
-        title: 'WebDAV', conditional: 'webdav',
+        title: 'WebDAV',
+        conditional: 'webdav',
         fields: [
-          { key: 'webdav-url', label: 'WebDAV 地址', type: 'text', fullWidth: true, placeholder: 'https://dav.example.com/remote.php/dav/files/user/' },
-          { key: 'webdav-username', label: '用户名', type: 'text', placeholder: 'admin' },
-          { key: 'webdav-password', label: '密码', type: 'password', placeholder: '输入密码' },
-        ],
-      },
-      {
-        title: 'GitHub Gist', conditional: 'gist',
-        fields: [
-          { key: 'github-gist-id', label: 'Gist ID', type: 'text', placeholder: 'a1b2c3d4e5f6...' },
-          { key: 'github-token', label: 'GitHub Token', type: 'password', placeholder: 'ghp_xxxxxxxxxxxx' },
-          { key: 'github-api-mirror', label: 'API 镜像', type: 'text', placeholder: 'https://api.github.com/', hint: '可选，留空使用 api.github.com' },
-        ],
-      },
-      {
-        title: 'CF R2 存储', conditional: 'r2',
-        fields: [
-          { key: 'worker-url', label: 'Woker 地址', type: 'text', placeholder: 'https://example.worker.dev', hint: "将测速结果推送到 Cloudflare Worker的地址" },
-          { key: 'worker-token', label: 'Worker令牌', type: 'password', placeholder: '1234567890' },
-        ],
-      },
-      {
-        title: 'S3 / MinIO', conditional: 's3',
-        fields: [
-          { key: 's3-endpoint', label: 'Endpoint', type: 'text', placeholder: '127.0.0.1:9000' },
-          { key: 's3-access-id', label: 'Access Key ID', type: 'text', placeholder: 'minioadmin' },
-          { key: 's3-secret-key', label: 'Secret Key', type: 'password', placeholder: '输入密钥' },
-          { key: 's3-bucket', label: 'Bucket', type: 'text', placeholder: 'subs-check' },
-          { key: 's3-use-ssl', label: '使用 SSL', type: 'toggle' },
           {
-            key: 's3-bucket-lookup', label: 'Bucket 寻址', type: 'select',
-            selectWidth: '500px',
+            key: 'webdav-url',
+            label: 'WebDAV 地址',
+            type: 'text',
+            fullWidth: true,
+            placeholder: 'https://dav.example.com/remote.php/dav/files/user/',
+            hint: 'WebDAV 是一种基于 HTTP 的文件管理协议，允许用户通过网络远程访问、上传、下载和管理服务器上的文件。',
+          },
+          {
+            key: 'webdav-username',
+            label: '用户名',
+            type: 'text',
+            placeholder: 'admin',
+            hint: 'Webdav 账号',
+          },
+          {
+            key: 'webdav-password',
+            label: '密码',
+            type: 'password',
+            placeholder: '输入密码',
+            hint: 'Webdav 密码，支持应用专用密码',
+          },
+        ],
+      },
+
+      {
+        title: 'GitHub Gist',
+        conditional: 'gist',
+        fields: [
+          {
+            key: 'github-gist-id',
+            label: 'Gist ID',
+            type: 'text',
+            placeholder: 'a1b2c3d4e5f6...',
+            fullWidth: true,
+            hint: 'Gist 提供了一种与他人共享代码片段的简单方法，机密 Gist 不会显示在 发现 中，也无法被搜索',
+            links: [
+              {
+                label: '创建 Gist',
+                href: 'https://gist.github.com/',
+                icon: 'github',
+              },
+            ],
+          },
+          {
+            key: 'github-token',
+            label: 'GitHub Token',
+            type: 'password',
+            fullWidth: true,
+            placeholder: 'GITHUB_TOKEN',
+            hint: '需具备 Gist 权限，同时将用于提高订阅拉取成功率，提升 GitHub 速率限制',
+            links: [
+              {
+                label: '创建 Token',
+                href: 'https://github.com/settings/personal-access-tokens',
+                icon: 'github',
+              },
+            ],
+          },
+          {
+            key: 'github-api-mirror',
+            label: 'API 镜像',
+            type: 'text',
+            placeholder: 'https://api.github.com/',
+            hint: '可选，自行搭建可用的镜像地址',
+          },
+        ],
+      },
+
+      {
+        title: 'CF R2 存储',
+        conditional: 'r2',
+        fields: [
+          {
+            key: 'worker-url',
+            label: 'Worker 地址',
+            type: 'text',
+            placeholder: 'https://example.worker.dev',
+            hint: '将测速结果推送到 Cloudflare Worker的地址',
+            links: [
+              {
+                label: 'R2 文档',
+                href: 'https://developers.cloudflare.com/r2/',
+                icon: 'link',
+              },
+            ],
+          },
+          {
+            key: 'worker-token',
+            label: 'Worker 令牌',
+            type: 'password',
+            placeholder: '1234567890',
+            hint: '与 Worker 配置一致',
+          },
+        ],
+      },
+
+      {
+        title: 'S3 / MinIO',
+        conditional: 's3',
+        fields: [
+          {
+            key: 's3-endpoint',
+            label: 'Endpoint',
+            type: 'text',
+            placeholder: '127.0.0.1:9000',
+            hint: 'S3 服务地址：兼容 Amazon S3 的对象存储服务，如 MinIO、Cloudflare R2、阿里云 OSS 等',
+          },
+          {
+            key: 's3-access-id',
+            label: 'Access Key ID',
+            type: 'text',
+            placeholder: 'minioadmin',
+          },
+          {
+            key: 's3-secret-key',
+            label: 'Secret Key',
+            type: 'password',
+            placeholder: '输入密钥',
+          },
+          {
+            key: 's3-bucket',
+            label: 'Bucket',
+            type: 'text',
+            placeholder: 'subs-check',
+            hint: '存储桶名称',
+          },
+          {
+            key: 's3-use-ssl',
+            label: '使用 SSL',
+            type: 'toggle',
+            hint: '启用 HTTPS',
+          },
+          {
+            key: 's3-bucket-lookup',
+            label: 'Bucket 寻址',
+            type: 'select',
+            hint: '推荐自动',
             options: [
               { value: 'auto', label: '自动 (auto)' },
               { value: 'path', label: 'Path 寻址' },
