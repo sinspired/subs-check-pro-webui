@@ -142,7 +142,7 @@ const PREVIEW_GROUPS = [
         fmt: (v, cfg) => {
           if (!v) return '未设置';
           const r = FIELD_VALIDATORS['singbox-latest.version'](v, cfg);
-          return `${v}-${r.suffix}`;
+          return r.suffix ? `${v}-${r.suffix}` : v;
         },
         validator: FIELD_VALIDATORS['singbox-latest.version']
       },
@@ -155,7 +155,7 @@ const PREVIEW_GROUPS = [
         fmt: (v, cfg) => {
           if (!v) return '未设置';
           const r = FIELD_VALIDATORS['singbox-extra.version'](v, cfg);
-          return `${v}-${r.suffix}`;
+          return r.suffix ? `${v}-${r.suffix}` : v;
         },
         validator: FIELD_VALIDATORS['singbox-extra.version']
       },
