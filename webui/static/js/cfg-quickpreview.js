@@ -291,7 +291,7 @@ function _buildPanel(cfg) {
     <div class="pv-body">
       <div class="pv-grid">${cardsHTML}</div>
       <div class="pv-footer">
-        <span class="pv-footer-hint">悬停查看详情 · 完整建议见</span>
+        <span class="pv-footer-hint">完整分析见</span>
         <a href="/analysis" target="_blank" rel="noopener" class="pv-footer-link">分析报告</a>
       </div>
     </div>`;

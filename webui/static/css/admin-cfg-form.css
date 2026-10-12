@@ -3795,32 +3795,6 @@ textarea.cfg-expandable-input:focus {
     min-height: 36px;
   }
 
-  /* 预览面板铺满全屏 */
-  .cfg-preview-panel {
-    position: fixed !important;
-    inset: 12px !important;
-    width: auto !important;
-    max-height: none !important;
-    border-radius: 16px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .pv-body {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    max-height: none !important;
-  }
-
-  .pv-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .pv-card:last-child:nth-child(odd) {
-    grid-column: 1;
-  }
-
   #miniHoverTooltip {
     width: 85vw !important;
     max-width: 320px;
@@ -3923,5 +3897,38 @@ textarea.cfg-expandable-input:focus {
   #subStatsTooltip .sub-tier-summary {
     flex-shrink: 0;
     gap: 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 预览面板铺满全屏 */
+  .cfg-preview-panel {
+    position: fixed !important;
+    inset: 6px !important;
+    width: auto !important;
+    max-height: none !important;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: min(560px, calc(100vw - 12px)) !important;
+  }
+
+  .pv-body {
+    padding: 14px 8px 12px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    max-height: none !important;
+  }
+
+  .pv-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pv-footer {
+    margin-top: 10px;
+    padding-top: 8px;
+    padding-left: 6px;
+    padding-right: 6px;
   }
 }
