@@ -3550,7 +3550,7 @@ function _mkGhProxyTestBtn() {
   const btn = el('button', {
     type: 'button',
     class: 'cfg-proxy-test-btn',
-    title: '从配置和代理组中寻找最佳代理',
+    title: '有值只测当前值；为空则从代理组寻优并回填',
   });
   btn.innerHTML = `${_SVG_PROXY_TEST}<span>检测</span>`;
 
@@ -3588,12 +3588,18 @@ function _mkGhProxyTestBtn() {
     }
   }
 
-  // 点击处理
   btn.addEventListener('click', async () => {
     setState('loading');
 
+    // 动态提取当前输入框的值（用户填的最新内容）
+    const inp = wrap.closest('.cfg-field')?.querySelector('[data-key="github-proxy"]');
+    const proxyVal = inp?.value?.trim() ?? '';
+
+    // 发送给后端的请求体携带 proxyVal
     const result = await w.sfetch('/api/proxy/check-github', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proxy: proxyVal }),
     });
 
     if (!result?.ok) {
@@ -3608,11 +3614,9 @@ function _mkGhProxyTestBtn() {
         : `${Math.round(data.speed_kbps)}KB/s`;
       setState('ok', `✓ ${data.latency_ms}ms · ${speed}`);
 
-      // 相对定位寻找输入框，且不再硬编码 textarea（兼顾健壮性）
-      const inp = wrap.closest('.cfg-field')?.querySelector('[data-key="github-proxy"]');
-      if (inp && inp.value !== data.proxy_used) {
+      // 组测速寻优后回填，或后端规范化 URL 格式后回填
+      if (inp && data.proxy_used && inp.value !== data.proxy_used) {
         inp.value = data.proxy_used;
-        // 触发 input 事件以联动其他UI，触发 change 事件以激活配置保存防抖
         inp.dispatchEvent(new Event('input', { bubbles: true }));
         inp.dispatchEvent(new Event('change', { bubbles: true }));
       }
