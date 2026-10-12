@@ -1877,8 +1877,7 @@ h1 svg {
 
   animation: rulerDotBreath 2s ease-in-out infinite;
 
-  transition:
-    box-shadow 0.12s;
+  transition: box-shadow 0.12s;
 }
 
 .ruler-dot-hit:hover + .ruler-dot,
@@ -2131,7 +2130,6 @@ h1 svg {
   gap: 6px;
   padding: 6px 12px 0 0;
 }
-
 
 .bad-error {
   display: inline-block;
@@ -3794,4 +3792,16 @@ code {
 
 .remote-card .sub-extra-stats {
   margin-top: 0px;
+}
+
+/* 文件体积较大警告样式 */
+.sub-extra-stats .ses-item.ses-warn,
+.srl-tag.srl-tag-warn {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+}
+.sub-extra-stats .ses-item.ses-warn svg,
+.srl-tag.srl-tag-warn svg {
+  opacity: 0.85;
 }

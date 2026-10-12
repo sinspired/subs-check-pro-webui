@@ -2089,16 +2089,31 @@ function buildSubExtraStatsHtml(subData, opts = {}) {
     const svgTraffic = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>`;
     const svgFile = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
 
+    let fSize = subData?.file_size;
+    // 补齐 0 B 逻辑：如果数据没传体积，且确定是被拉取过的（沉默或无节点）
+    if (!fSize && subData) {
+        const st = opts.state || subData._state || getSubReportState(subData).state;
+        if (st === 'silent' || st === 'empty') {
+            fSize = '0 B';
+        }
+    }
+
+    // 解析体积判定是否 >= 20MB (20 << 20)
+    const bytes = parseSizeBytes(fSize);
+    const isWarn = bytes >= 20 * 1024 * 1024;
+    const fileClass = isWarn ? ' ses-warn' : '';
+    const fileTip = opts.sizeTitle || (isWarn ? '文件体积较大' : '文件大小');
+
     const items = [
-        { icon: svgSpeed, val: subData?.avg_speed, tip: '平均速度' },
-        { icon: svgTraffic, val: subData?.traffic, tip: '消耗流量' },
-        { icon: svgFile, val: subData?.file_size, tip: opts.sizeTitle || '文件大小' },
+        { icon: svgSpeed, val: subData?.avg_speed, tip: '平均速度', cls: '' },
+        { icon: svgTraffic, val: subData?.traffic, tip: '消耗流量', cls: '' },
+        { icon: svgFile, val: fSize, tip: fileTip, cls: fileClass },
     ].filter(i => i.val !== undefined && i.val !== null && String(i.val).trim() !== '');
 
     if (!items.length) return '';
 
     return `<div class="sub-extra-stats">${items.map(i =>
-        `<span class="ses-item" title="${esc(i.tip)}">${i.icon}<span>${esc(i.val)}</span></span>`
+        `<span class="ses-item${i.cls}" title="${esc(i.tip)}">${i.icon}<span>${esc(i.val)}</span></span>`
     ).join('')}</div>`;
 }
 
@@ -2192,6 +2207,8 @@ function buildRemoteAggregate(entry, report) {
     const order = ['tier-s', 'tier-a', 'tier-b', 'tier-c', 'tier-silent', 'tier-empty', 'tier-temp', 'tier-dead', 'tier-unknown'];
     const chips = [...counts.values()].sort((a, b) => order.indexOf(a.cls) - order.indexOf(b.cls));
 
+    const hasProcessed = links.some(l => l.st && (l.st.state === 'grade' || l.st.state === 'silent' || l.st.state === 'empty'));
+
     return {
         url: entry.url,
         error,
@@ -2202,7 +2219,8 @@ function buildRemoteAggregate(entry, report) {
         // 以下三项与本地订阅同名同格式，缺失时留空，渲染层自动省略
         avg_speed: speedWeight > 0 ? fmtSpeed(speedWeighted / speedWeight) : undefined,
         traffic: trafficBytes > 0 ? fmtBytes(trafficBytes) : undefined,
-        file_size: sizeBytes > 0 ? fmtBytes(sizeBytes) : undefined,
+        // 如果 size 为 0，但只要有处理过的链接就回退成 0 B
+        file_size: (sizeBytes > 0 || hasProcessed) ? fmtBytes(sizeBytes) : undefined,
 
         _remote: {
             count: Number(entry.count) || links.length,
@@ -2253,10 +2271,19 @@ function buildRemoteLinksHtml(remote) {
         const svgFile = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
         const copyIcon = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 
+        // 补全 0B 以及 警告样式判定
+        let fSize = d.file_size;
+        if (!fSize && st && (st.state === 'silent' || st.state === 'empty')) {
+            fSize = '0 B';
+        }
+        const fileBytes = parseSizeBytes(fSize);
+        const isWarn = fileBytes >= 20 * 1024 * 1024;
+        const fileClass = isWarn ? ' srl-tag-warn' : '';
+
         const parts = [
             d.avg_speed && `<span class="srl-tag" title="平均速度">${svgSpeed}<span>${esc(d.avg_speed)}</span></span>`,
             d.traffic && `<span class="srl-tag" title="消耗流量">${svgTraffic}<span>${esc(d.traffic)}</span></span>`,
-            d.file_size && `<span class="srl-tag" title="文件大小">${svgFile}<span>${esc(d.file_size)}</span></span>`,
+            fSize && `<span class="srl-tag${fileClass}" title="${isWarn ? '文件体积较大' : '文件大小'}">${svgFile}<span>${esc(fSize)}</span></span>`,
         ].filter(Boolean);
 
         return `<div class="sub-remote-link ${cls}" title="${esc(tip + '\n' + rawUrl)}">
@@ -2355,6 +2382,11 @@ function renderRemoteSubs(remoteSubs, subs, subsBad) {
             ? `<div class="rs-item" title="所有节点平均下载速度"><div class="rs-label">平均速度</div><div class="rs-val">${esc(agg.avg_speed)}</div></div>`
             : `<div class="rs-item" title="暂无测速数据"><div class="rs-label">平均速度</div><div class="rs-val">-</div></div>`;
 
+        // 合计体积警告判定
+        const aggFileBytes = parseSizeBytes(agg.file_size);
+        const isAggWarn = aggFileBytes >= 30 * 1024 * 1024;
+        const aggFileHtml = `<div class="rs-item" title="${isAggWarn ? '合并体积较大，可能导致较高内存消耗' : '文件大小合计'}"><div class="rs-label">文件总计</div><div class="rs-val" ${isAggWarn ? 'style="color:var(--warning)"' : ''}>${esc(agg.file_size || '-')}</div></div>`;
+
         return `<div class="remote-card ${tierClass}" id="remoteCard${i}">
             <div class="remote-head" onclick="toggleRemoteCard('remoteCard${i}')">
                 <span class="remote-badge" title="${esc(tip)}">${isGrade ? esc(badge) : getSubStateIcon(st.state, 13)}</span>
@@ -2374,7 +2406,7 @@ function renderRemoteSubs(remoteSubs, subs, subsBad) {
                     <div class="rs-item" title="聚合成功率"><div class="rs-label">成功率</div><div class="rs-val">${st.total > 0 ? fmtRate(st.rateNum) : '-'}</div></div>
                     ${speedHtml}
                     <div class="rs-item" title="消耗流量合计"><div class="rs-label">消耗流量</div><div class="rs-val">${esc(agg.traffic || '-')}</div></div>
-                    <div class="rs-item" title="文件大小合计"><div class="rs-label">文件总计</div><div class="rs-val">${esc(agg.file_size || '-')}</div></div>
+                    ${aggFileHtml}
                 </div>
             </div>
 
@@ -2740,14 +2772,14 @@ function renderBadItem(s, type) {
     }
 
     let tagColorClass = 'bad-tag';
-    let tagBadCountClass = 'bad-count'
+    let tagBadCountClass = 'bad-count';
 
     if (state === 'dead') {
         tagColorClass = 'dead-tag';
-        tagBadCountClass = 'bad-count-hidden'
+        tagBadCountClass = 'bad-count-hidden';
     } else if (state === 'temp') {
         tagColorClass = 'temp-tag';
-        tagBadCountClass = 'bad-count-hidden'
+        tagBadCountClass = 'bad-count-hidden';
     } else if (state === 'empty') {
         tagColorClass = 'empty-tag';
     } else if (state === 'silent') {
@@ -2762,13 +2794,25 @@ function renderBadItem(s, type) {
         ? `<span class="bad-error ${tagColorClass}" title="${esc(errMsg)}">${esc(errMsg)}</span>`
         : '';
 
-    const stateTip = state === 'silent'
-        ? `沉默 | 有 ${total} 个节点，但当前没有可用节点`
-        : state === 'empty'
-            ? `无节点 | 已读取订阅，但未获取到任何节点${errMsg ? ` | ${errMsg}` : ''}`
-            : state === 'temp'
-                ? `异常 | ${errMsg || '临时异常'}`
-                : `失效 | ${errMsg || '链接已失效'}`;
+    // 如果没有报错信息，就不渲染外层容器，避免多余的 padding
+    const errHtml = errText ? `<div class="bad-status-wrap">${errText}</div>` : '';
+
+    // 提取体积、消耗流量等附加统计数据，传入 state 以便准确补齐 0 B
+    const extraStats = buildSubExtraStatsHtml(s, { state: state });
+    const hasCount = tagBadCountClass !== 'bad-count-hidden';
+
+    // 构建底部同行容器：左侧为 extraStats，右侧为节点数统计
+    let bottomRow = '';
+    if (extraStats || hasCount) {
+        bottomRow = `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px;">
+                <div style="flex: 1; min-width: 0;">${extraStats}</div>
+                <span class="bad-count ${tagBadCountClass}" style="margin-left: auto; font-variant-numeric: tabular-nums;">
+                    ${success}/${total}
+                </span>
+            </div>
+        `;
+    }
 
     return `<div class="bad-item">
                 <div class="bad-top-row">
@@ -2776,10 +2820,7 @@ function renderBadItem(s, type) {
                        <svg class="tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
                        <span class="tag-text">${esc(nameTag || '无标签')}</span>
                      </div>
-                     <div class="bad-status-wrap">
-                       <span class="bad-count ${tagBadCountClass}">${success}/${total}</span>
-                       ${errText}
-                     </div>
+                     ${errHtml}
                 </div>
 
                 <div class="bad-item-row">
@@ -2790,6 +2831,7 @@ function renderBadItem(s, type) {
                      </button>
                    </div>
                 </div>
+                ${bottomRow}
                </div>`;
 }
 
