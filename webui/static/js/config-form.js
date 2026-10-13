@@ -2454,7 +2454,7 @@ function _openSubTooltip(btn, html) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    if (vw <= 640) {
+    if (vw <= 768) {
       _subTooltipOverlayEl.style.display = 'block';
       requestAnimationFrame(() => { _subTooltipOverlayEl.classList.add('visible'); });
 
