@@ -2932,7 +2932,7 @@ function initThresholdSlider(subs, cfg) {
 
     <a href="javascript:void(0)"
        onclick="window._setFilterMode('rate')"
-       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'rate' ? 'var(--fg-accentt)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'rate' ? '700' : '600'}">
+       style="text-decoration:none;transition:0.2s;color:${_currentFilterMode === 'rate' ? 'var(--fg-accent)' : 'var(--muted)'};font-weight:${_currentFilterMode === 'rate' ? '700' : '600'}">
         成功率
     </a>
 </span>
