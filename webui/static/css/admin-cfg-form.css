@@ -3154,6 +3154,7 @@ textarea.cfg-expandable-input:focus {
  */
 
 .cfg-url-btn-tier {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3194,6 +3195,46 @@ textarea.cfg-expandable-input:focus {
   cursor: wait;
   opacity: 0.7;
   transform: none;
+}
+
+/* 保持被点击后的高亮状态 */
+.cfg-url-btn-tier.is-active {
+  background: color-mix(in srgb, var(--tc) 25%, transparent);
+  border-color: var(--tc) !important;
+  outline: 2px solid color-mix(in srgb, var(--tc) 40%, transparent);
+  outline-offset: 1px;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--tc) 50%, transparent);
+  color: var(--tc) !important;
+  opacity: 1 !important;
+}
+
+/* 利用 ::after 在右上角添加一个指示小红点/主题色点 */
+.cfg-url-btn-tier.is-active::after {
+  content: '';
+  position: absolute;
+  top: -2px;    /* 靠右上角溢出一点点，更显眼 */
+  right: -2px;
+  width: 4px;
+  height: 4px;
+  background-color: var(--tc); /* 动态跟随当前评级的主题色 (绿、黄、红等) */
+  /* 加一圈页面背景色的实心边框，制造出“挖空”质感 */
+  border: 2px solid var(--bg, #ffffff);
+  border-radius: 50%;
+  box-shadow: 0 0 4px color-mix(in srgb, var(--tc) 60%, transparent);
+  z-index: 5;
+
+  /* 添加一个微小的弹性弹出动画，点击反馈更好 */
+  animation: cfg-marker-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* 标记的弹出动画 */
+@keyframes cfg-marker-pop {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* ================= S：VIP 金色按钮 ================= */

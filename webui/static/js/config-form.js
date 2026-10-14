@@ -2411,6 +2411,10 @@ function _closeSubTooltip() {
     }, 200);
   }
   window.removeEventListener('scroll', _tooltipScrollHandler, true);
+
+  // 尝试把焦点还给刚刚带 .is-active 的按钮
+  const activeBtn = document.querySelector('.cfg-url-btn-tier.is-active');
+  if (activeBtn) activeBtn.focus();
 }
 
 // 配置面板滚动时关闭悬浮窗（悬浮窗内部滚动不触发）
@@ -3103,6 +3107,11 @@ function mkUrlList(field, values) {
         e.preventDefault();
         e.stopPropagation();
 
+        /* 1. 一进来先清除其他所有按钮的高亮 */
+        document.querySelectorAll('.cfg-url-btn-tier.is-active').forEach(b => {
+          b.classList.remove('is-active');
+        });
+
         const currentUrl = inp.value.trim();
 
         if (!currentUrl) {
@@ -3200,6 +3209,9 @@ function mkUrlList(field, values) {
 
         // 点击时也重新同步一次按钮状态
         updateStatsButton(subData);
+
+        /* 2. 必须在 updateStatsButton 执行完毕之后，重新追加 is-active */
+        statsBtn.classList.add('is-active');
 
         _showSubTooltip(statsBtn, subData, checkTime);
       });
