@@ -99,6 +99,8 @@ const MINI_GENERIC_INFO = {
     color: 'var(--accent, #3b82f6)',
     desc: `
 <div class="mtt-tag-list">
+  <div class="mtt-tag-title">IP 风险</div>
+  <div class="mtt-tag-item"><span class="mtt-badge-danger">0%</span>IP欺诈评分，越低越好</div>
   <div class="mtt-tag-title">CF 节点</div>
   <div class="mtt-tag-item"><span class="mtt-badge-danger">HK⁻¹</span>无法访问 CF 自身</div>
   <div class="mtt-tag-item"><span class="mtt-badge-success">HK¹⁺</span>出口与 CDN 位置一致</div>
