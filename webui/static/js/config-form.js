@@ -1016,7 +1016,16 @@ const SCHEMA = [
               { value: 'Tencent', label: '腾讯' },
               { value: 'Cloudflare', label: 'Cloudflare' },
               { value: 'Google', label: 'Google' },
+              { value: 'Custom', label: '自定义' },
             ],
+          },
+          {
+            key: 'sub-process.resolve-domain.custom-url',
+            label: '自定义 DNS URL',
+            type: 'text',
+            fullWidth: true,
+            placeholder: 'https://1.1.1.1/dns-query',
+            hint: '当提供商选择自定义时必填，支持 DoH 等格式。',
           },
           {
             key: 'sub-process.resolve-domain.edns',
@@ -4471,7 +4480,7 @@ function _bindIspCheck(panel) {
 /* ═══════════════════════════ DNS 解析联动 ═══════════════════════
  * 1. 当 sub-process.resolve-domain.enable 为 false 时，隐藏其余相关字段
  * 2. 开启节点裂变时，自动开启 DNS 解析并记录状态；关闭裂变时恢复原状
- * 3. 当由于某些原因 DNS 未开启而裂变开启时，在节点裂变处触发警告提示
+ * 3. 选中 Custom 选项时，单独显示 custom-url 字段
  * ─────────────────────────────────────────────────────────────────── */
 function _bindDnsResolve(panel) {
   const toggleRow = panel.querySelector('.cfg-field[data-key="sub-process.resolve-domain.enable"]');
@@ -4480,8 +4489,12 @@ function _bindDnsResolve(panel) {
   const cb = toggleRow.querySelector('input[type="checkbox"][data-key="sub-process.resolve-domain.enable"]');
   if (!cb) return;
 
+  // 抓取 provider 的 select 元素
+  const providerSel = panel.querySelector('select.cfg-select-native[data-key="sub-process.resolve-domain.provider"]');
+
   const targetKeys = [
     'sub-process.resolve-domain.provider',
+    'sub-process.resolve-domain.custom-url', // <- 将新字段加入受控列表
     'sub-process.resolve-domain.type',
     'sub-process.resolve-domain.cache',
     'sub-process.resolve-domain.cache-ttl',
@@ -4492,9 +4505,23 @@ function _bindDnsResolve(panel) {
 
   function update() {
     const active = cb.checked;
+    const isCustom = providerSel && providerSel.value === 'Custom';
+
     targetKeys.forEach(key => {
       const row = panel.querySelector(`.cfg-field[data-key="${key}"]`);
-      if (row) row.style.display = active ? '' : 'none';
+      if (!row) return;
+
+      if (!active) {
+        // 总开关没开，一律隐藏
+        row.style.display = 'none';
+      } else {
+        // 总开关开启的情况下，单独控制 custom-url 的显示
+        if (key === 'sub-process.resolve-domain.custom-url') {
+          row.style.display = isCustom ? '' : 'none';
+        } else {
+          row.style.display = '';
+        }
+      }
     });
 
     // 联动触发 node-split 的实时校验更新
@@ -4506,27 +4533,28 @@ function _bindDnsResolve(panel) {
 
   // 监听 DNS 解析开关手动变化
   cb.addEventListener('change', (e) => {
-    // 只有用户的真实点击操作（isTrusted），才意味着用户接管了控制，此时清除临时标记
-    // 否则（如代码自动触发）保留标记，以便将来取消时能恢复状态
     if (e.isTrusted) {
       delete cb.dataset.autoEnabledBySplit;
     }
     update();
   });
 
+  // 监听 DNS provider 的下拉框变化
+  if (providerSel) {
+    providerSel.addEventListener('change', update);
+  }
+
   // 监听节点裂变开关的变化
   const splitCb = panel.querySelector('input[type="checkbox"][data-key="sub-process.node-split"]');
   if (splitCb) {
     splitCb.addEventListener('change', () => {
       if (splitCb.checked) {
-        // 开启裂变：若 DNS 未开，则自动开启，并打上标记
         if (!cb.checked) {
           cb.dataset.autoEnabledBySplit = 'true';
           cb.checked = true;
           cb.dispatchEvent(new Event('change')); // 触发 UI 更新
         }
       } else {
-        // 关闭裂变：若 DNS 刚才被裂变自动开启，则将其恢复为关闭状态
         if (cb.dataset.autoEnabledBySplit === 'true') {
           cb.checked = false;
           delete cb.dataset.autoEnabledBySplit;
