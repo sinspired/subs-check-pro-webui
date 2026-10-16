@@ -28,10 +28,14 @@ const configCompletions = [
   { label: "prerelease", type: "property", detail: "使用预发布版本", section: "版本更新", isArray: false },
   { label: "update-timeout", type: "property", detail: "下载新版本超时(分钟)", section: "版本更新", isArray: false },
   { label: "concurrent", type: "property", detail: "并发线程数", section: "检测参数", isArray: false },
+  { label: "net-guard", type: "property", detail: "网络拥塞保护", section: "检测参数", isArray: false },
   { label: "alive-concurrent", type: "property", detail: "测活并发数，建议：10-1000", section: "检测参数", isArray: false },
   { label: "speed-concurrent", type: "property", detail: "测速并发数，建议：4-32", section: "检测参数", isArray: false },
   { label: "media-concurrent", type: "property", detail: "媒体解锁并发数，建议：4-200", section: "检测参数", isArray: false },
   { label: "ipv6", type: "property", detail: "是否启用IPv6", section: "检测参数", isArray: false },
+  { label: "nameserver", type: "property", detail: "主要 DNS 服务器", section: "检测参数", isArray: false },
+  { label: "proxy-server-nameserver", type: "property", detail: "节点 DNS 服务器", section: "检测参数", isArray: false },
+  { label: "proxy-server-nameserver-policy", type: "property", detail: "节点 DNS 策略", section: "检测参数", isArray: false },
   { label: "check-interval", type: "property", detail: "检查间隔(分钟)", section: "检测参数", isArray: false },
   { label: "cron-expression", type: "property", detail: "定时检测", section: "检测参数", isArray: false },
   { label: "success-limit", type: "property", detail: "成功节点数量限制", section: "检测参数", isArray: false },
@@ -59,6 +63,7 @@ const configCompletions = [
   { label: "drop-bad-cf-nodes", type: "property", detail: "是否丢弃无法访问 cloudflare 的节点", section: "节点处理", isArray: false },
   { label: "enhanced-tag", type: "property", detail: "增强位置显示开关", section: "节点标签", isArray: false },
   { label: "maxmind-db-path", type: "property", detail: "MaxMind 地理数据库路径", section: "节点标签", isArray: false },
+  { label: "maxmind-db-update-notify", type: "property", detail: "MaxMind DB 更新通知", section: "节点标签", isArray: false },
   { label: "output-dir", type: "property", detail: "输出目录", section: "输出设置", isArray: false },
   { label: "use-last-result", type: "property", detail: "是否加载上次检测结果(all.yaml)", section: "节点处理", isArray: false },
   { label: "use-history-result", type: "property", detail: "是否加载并保存历史检测结果(history.yaml)", section: "节点处理", isArray: false },
@@ -70,6 +75,8 @@ const configCompletions = [
   { label: "apprise-api-server", type: "property", detail: "apprise API server 地址", section: "通知设置", isArray: false, info: "示例: https://notify.xxxx.us.kg/notify" },
   { label: "recipient-url", type: "property", detail: "apprise 通知目标", section: "通知设置", isArray: true, info: "详细格式请参照 https://github.com/caronc/apprise" },
   { label: "notify-title", type: "property", detail: "自定义通知标题", section: "通知设置", isArray: false, info: "默认标题: 🔔 节点状态更新" },
+  { label: "sub-store-update-cron", type: "property", detail: "sub-store 定时更新任务", section: "sub-store", isArray: false },
+  { label: "sub-store-update-notify", type: "property", detail: "sub-store 更新通知", section: "sub-store", isArray: false },
   { label: "sub-store-port", type: "property", detail: "sub-store 端口", section: "sub-store", isArray: false },
   { label: "sub-store-path", type: "property", detail: "sub-store 自定义路径", section: "sub-store", isArray: false },
   { label: "mihomo-overwrite-url", type: "property", detail: "mihomo 覆写订阅地址", section: "sub-store", isArray: false },
@@ -601,7 +608,7 @@ const placeholderMatcher = new MatchDecorator({
   regexp: new RegExp(
     [
       // 匹配所有 configCompletions 中的 label
-      '(?<=^[ \t]*)(print-progress|progress-mode|update|update-on-startup|cron-check-update|prerelease|update-timeout|concurrent|alive-concurrent|speed-concurrent|media-concurrent|ipv6|check-interval|cron-expression|success-limit|timeout|speed-test-url|min-speed|download-timeout|download-mb|total-speed-limit|threshold|gc-threshold|rename-node|node-prefix|node-type|node-loc|isp-check|isp-timeout|isp-check-api-key-ipapi|isp-check-api-key-proxycheck|isp-check-api-key-iplocate|isp-check-api-key-ipdata|media-check|platforms|media-check-timeout|drop-bad-cf-nodes|enhanced-tag|maxmind-db-path|output-dir|use-last-result|use-history-result|listen-port|enable-web-ui|api-key|share-password|callback-script|apprise-api-server|recipient-url|notify-title|sub-store-port|sub-store-path|mihomo-overwrite-url|singbox-latest|singbox-extra|sub-store-sync-cron|sub-store-produce-cron|sub-store-push-service|save-method|webdav-url|webdav-username|webdav-password|github-gist-id|github-token|github-api-mirror|worker-url|worker-token|s3-endpoint|s3-access-id|s3-secret-key|s3-bucket|s3-use-ssl|s3-bucket-lookup|system-proxy|github-proxy|ghproxy-group|sub-urls-retry|sub-url-max-size-mb|sub-urls-timeout|sub-urls-stats|success-rate|subs-parse-batch|subs-dedupe-batch|memory-limit-mb|gc-percent|sub-urls-remote|sub-urls|sub-process|resolve-domain|node-split|regex-filter-keep|regex-filter|regex-sort|sub-info|version|json|js|enable|provider|edns|concurrency|type|cache|cache-ttl)(?=\s*:\s*)',
+      '(?<=^[ \t]*)(print-progress|progress-mode|update|update-on-startup|cron-check-update|prerelease|update-timeout|concurrent|net-guard|alive-concurrent|speed-concurrent|media-concurrent|ipv6|nameserver|proxy-server-nameserver|proxy-server-nameserver-policy|check-interval|cron-expression|success-limit|timeout|speed-test-url|min-speed|download-timeout|download-mb|total-speed-limit|threshold|gc-threshold|rename-node|node-prefix|node-type|node-loc|isp-check|isp-timeout|isp-check-api-key-ipapi|isp-check-api-key-proxycheck|isp-check-api-key-iplocate|isp-check-api-key-ipdata|media-check|platforms|media-check-timeout|drop-bad-cf-nodes|enhanced-tag|maxmind-db-path|maxmind-db-update-notify|output-dir|use-last-result|use-history-result|listen-port|enable-web-ui|api-key|share-password|callback-script|apprise-api-server|recipient-url|notify-title|sub-store-update-cron|sub-store-update-notify|sub-store-port|sub-store-path|mihomo-overwrite-url|singbox-latest|singbox-extra|sub-store-sync-cron|sub-store-produce-cron|sub-store-push-service|save-method|webdav-url|webdav-username|webdav-password|github-gist-id|github-token|github-api-mirror|worker-url|worker-token|s3-endpoint|s3-access-id|s3-secret-key|s3-bucket|s3-use-ssl|s3-bucket-lookup|system-proxy|github-proxy|ghproxy-group|sub-urls-retry|sub-url-max-size-mb|sub-urls-timeout|sub-urls-stats|success-rate|subs-parse-batch|subs-dedupe-batch|memory-limit-mb|gc-percent|sub-urls-remote|sub-urls|sub-process|resolve-domain|node-split|regex-filter-keep|regex-filter|regex-sort|sub-info|version|json|js|enable|provider|edns|concurrency|type|cache|cache-ttl)(?=\s*:\s*)',
 
       // 列表项：- openai / - "openai"
       '(?<=^[ \\t]*-\\s*["\']?)(openai|iprisk|gemini|copilot|tiktok|youtube|disney|netflix|x|ss|trojan|vless|vmess|shadowsocks)(?=["\']?\\b)',
