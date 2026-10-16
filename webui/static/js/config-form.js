@@ -678,6 +678,29 @@ const SCHEMA = [
         ]
       },
       {
+        title: 'DNS 配置',
+        fields: [
+          {
+            key: 'nameserver', label: '主要 DNS', type: 'url-list',
+            placeholder: 'https://dns.alidns.com/dns-query',
+            hint: '基础 DNS，影响直连和兜底解析，留空表示使用默认解析'
+          },
+          {
+            key: 'proxy-server-nameserver', label: '节点 DNS', type: 'url-list',
+            placeholder: 'https://doh.pub/dns-query',
+            hint: '用于解析所有节点域名的 DNS，非必要配置项，如果不填则遵循 nameserver-policy、nameserver 的配置'
+          },
+          {
+            key: 'proxy-server-nameserver-policy', label: '节点 DNS 策略', type: 'url-list',
+            placeholder: '+.node.example.org: https://dns.alidns.com/dns-query',
+            hint: '为特定节点域名指定 DNS，仅当 proxy-server-nameserver 不为空时生效。[ 域名: DNS地址 ]',
+            hintExamples: [
+              "www.baidu.com, +.google.cn: 223.5.5.5, 8.8.8.8"
+            ]
+          },
+        ],
+      },
+      {
         title: 'ISP 检测',
         fields: [
           { key: 'isp-check', label: 'ISP 类型检测', type: 'toggle', hint: '比如: [原生|住宅]、[广播|机房]等' },
@@ -1647,6 +1670,60 @@ const VALUE_TRANSFORM = {
     load: v => (v === false || v === 'false') ? 'false' : 'true',  // bool → string
     save: v => v !== 'false',   // string → bool
   },
+
+  // 前端多行 url-list 与后端 YAML 嵌套 Map 的双向转换
+  'proxy-server-nameserver-policy': {
+    load: v => {
+      // 后端 Map -> 前端多行文本
+      if (!v || typeof v !== 'object' || Array.isArray(v)) return [];
+      return Object.entries(v).map(([k, val]) => {
+        // 如果后端存的是数组，用逗号连接方便显示
+        const vStr = Array.isArray(val) ? val.join(', ') : val;
+        return `${k}: ${vStr}`;
+      });
+    },
+    save: v => {
+      const obj = {};
+      (Array.isArray(v) ? v : []).forEach(line => {
+        // 使用正则精确匹配第一个 “冒号+至少一个空格” 作为分隔，防止误切 URL 里的冒号
+        const match = line.match(/^(.*?):\s+(.*)$/);
+        if (match) {
+          const k = match[1].trim().replace(/^['"]|['"]$/g, '');
+          const val = match[2].trim().replace(/^['"]|['"]$/g, '');
+          if (k && val) {
+            if (val.includes(',')) {
+              obj[k] = val.split(',').map(s => s.trim());
+            } else {
+              obj[k] = val;
+            }
+          }
+        }
+      });
+      return Object.keys(obj).length ? obj : undefined;
+    }
+  },
+  save: v => {
+    // 前端多行文本 -> 后端 Map
+    const obj = {};
+    (Array.isArray(v) ? v : []).forEach(line => {
+      const idx = line.indexOf(':');
+      if (idx > 0) {
+        // 清除多余的空格和可能存在的单双引号
+        const k = line.slice(0, idx).trim().replace(/^['"]|['"]$/g, '');
+        const val = line.slice(idx + 1).trim().replace(/^['"]|['"]$/g, '');
+        if (k && val) {
+          // 支持单行填写多个 DNS，转为数组格式保存以对齐 Mihomo
+          if (val.includes(',')) {
+            obj[k] = val.split(',').map(s => s.trim());
+          } else {
+            obj[k] = val;
+          }
+        }
+      }
+    });
+    // 没有任何规则时返回 undefined，防止在 yaml 中生成空字段
+    return Object.keys(obj).length ? obj : undefined;
+  }
 };
 
 
@@ -1840,7 +1917,12 @@ function _parseCronValue(v) {
 function _flattenCfg(obj, prefix = '', out = {}) {
   for (const [k, v] of Object.entries(obj ?? {})) {
     const key = prefix ? `${prefix}.${k}` : k;
-    if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+    if (
+      v !== null &&
+      typeof v === 'object' &&
+      !Array.isArray(v) &&
+      key !== 'proxy-server-nameserver-policy' // ← 跳过展平这个原生字典
+    ) {
       _flattenCfg(v, key, out);
     } else {
       out[key] = v;
@@ -4968,15 +5050,21 @@ function collectPanel(tabId) {
           break;
         }
         case 'url-list': {
-          const w = panel.querySelector(`.cfg-url-list[data-key="${key}"]`)
-          if (w) out[key] = Array.from(w.querySelectorAll('.cfg-url-item .cfg-url-input'))
-            .flatMap(t => t.value.split('\n'))
-            .map(s => s.trim()
-              .replace(/\x08/g, '\\b')   // ← 防御存量脏数据
-              .replace(/\t/g, '\\t')
-            )
-            .filter(Boolean)
-          break
+          const w = panel.querySelector(`.cfg-url-list[data-key="${key}"]`);
+          if (w) {
+            const raw = Array.from(w.querySelectorAll('.cfg-url-item .cfg-url-input'))
+              .flatMap(t => t.value.split('\n'))
+              .map(s => s.trim()
+                .replace(/\x08/g, '\\b')
+                .replace(/\t/g, '\\t')
+              )
+              .filter(Boolean);
+
+            // 如果该字段定义了转换器，保存前执行转换（如 Map -> List）
+            const xf = VALUE_TRANSFORM[key];
+            out[key] = xf ? xf.save(raw) : raw;
+          }
+          break;
         }
         default: {
           /* text / password：适配 input 和 textarea */
