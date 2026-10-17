@@ -695,7 +695,7 @@ const SCHEMA = [
             placeholder: '+.node.example.org: https://dns.alidns.com/dns-query',
             hint: '为特定节点域名指定 DNS，仅当 proxy-server-nameserver 不为空时生效。[ 域名: DNS地址 ]',
             hintExamples: [
-              "www.baidu.com, +.google.cn: 223.5.5.5, 8.8.8.8"
+              "+.google.cn: 8.8.8.8"
             ]
           },
         ],
