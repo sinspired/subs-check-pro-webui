@@ -509,7 +509,7 @@ const SCHEMA = [
         fields: [
           { key: 'sub-urls-retry', label: '重试次数', type: 'number', min: 1, max: 5, placeholder: '3', hint: '获取订阅失败重试次数', default: 3, },
           { key: 'sub-urls-timeout', label: '下载超时 (s)', type: 'number', min: 5, max: 30, placeholder: '10', hint: '建议 10–60', default: 10, },
-          { key: 'sub-url-max-size-mb', label: '订阅大小上限 (MB/s)', type: 'number', min: 0, max: 500, placeholder: '50', hint: '建议 1–100', default: 50, },
+          { key: 'sub-url-max-size-mb', label: '订阅大小上限 (MB)', type: 'number', min: 0, max: 500, placeholder: '50', hint: '建议 1–100', default: 50, },
           {
             key: 'success-rate', label: '成功率提醒阈值 (‰)', type: 'number', min: 0.01, max: 1000, placeholder: '0', hint: '低于此值将打印成功率信息，并写入统计文件',
             hintExamples: [

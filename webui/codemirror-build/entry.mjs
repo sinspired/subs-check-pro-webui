@@ -104,7 +104,7 @@ const configCompletions = [
   { label: "github-proxy", type: "property", detail: "Github 代理", section: "代理设置", isArray: false, info: "获取订阅、添加覆写地址时使用" },
   { label: "ghproxy-group", type: "property", detail: "GitHub 代理列表", section: "代理设置", isArray: true, info: "程序会自动筛选可用的 GitHub 代理" },
   { label: "sub-urls-retry", type: "property", detail: "重试次数(获取订阅失败后重试次数)", section: "订阅设置", isArray: false },
-  { label: "sub-url-max-size-mb", type: "property", detail: "订阅大小上限 (MB/s)", section: "订阅设置", isArray: false },
+  { label: "sub-url-max-size-mb", type: "property", detail: "订阅大小上限 (MB)", section: "订阅设置", isArray: false },
   { label: "sub-urls-timeout", type: "property", detail: "获取订阅超时(默认10s)", section: "订阅设置", isArray: false },
   { label: "sub-urls-stats", type: "property", detail: "统计订阅链接有效性和成功率", section: "订阅设置", isArray: false },
   { label: "success-rate", type: "property", detail: "节点订阅成功率", section: "订阅设置", isArray: false },
