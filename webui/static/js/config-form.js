@@ -1227,7 +1227,12 @@ const SCHEMA = [
           {
             key: 'singbox-latest.js', label: '最新版处理脚本', type: 'text', fullWidth: true,
             placeholder: 'https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.14.x/sing-box.js',
-            hint: '节点处理脚本地址，留空使用内置默认值',
+            hint: '脚本地址，留空用默认。链接后可加 # 参数：name=订阅名、type=0(订阅)/1(组合)；可选限额：maxNodes=100(总节点)、minRegion=5(地区保底)、minEndpoints=5 / maxEndpoints=15(端点)、maxOpenVPN=5',
+            hintExamples: [
+              '#name=sub&type=0',
+              '#name=机场合集&type=组合',
+              '#name=sub&type=0&maxNodes=120&minRegion=5&minEndpoints=5&maxEndpoints=15&maxOpenVPN=5'
+            ]
           },
           {
             key: 'singbox-extra.version', label: 'Extra 版本号', type: 'text',
@@ -1241,6 +1246,12 @@ const SCHEMA = [
           {
             key: 'singbox-extra.js', label: 'Extra 处理脚本', type: 'text', fullWidth: true,
             placeholder: 'https://raw.githubusercontent.com/sinspired/sub-store-template/main/1.15.x/sing-box.js',
+            hint: '脚本地址，留空用默认。链接后可加 # 参数：name=订阅名、type=0(订阅)/1(组合)；可选限额：maxNodes=100(总节点)、minRegion=5(地区保底)、minEndpoints=5 / maxEndpoints=15(端点)、maxOpenVPN=5',
+            hintExamples: [
+              '#name=sub&type=0',
+              '#name=机场合集&type=组合',
+              '#name=sub&type=0&maxNodes=120&minRegion=5&minEndpoints=5&maxEndpoints=15&maxOpenVPN=5'
+            ]
           },
         ],
       },
