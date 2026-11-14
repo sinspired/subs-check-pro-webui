@@ -2938,6 +2938,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       if (!p?.version) return
 
       const currentV = p.version
+      window.__scp_coreVersion = currentV
+      window.dispatchEvent(new CustomEvent('scp-version-loaded', { detail: { version: currentV } }))
       const latestV = p.latest_version
       const isPre = v => v && v.includes('-')
 
@@ -2980,6 +2982,10 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       if (!d) return
 
       const currentV = d.version
+      if (currentV) {
+        window.__scp_coreVersion = currentV
+        window.dispatchEvent(new CustomEvent('scp-version-loaded', { detail: { version: currentV } }))
+      }
       const latestV = d.latest_version
       const isPre = v => v && v.includes('-')
 

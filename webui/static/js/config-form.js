@@ -1164,6 +1164,13 @@ const SCHEMA = [
           { key: 'update', label: '自动更新', type: 'toggle', default: true, hint: '关闭时仅提醒新版本' },
           { key: 'update-on-startup', label: '启动时检查更新', type: 'toggle' },
           { key: 'prerelease', label: '使用预发布版本', type: 'toggle', hint: '包含 beta / rc 版本' },
+          {
+            key: 'upgrade-to-v3',
+            label: '升级到 v3 版本',
+            type: 'toggle',
+            default: false,
+            hint: '默认仅检查 v2 更新；开启后将允许自动升级至 v3',
+          },
           { key: 'cron-check-update', label: '检查更新 Cron', type: 'cron', fullWidth: true, placeholder: '0 9,21 * * *', default: '0 0,9,21 * * *', hint: '# 定时检查版本更新' },
           { key: 'update-timeout', label: '下载超时 (分钟)', type: 'number', min: 1, placeholder: '2', hint: '下载更新文件的最大时间，如更新失败或网络环境恶劣，可适当调大' },
         ],
@@ -1269,6 +1276,15 @@ const SCHEMA = [
 
 /* ═══════════════════════════ 字段校验规则 ═══════════════════════════ */
 const FIELD_VALIDATORS = {
+  'upgrade-to-v3': v => {
+    if (v) {
+      return {
+        level: 'warn',
+        msg: '开启后将允许跨版本升级到 v3（v3 与 v2 使用不同的 Sub-Store 引擎，建议提前备份配置）',
+      };
+    }
+    return { level: 'info', msg: '当前仅检测并更新 v2.x.x 版本' };
+  },
   // ── 并发与限制 ──
   'concurrent': v => {
     if (!_anyAutoMode()) return null;
@@ -4578,6 +4594,31 @@ function _bindDnsResolve(panel) {
   requestAnimationFrame(update); // 初始化时同步一次显示状态
 }
 
+function _isV2BackendVersion(ver) {
+  if (!ver) return false;
+  return /^v?2\./i.test(String(ver).trim());
+}
+
+function _bindV2UpgradeVisibility(panel) {
+  const row = panel.querySelector('.cfg-field[data-key="upgrade-to-v3"]');
+  if (!row) return;
+
+  const sync = () => {
+    row.style.display = _isV2BackendVersion(window.__scp_coreVersion) ? '' : 'none';
+  };
+
+  sync();
+
+  const onVersionLoaded = () => {
+    if (!row.isConnected) {
+      window.removeEventListener('scp-version-loaded', onVersionLoaded);
+      return;
+    }
+    sync();
+  };
+  window.addEventListener('scp-version-loaded', onVersionLoaded);
+}
+
 /* ═══════════════════════════ 面板构建 ═══════════════════════════ */
 function buildPanel(tabId) {
   const panel = document.getElementById(`panel-${tabId}`); if (!panel) return;
@@ -4628,6 +4669,11 @@ function buildPanel(tabId) {
   /* 检测：ISP 状态联动 */
   if (tabId === 'detection') {
     _bindIspCheck(panel);
+  }
+
+  /* 高级：仅当 public version 后端为 v2 时显示升级到 v3 选项 */
+  if (tabId === 'advanced') {
+    _bindV2UpgradeVisibility(panel);
   }
 
   _built.add(tabId);
