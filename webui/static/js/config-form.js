@@ -1238,6 +1238,8 @@ const SCHEMA = [
             hintExamples: [
               '#name=sub&type=0',
               '#name=机场合集&type=组合',
+              '&version=1.14',
+              '&drop=certificate_sha256,certificate_md5',
               '#name=sub&type=0&maxNodes=120&minRegion=5&minEndpoints=5&maxEndpoints=15&maxOpenVPN=5'
             ]
           },
@@ -1257,6 +1259,8 @@ const SCHEMA = [
             hintExamples: [
               '#name=sub&type=0',
               '#name=机场合集&type=组合',
+              '&version=1.15',
+              '&drop=certificate_sha256,certificate_sha1,certificate_md5',
               '#name=sub&type=0&maxNodes=120&minRegion=5&minEndpoints=5&maxEndpoints=15&maxOpenVPN=5'
             ]
           },
