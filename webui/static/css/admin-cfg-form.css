@@ -333,17 +333,17 @@
 .cfg-field {
   display: grid;
   /* 控制右侧输入区宽度比例 */
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
   column-gap: 10px;
   row-gap: 1px;
   align-items: center;
+  min-width: 0;
   padding: 12px 10px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
   border-radius: 8px;
   transition:
     background 0.12s,
     margin 0.12s;
-  /* box-shadow: 0 0 4px color-mix(in srgb, var(--fg) 5%, transparent); */
 }
 
 .cfg-field.split-active {
@@ -414,9 +414,11 @@
   color: var(--muted);
   line-height: 1.35;
   opacity: 0.82;
+  min-width: 0;
+  max-width: 100%;
   white-space: normal;
   /* 允许换行 */
-  word-break: break-word;
+  overflow-wrap: anywhere;
   user-select: none;
 }
 
@@ -440,6 +442,9 @@
 .cfg-field:not(.full-width) .cfg-label-hint {
   grid-column: 1/-1;
   grid-row: 2;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-size: 10.5px;
   color: var(--muted);
   line-height: 1.35;
@@ -454,7 +459,7 @@
 }
 
 .cfg-field.full-width {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   row-gap: 4px;
   align-items: start;
 }
@@ -472,6 +477,9 @@
 .cfg-field.full-width .cfg-label-hint {
   grid-row: 2;
   grid-column: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-size: 11px;
   color: var(--muted);
   line-height: 1.4;
@@ -482,19 +490,22 @@
 .cfg-label-hint .cfg-hint-code {
   display: inline-flex;
   align-items: center;
-  height: 16px;
-  padding: 2px 4px 2px;
+  max-width: 100%;
+  min-height: 16px;
+  padding: 1px 4px;
   margin-bottom: 2px;
   margin-right: 2px;
+  box-sizing: border-box;
   border-radius: 3px;
   font-family: var(--font-mono, 'SF Mono', 'Fira Code', 'Consolas', monospace);
   font-size: 9.5px;
-  line-height: 1.2;
+  line-height: 1.25;
   font-weight: 500;
+  white-space: normal;
+  overflow-wrap: anywhere;
   background: color-mix(in srgb, var(--fg) 4%, transparent);
   border: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
   color: color-mix(in srgb, var(--accent) 100%, transparent);
-  user-select: all;
   cursor: text;
   vertical-align: middle;
   user-select: text;
@@ -3755,7 +3766,7 @@ textarea.cfg-expandable-input:focus {
 
   /* 双栏时右侧控件列缩窄，防止标签被挤压 */
   .cfg-panels-wrap.split-mode .cfg-field {
-    grid-template-columns: 1fr 0.8fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
   }
 
   .cfg-panels-wrap.split-mode .cfg-field.cfg-field--toggle {
@@ -3764,7 +3775,7 @@ textarea.cfg-expandable-input:focus {
 
   /* full-width 字段不受双栏列宽影响，始终单列铺满 */
   .cfg-panels-wrap.split-mode .cfg-field.full-width {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     /* 特异性 (0,4,0)，覆盖上条 */
   }
 }
