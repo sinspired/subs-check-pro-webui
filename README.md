@@ -29,3 +29,13 @@
 
 - > Telegram 群组：[subs-check性能版](https://t.me/subs_check_pro)⁠
 - > Telegram 频道：[关注频道](https://t.me/sinspired_ai)⁠
+
+## 节点延迟上限配置
+
+配合支持 `max-latency` 的主程序版本使用，可在配置表单的“延迟参数”中设置节点延迟上限（毫秒）：
+
+- `300`：只保留 HTTP 测活响应耗时严格小于 300ms 的节点。
+- `0`：关闭延迟上限筛选。
+- 该设置复用主程序原有 HTTP 测活请求计时，不会额外发送探测请求。
+
+主程序功能对应 PR：[修复检测任务锁并增加节点延迟上限](https://github.com/sinspired/subs-check-pro/pull/19)。在主程序合并并发布支持版本前，WebUI 表单字段不会单独启用后端筛选功能。
