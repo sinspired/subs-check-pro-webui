@@ -581,7 +581,8 @@ const SCHEMA = [
       {
         title: '延迟参数',
         fields: [
-          { key: 'timeout', label: '超时时间 (ms)', type: 'number', min: 1000, max: 15000, placeholder: '6000', hint: '节点延迟上限，建议 3000–10000', default: 6000, },
+          { key: 'timeout', label: '超时时间 (ms)', type: 'number', min: 1000, max: 15000, placeholder: '6000', hint: '单次测活请求的最长等待时间，建议 3000–10000ms', default: 6000, },
+          { key: 'max-latency', label: '节点延迟上限 (ms)', type: 'number', min: 0, max: 30000, placeholder: '300', hint: '复用原有测活请求计时；超过上限的节点将被丢弃，0 = 不限制', default: 300, },
         ],
       },
       {
