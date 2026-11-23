@@ -3423,6 +3423,32 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     if (window.__WAILS_GUI?.baseURL) {
       setText(els.logoutText, "切换配置");
       setText(els.projectInfoText, "关于软件");
+
+      // 仅 Wails3 桌面端：在侧边栏最下方追加「后台运行」菜单项（与切换主题/退出同构）
+      if (!window.__WAILS_ANDROID_GUI && els.logoutBtn?.parentElement && !document.getElementById('bgRunBtn')) {
+        const bgBtn = document.createElement('div');
+        bgBtn.className = 'list-item';
+        bgBtn.id = 'bgRunBtn';
+        bgBtn.title = '关闭界面窗口释放内存，仅保留内核在系统托盘后台运行';
+        bgBtn.style.cursor = 'pointer';
+        bgBtn.innerHTML = `
+          <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5"></path>
+            <rect x="13" y="13" width="9" height="7" rx="1.5"></rect>
+            <path d="M7 8l3.5 3.5M10.5 8v3.5H7"></path>
+          </svg>
+          <span id="bgRunText">后台运行</span>
+        `;
+
+        bgBtn.addEventListener('click', e => {
+          e.preventDefault();
+          fetch('/gui/hide-to-tray').catch(() => { });
+        });
+
+        // 放到当前侧边栏分组的最下方（位于 #logoutBtn 之后）
+        els.logoutBtn.parentElement.appendChild(bgBtn);
+      }
     } else {
       setText(els.logoutText, "退出登录");
       setText(els.projectInfoText, "项目信息");
