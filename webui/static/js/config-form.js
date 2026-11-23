@@ -2942,10 +2942,14 @@ function mkUrlList(field, values) {
       boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
       borderRadius: '6px',
     });
-    // 强制声明 pointer-events 为 none，这是让 elementFromPoint 流畅工作的关键
     _touchClone.style.setProperty('pointer-events', 'none', 'important');
     document.body.appendChild(_touchClone);
     row.classList.add('dragging');
+
+    // 仅在真正开始触摸拖拽时临时挂载到 document
+    document.addEventListener('touchmove', _onTouchMove, { passive: false });
+    document.addEventListener('touchend', _onTouchEnd);
+    document.addEventListener('touchcancel', _onTouchEnd);
   }
 
   function _onTouchMove(e) {
@@ -2974,18 +2978,23 @@ function mkUrlList(field, values) {
   }
 
   function _onTouchEnd(e) {
+    // 拖拽一结束立刻从 document 卸载，彻底杜绝闭包和旧表单 DOM 泄漏
+    document.removeEventListener('touchmove', _onTouchMove, { passive: false });
+    document.removeEventListener('touchend', _onTouchEnd);
+    document.removeEventListener('touchcancel', _onTouchEnd);
+
     if (!_touchSrc) return;
 
-    const touch = e.changedTouches[0];
-    const target = _getRowFromPoint(touch.clientX, touch.clientY);
-
-    if (target && target !== _touchSrc) {
-      const rect = target.getBoundingClientRect();
-      const before = touch.clientY < rect.top + rect.height / 2;
-      wrap.insertBefore(_touchSrc, before ? target : target.nextSibling);
+    const touch = e.changedTouches?.[0];
+    if (touch) {
+      const target = _getRowFromPoint(touch.clientX, touch.clientY);
+      if (target && target !== _touchSrc) {
+        const rect = target.getBoundingClientRect();
+        const before = touch.clientY < rect.top + rect.height / 2;
+        wrap.insertBefore(_touchSrc, before ? target : target.nextSibling);
+      }
     }
 
-    // 清理
     _touchSrc.classList.remove('dragging');
     wrap.querySelectorAll('.cfg-url-item').forEach(r =>
       r.classList.remove('drag-over-top', 'drag-over-bottom')
@@ -2994,9 +3003,6 @@ function mkUrlList(field, values) {
     _touchClone = null;
     _touchSrc = null;
   }
-
-  // 触摸事件挂在 wrap 上，避免每行重复绑定
-  wrap.addEventListener('touchstart', _onTouchStart.bind(null, null), { passive: false });
 
   // ── 行构建 ────────────────────────────────────────────────────────
   function addRow(val = '', atTop = false) {
@@ -3078,10 +3084,6 @@ function mkUrlList(field, values) {
 
     // 触摸拖拽
     row.addEventListener('touchstart', e => _onTouchStart(e, row), { passive: false });
-
-    // touchmove / touchend 挂在 document 上，确保手指移出 row 时仍能跟踪
-    document.addEventListener('touchmove', _onTouchMove, { passive: false });
-    document.addEventListener('touchend', _onTouchEnd);
 
     if (field.key === 'recipient-url') {
       const inputWrap = el('div', { class: 'cfg-url-input-wrap' });

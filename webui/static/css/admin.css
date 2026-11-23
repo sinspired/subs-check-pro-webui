@@ -3480,6 +3480,51 @@ img.link-icon {
   z-index: 10001;
 }
 
+@keyframes spin-status {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes spin-status-rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes spin-status-dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 45, 150;
+    stroke-dashoffset: -15px;
+  }
+  100% {
+    stroke-dasharray: 45, 150;
+    stroke-dashoffset: -62px;
+  }
+}
+.status-spinner-simple {
+  animation: spin-status 1s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+  margin-bottom: 2px;
+}
+.status-spinner-checking {
+  animation: spin-status-rotate 2s linear infinite;
+  will-change: transform;
+  transform-origin: center;
+  vertical-align: middle;
+  margin-right: 6px;
+  margin-bottom: 2px;
+}
+.status-spinner-checking circle {
+  animation: spin-status-dash 1.5s ease-in-out infinite;
+}
+
 @media (min-width: 768px) {
   .login-theme-btn {
     top: 24px;

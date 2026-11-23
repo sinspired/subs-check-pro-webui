@@ -184,6 +184,10 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   // 全局状态缓存，用于防止重复渲染详细摘要
   let cachedHistoryData = null
   let cachedSummaryText = null
+  let isPageVisible = !document.hidden
+  let _scrollRafId = 0
+  let _summaryMapRaf = 0
+  let _currentUIState = ''
 
   /* ── 解锁平台品牌色映射 ── */
   const PLATFORM_COLORS = {
@@ -528,41 +532,15 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   // ==================== 状态栏与历史区渲染 ====================
 
-  // 定义带旋转动画的 SVG 图标 (用于状态栏)
+  // 定义带旋转动画的 SVG 图标 (用于状态栏，动画样式位于 admin.css)
   const STATUS_SPINNER = `
-    <style>@keyframes spin-status { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-    <svg style="animation: spin-status 1s linear infinite; vertical-align: middle; margin-right: 6px; margin-bottom: 2px;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+    <svg class="status-spinner-simple" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
   `
 
   // 定义带旋转动画的 SVG 图标,用于检测任务
   const checking_SPINNER = `
-    <style>
-      @keyframes spin-status-rotate {
-        100% { transform: rotate(360deg); }
-      }
-      @keyframes spin-status-dash {
-        0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
-        50% { stroke-dasharray: 45, 150; stroke-dashoffset: -15px; }
-        100% { stroke-dasharray: 45, 150; stroke-dashoffset: -62px; }
-      }
-    </style>
-    <svg
-      style="
-        /* 旋转动画 2秒一圈 */
-        animation: spin-status-rotate 2s linear infinite;
-        will-change: transform;
-        transform-origin: center;
-        vertical-align: middle;
-        margin-right: 6px;
-        margin-bottom: 2px;
-      "
-      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-    >
-      <!-- 内部线条进行伸缩呼吸动画 -->
-      <circle
-        style="animation: spin-status-dash 1.5s ease-in-out infinite;"
-        cx="12" cy="12" r="10"
-      ></circle>
+    <svg class="status-spinner-checking" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
     </svg>
   `
 
@@ -820,15 +798,19 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   // ==================== 轮询控制 (全动态变速) ====================
 
   function startPollers() {
-    if (!sessionKey) return
+    if (!sessionKey || !isPageVisible) return
     startLogPoller()
     if (!timers.status) {
       const statusLoop = async () => {
-        if (!sessionKey) return
+        if (!sessionKey || !isPageVisible) { timers.status = null; return }
         if (!statusPollRunning) {
           await loadStatus().catch(() => { })
         }
-        timers.status = setTimeout(statusLoop, currentStatusInterval)
+        if (sessionKey && isPageVisible) {
+          timers.status = setTimeout(statusLoop, currentStatusInterval)
+        } else {
+          timers.status = null
+        }
       }
       statusLoop()
     }
@@ -846,16 +828,51 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   function startLogPoller() {
-    if (timers.logs) return
+    if (timers.logs || !isPageVisible) return
     const logLoop = async () => {
-      if (!sessionKey) return
+      if (!sessionKey || !isPageVisible) { timers.logs = null; return }
       if (!logsPollRunning) {
         await loadLogsIncremental(true).catch(() => { })
       }
-      timers.logs = setTimeout(logLoop, currentLogInterval)
+      if (sessionKey && isPageVisible) {
+        timers.logs = setTimeout(logLoop, currentLogInterval)
+      } else {
+        timers.logs = null
+      }
     }
     logLoop()
   }
+
+  function handleVisibilityChange(visible) {
+    const next = !!visible
+    if (isPageVisible === next) return
+    isPageVisible = next
+
+    if (!next) {
+      stopPollers()
+      if (_scrollRafId) { cancelAnimationFrame(_scrollRafId); _scrollRafId = 0 }
+      if (_summaryMapRaf) { cancelAnimationFrame(_summaryMapRaf); _summaryMapRaf = 0 }
+      _summaryMapInstance?.pause?.()
+      return
+    }
+
+    if (!sessionKey) return
+    loadStatus().catch(() => { })
+    loadLogsIncremental(true).catch(() => { })
+    startPollers()
+
+    // 若摘要卡片与地理分布区均处于展开状态，恢复地图动画
+    const summaryCard = $('#analysisSummaryCard')
+    const geoSection = summaryCard?.querySelector('#smr-geo-section')
+    if (summaryCard && !summaryCard.classList.contains('collapsed') && geoSection?.classList.contains('smr-sub-open')) {
+      _summaryMapInstance?.resume?.()
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    handleVisibilityChange(!document.hidden)
+  })
+  window.addEventListener('pagehide', stopPollers)
 
   // ==================== 业务逻辑 ====================
 
@@ -1039,9 +1056,15 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         updateToggleUI('idle')
         restoreHistoryTitle()
 
+        // 仅在首次加载、检测刚结束、状态摘要变化、或兜底 60 秒才请求全量报告
         const now = Date.now()
         if (!loadStatus.lastReportFetchTime) loadStatus.lastReportFetchTime = 0
-        if (checkStartTime || now - loadStatus.lastReportFetchTime > 3000) {
+        const reportKey = d.lastCheck
+          ? `${d.lastCheck.time ?? ''}_${d.lastCheck.total ?? ''}_${d.lastCheck.available ?? ''}`
+          : ''
+        const reportChanged = reportKey !== '' && loadStatus._lastReportKey !== reportKey
+        if (justFinished || !cachedHistoryData || reportChanged || (now - loadStatus.lastReportFetchTime > 60000)) {
+          loadStatus._lastReportKey = reportKey
           await syncHistoryFromYaml()
           loadStatus.lastReportFetchTime = now
         }
@@ -1126,9 +1149,27 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const oldStr = lastLogLines.join('\n')
       const newStr = newTail.join('\n')
 
-      if (newStr.startsWith(oldStr) && newStr.length > oldStr.length) {
-        const addedPart = newStr.substring(oldStr.length + 1)
-        const added = addedPart.split('\n').filter(s => s !== '')
+      // 内容无任何变化，直接跳过（解决空闲时每3秒重建DOM与堆积rAF问题）
+      if (newStr === oldStr) {
+        return
+      }
+
+      // 查找 oldLines 尾部与 newTail 头部的最大重叠行数
+      let overlap = 0
+      const maxOverlap = Math.min(lastLogLines.length, newTail.length)
+      for (let k = maxOverlap; k >= 1; k--) {
+        let matched = true
+        for (let i = 0; i < k; i++) {
+          if (lastLogLines[lastLogLines.length - k + i] !== newTail[i]) {
+            matched = false
+            break
+          }
+        }
+        if (matched) { overlap = k; break }
+      }
+
+      if (overlap > 0) {
+        const added = newTail.slice(overlap).filter(s => s !== '')
         if (added.length > 0) {
           appendLogLines(added)
           if (added.some(line => line.includes('检测完成'))) {
@@ -1275,13 +1316,17 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           els.statusEl.className = 'muted status-label status-checking'
         }
       } else if (lastChecked || (processed >= total && total > 0)) {
-        els.statusEl.textContent = '检测完成'
-        els.statusEl.title = ''
-        els.statusEl.className = 'muted status-label status-logged'
+        if (els.statusEl.textContent !== '检测完成') {
+          els.statusEl.textContent = '检测完成'
+          els.statusEl.title = ''
+          els.statusEl.className = 'muted status-label status-logged'
+        }
       } else {
-        els.statusEl.textContent = '空闲'
-        els.statusEl.title = ''
-        els.statusEl.className = 'muted status-label status-idle'
+        if (els.statusEl.textContent !== '空闲') {
+          els.statusEl.textContent = '空闲'
+          els.statusEl.title = ''
+          els.statusEl.className = 'muted status-label status-idle'
+        }
       }
     }
   }
@@ -1417,6 +1462,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
 
   function switchUIState(state) {
+    if (_currentUIState === state) return;
+    _currentUIState = state;
+
     const uis = {
       idle: $('#idleUI'),
       preparing: $('#preparingUI'),
@@ -1619,6 +1667,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
    * 结构化渲染分析摘要 - 含迷你地图 & 协议总览
    */
   function renderAnalysisSummary(data) {
+    if (_summaryMapRaf) { cancelAnimationFrame(_summaryMapRaf); _summaryMapRaf = 0; }
+    if (_summaryMapInstance) { _summaryMapInstance.destroy(); _summaryMapInstance = null; }
     const summaryCard = $('#analysisSummaryCard');
     if (!summaryCard || !data) return;
 
@@ -1688,7 +1738,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         : chip('模式', '仅测活', '--muted')}
     ${chip('流量', info.check_traffic_total || '-', '--chip-traffic')}
     ${chip('耗时', info.check_duration || '-', '--idle')}
-  </div>`;
+    </div>`;
 
     // 行2：节点分布
     const row2 = `<div class="smr-chip-row">
@@ -1696,7 +1746,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     ${chip('协议', protoCount, '--chip-proto')}
     ${chip('CF中转', cfVal.toFixed(1) + '%' + (cfConTotal ? ' · ' + cfConTotal : ''), '--chip-cf')}
     ${chip('VPS', vpsVal.toFixed(1) + '%' + (vpsTotal ? ' · ' + vpsTotal : ''), '--chip-vps')}
-  </div>`;
+    </div>`;
 
     const unlockChips = [
       ...mediaList.map(u => unlockChip(u.name, u.count, platformColor(u.name, 'media'))),
@@ -1711,7 +1761,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     const CHEVRON_SVG = `<svg class="smr-sub-chevron" viewBox="0 0 24 24" fill="none"
     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <polyline points="6 9 12 15 18 9"/>
-  </svg>`;
+    </svg>`;
 
     // ── 迷你协议总览 ──────────────────────────────────────────────
     const protoData = global.protocol_distribution || {};
@@ -1859,7 +1909,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         <span>完整报告</span>
       </button>
     </div>
-  `;
+    `;
 
     summaryCard
       .querySelector('#summaryAnalysisBtn')
@@ -1912,7 +1962,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
             && !summaryCard.classList.contains('collapsed')
             && !!geoSection?.classList.contains('smr-sub-open');
         };
-        requestAnimationFrame(() => {
+        _summaryMapRaf = requestAnimationFrame(() => {
+          _summaryMapRaf = 0;
+          if (!mapSlot.isConnected) return;
           _summaryMapInstance = new GeoFlightMap(mapSlot, geoEntries, origin, visibilityFn);
         });
       }
@@ -2036,14 +2088,13 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   function scrollToBottomSafe() {
-    if (!els.logContainer || isLogCollapsed()) return;
+    if (!els.logContainer || isLogCollapsed() || document.hidden || !isPageVisible) return;
 
-    // 只有在允许自动滚动时，才执行下滑
     if (autoScrollLog) {
-      requestAnimationFrame(() => {
-        // requestAnimationFrame 执行时再次检查，避免此期间用户折叠日志
-        if (!els.logContainer || isLogCollapsed()) return;
-
+      if (_scrollRafId) cancelAnimationFrame(_scrollRafId);
+      _scrollRafId = requestAnimationFrame(() => {
+        _scrollRafId = 0;
+        if (!els.logContainer || isLogCollapsed() || document.hidden || !isPageVisible) return;
         els.logContainer.scrollTop = els.logContainer.scrollHeight;
       });
     }
@@ -2392,6 +2443,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
    * @return {*}
    */
   function updateToggleUI(state) {
+    if (actionState === state) return
+    actionState = state
     actionState = state
     if (!els.toggleBtn) return
     const config = {
@@ -3070,6 +3123,12 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         console.warn('WailsBridge.Events 未就绪');
         return;
       }
+
+      Events.On('webui:visibility', e => {
+        if (e?.sender && e.sender !== 'webui') return
+        const visible = Array.isArray(e?.data) ? !!e.data[0] : !!e?.data
+        handleVisibilityChange(visible)
+      })
 
       Events.On('gui:update:toast', e => {
         els.siderBarCheckupdate?.classList.remove('checking-update')
