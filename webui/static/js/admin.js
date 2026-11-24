@@ -3421,7 +3421,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
     }
 
     if (window.__WAILS_GUI?.baseURL) {
-      setText(els.logoutText, "切换配置");
+      setText(els.logoutText, "回主界面");
       setText(els.projectInfoText, "关于软件");
 
       // 仅 Wails3 桌面端：在侧边栏最下方追加「后台运行」菜单项（与切换主题/退出同构）
