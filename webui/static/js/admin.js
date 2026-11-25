@@ -909,6 +909,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       window.__scp_subStoreRunning = !!d.isSubStoreRunning;
       window.__scp_subStorePort = d.subStorePort || '';
       window.__scp_subStorePath = d.subStorePath || '';
+      window.__scp_subStorePublicUrl = String(d.subStorePublicUrl || '').trim();
       window.__scp_singboxExtra = d.singboxExtra || '';
       window.__scp_singboxLatest = d.singboxLatest || '';
 
@@ -2537,13 +2538,32 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         baseUrl = wailsBase.replace(/\/$/, '');
       }
     } else {
+      // 显式公网入口优先；未配置或配置无效时，保持原有自动探测规则。
+      const configuredPublicUrl = String(window.__scp_subStorePublicUrl || '').trim();
       const status = getBaseUrl._routeStatus?.status || 'warn';
       const targetHost = getBaseUrl._cachedHostname || window.location.hostname;
 
       // 局域网访问(local)：自动带上后台传来的 cleanPort 端口
       // 公网访问(ok/legacy/warn)：CF Tunnel 代理，不加端口
       const portToAdd = (status === 'local' && cleanPort) ? `:${cleanPort}` : '';
-      baseUrl = window.location.protocol + '//' + targetHost + portToAdd;
+      const fallbackBaseUrl = window.location.protocol + '//' + targetHost + portToAdd;
+
+      if (configuredPublicUrl) {
+        try {
+          const configured = new URL(configuredPublicUrl);
+          if (!['http:', 'https:'].includes(configured.protocol) ||
+            !configured.host || configured.username || configured.password ||
+            configured.search || configured.hash) {
+            throw new Error('Sub-Store 公网入口格式无效');
+          }
+          baseUrl = configured.origin + configured.pathname.replace(/\/+$/, '');
+        } catch (error) {
+          console.warn('Sub-Store 公网入口配置无效，回退自动探测地址：', error);
+          baseUrl = fallbackBaseUrl;
+        }
+      } else {
+        baseUrl = fallbackBaseUrl;
+      }
     }
 
     const lastPath = sessionStorage.getItem("scp_lastSubStorePath");
@@ -2685,6 +2705,28 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         base = wailsBase.replace(/\/$/, '');
       }
       return `${base}${path}`;
+    }
+
+    // 自定义公网入口必须同时用于订阅分享链接，避免再次回退到自动探测域名。
+    // Wails 桌面端在上方已优先返回本地服务地址，不受此配置影响。
+    const configuredPublicUrl = String(window.__scp_subStorePublicUrl || '').trim();
+    if (configuredPublicUrl) {
+      try {
+        const configured = new URL(configuredPublicUrl);
+        if (!['http:', 'https:'].includes(configured.protocol) ||
+          !configured.host || configured.username || configured.password ||
+          configured.search || configured.hash) {
+          throw new Error('Sub-Store 公网入口格式无效');
+        }
+        const basePath = configured.pathname.replace(/\/+$/, '');
+        const requestPath = String(path || '');
+        const normalizedPath = requestPath
+          ? (requestPath.startsWith('/') ? requestPath : '/' + requestPath)
+          : '';
+        return configured.origin + basePath + normalizedPath;
+      } catch (error) {
+        console.warn('Sub-Store 公网入口配置无效，分享链接回退自动探测：', error);
+      }
     }
 
     const protocol = window.location.protocol;
