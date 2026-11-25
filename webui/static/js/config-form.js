@@ -581,7 +581,8 @@ const SCHEMA = [
       {
         title: '延迟参数',
         fields: [
-          { key: 'timeout', label: '超时时间 (ms)', type: 'number', min: 1000, max: 15000, placeholder: '6000', hint: '节点延迟上限，建议 3000–10000', default: 6000, },
+          { key: 'timeout', label: '超时时间 (ms)', type: 'number', min: 1000, max: 15000, placeholder: '6000', hint: '单次测活请求的最长等待时间，建议 3000–10000ms', default: 6000, },
+          { key: 'max-latency', label: '节点延迟上限 (ms)', type: 'number', min: 0, max: 30000, placeholder: '0', hint: '测活延迟上限，超出将丢弃；高并发可能抬高延迟，0 = 不限制', default: 0, },
         ],
       },
       {
@@ -1404,6 +1405,34 @@ const FIELD_VALIDATORS = {
     return null;
   },
 
+  'max-latency': v => {
+    const n = Number(v);
+
+    if (n <= 0) return null;
+
+    if (n <= 300) {
+      return {
+        level: 'warn',
+        msg: `延迟上限 ${n}ms 对高并发检测较严格，导致可用节点被误筛，延迟没那么重要`
+      };
+    }
+
+    if (n < 500) {
+      return {
+        level: 'info',
+        msg: `${n}ms 对高并发检测较严格，可根据实际检测结果适当放宽`
+      };
+    }
+
+    if (n < 3000) {
+      return {
+        level: 'info',
+        msg: `${n}ms 延迟上限，请根据实际情况进行调整`
+      };
+    }
+
+    return null;
+  },
 
   'isp-timeout': v => {
     const n = Number(v);
