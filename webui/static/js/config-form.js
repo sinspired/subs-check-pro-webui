@@ -1191,6 +1191,13 @@ const SCHEMA = [
           { key: 'sub-store-update-notify', label: 'Sub-Store 更新通知', type: 'toggle', fullWidth: false, default: true, hint: 'Sub-Store 前后端资源更新通知开关' },
           { key: 'sub-store-port', label: '监听端口', type: 'text', placeholder: ':8299', hint: 'Sub-Store 的启动端口，为空则不启动sub-store' },
           { key: 'sub-store-path', label: '访问路径', type: 'text', placeholder: '/sub-store-path', hint: '建议设置以避免泄露；留空自动生成随机路径' },
+          {
+            key: 'sub-store-public-url',
+            label: '自定义公网访问地址',
+            type: 'text',
+            placeholder: 'https://sub-store.example.com',
+            hint: 'Sub-Store 公网入口（可选），需以 http(s):// 开头，支持端口和路径前缀，不含 ? 或 #；CF Tunnel 默认使用 scp-store.example.com。请自行确保公网域名正常访问，此配置影响从 WebUI 点击“订阅管理” 操作'
+          },
           { key: 'sub-store-sync-cron', label: '定时同步 Gist', type: 'cron', fullWidth: true, placeholder: '55 5-23/2 * * *', hint: '定时将订阅/文件上传到私有 Gist. 在前端, 叫做 同步 或 同步配置.', },
           {
             key: 'sub-store-produce-cron', label: '定时缓存订阅', type: 'produce-cron', fullWidth: true, placeholder: '0 */2 * * *,sub,sub_A',
@@ -1507,6 +1514,36 @@ const FIELD_VALIDATORS = {
     }
     if (/\s/.test(s)) {
       return { level: 'warn', msg: '路径中不应包含空格' };
+    }
+    return null;
+  },
+
+  'sub-store-public-url': v => {
+    const s = String(v ?? '').trim();
+    if (!s) return null;
+    if (/\s/.test(s)) {
+      return { level: 'error', msg: '地址中不应包含空格' };
+    }
+    if (!/^https?:\/\//i.test(s)) {
+      return { level: 'error', msg: '需以 http:// 或 https:// 开头，例如：https://sub-store.example.com' };
+    }
+    let u;
+    try {
+      u = new URL(s);
+    } catch {
+      return { level: 'error', msg: 'URL 格式无效，请填写合法的 HTTP(S) 地址' };
+    }
+    if (!u.hostname) {
+      return { level: 'error', msg: 'URL 缺少有效主机名' };
+    }
+    if (u.username || u.password) {
+      return { level: 'error', msg: '地址中不要包含用户名或密码' };
+    }
+    if (u.search || s.includes('?')) {
+      return { level: 'error', msg: '地址中不要包含查询参数（?）' };
+    }
+    if (u.hash || s.includes('#')) {
+      return { level: 'error', msg: '地址中不要包含 URL 片段（#）' };
     }
     return null;
   },
