@@ -2489,6 +2489,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const configuredPublicUrl = String(window.__scp_subStorePublicUrl || '').trim();
       const status = getBaseUrl._routeStatus?.status || 'warn';
       const targetHost = getBaseUrl._cachedHostname || window.location.hostname;
+
+      // 局域网访问(local)：自动带上后台传来的 cleanPort 端口
+      // 公网访问(ok/legacy/warn)：CF Tunnel 代理，不加端口
       const portToAdd = (status === 'local' && cleanPort) ? `:${cleanPort}` : '';
       const fallbackBaseUrl = window.location.protocol + '//' + targetHost + portToAdd;
 
@@ -2496,8 +2499,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         try {
           const configured = new URL(configuredPublicUrl);
           if (!['http:', 'https:'].includes(configured.protocol) ||
-              !configured.host || configured.username || configured.password ||
-              configured.search || configured.hash) {
+            !configured.host || configured.username || configured.password ||
+            configured.search || configured.hash) {
             throw new Error('Sub-Store 公网入口格式无效');
           }
           baseUrl = configured.origin + configured.pathname.replace(/\/+$/, '');
@@ -2658,8 +2661,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       try {
         const configured = new URL(configuredPublicUrl);
         if (!['http:', 'https:'].includes(configured.protocol) ||
-            !configured.host || configured.username || configured.password ||
-            configured.search || configured.hash) {
+          !configured.host || configured.username || configured.password ||
+          configured.search || configured.hash) {
           throw new Error('Sub-Store 公网入口格式无效');
         }
         const basePath = configured.pathname.replace(/\/+$/, '');

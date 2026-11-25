@@ -29,9 +29,3 @@
 
 - > Telegram 群组：[subs-check性能版](https://t.me/subs_check_pro)⁠
 - > Telegram 频道：[关注频道](https://t.me/sinspired_ai)⁠
-
-## Sub-Store 公网入口配置
-
-自建部署可在主程序配置中设置 `sub-store-public-url`，让 WebUI 首页入口和订阅分享链接统一使用指定的公网基础地址。支持 HTTP(S) 协议、端口及路径前缀；未配置或配置无效时，继续使用原有自动探测逻辑。Wails 桌面端仍优先使用本地服务地址。
-
-此功能需要主程序同时提供状态接口字段 `subStorePublicUrl` 和配置项 `sub-store-public-url`，对应主程序贡献分支：[Sub-Store 公网入口后端支持](https://github.com/sinspired/subs-check-pro/compare/main...822233:contrib/sub-store-public-url?expand=1)。
