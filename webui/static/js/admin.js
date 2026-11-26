@@ -376,13 +376,14 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   }
 
   /**
-     * 渲染 Cloudflare 路由映射建议弹窗
-     * @param {boolean} isLegacy 是否为旧版兼容模式
-     * @param {string} subStorePath Sub-Store路径
-     * @param {string} subStorePort Sub-Store端口
-     * @param {boolean} allowDismiss 是否允许显示"以后提醒/不再提醒"记忆按钮
-     */
-  function showCfTunnelRouteWarning(isLegacy, subStorePath = '', subStorePort = '8299', allowDismiss = false) {
+       * 渲染 Cloudflare 路由映射建议弹窗
+       * @param {boolean} isLegacy 是否为旧版兼容模式
+       * @param {string} subStorePath Sub-Store路径
+       * @param {string} subStorePort Sub-Store端口
+       * @param {boolean} allowDismiss 是否允许显示"以后提醒/不再提醒"记忆按钮
+       * @param {string} [customBaseUrl] 自定义公网入口地址（若有）
+       */
+  function showCfTunnelRouteWarning(isLegacy, subStorePath = '', subStorePort = '8299', allowDismiss = false, customBaseUrl = '') {
     return new Promise((resolve) => {
       if (document.getElementById('cfTunnelWarnOverlay')) return resolve(false);
 
@@ -405,10 +406,12 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       const incyLink = '<a href="https://incy.cc/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">INCY</a>';
 
-      // 优化网络预检失败的文案
+      // 优化网络预检失败的文案（兼容自定义公网入口探测失败场景）
       const desc = isLegacy
         ? `原订阅管理子域名 <b style="color:var(--accent);">sub_store_for_subs_check</b> 包含下划线，不符合 RFC 规范，会导致 ${incyLink} 等代理软件无法拉取订阅。`
-        : `网络预检失败。可能未设置专属路由，或因网络波动/广告拦截导致探测被阻断。如果您确定已设置映射，请直接继续。`;
+        : customBaseUrl
+          ? `自定义公网入口 <b style="color:var(--accent);word-break:break-all;">${escapeHtml(customBaseUrl)}</b> 及默认路由网络预检均失败。可能因跨域策略(CORS)、路由未生效，或因网络波动/广告拦截导致探测被阻断。如果您确定入口可用，请直接继续。`
+          : `网络预检失败。可能未设置专属路由，或因网络波动/广告拦截导致探测被阻断。如果您确定已设置映射，请直接继续。`;
 
       // 无论何种情况，都提供【取消】和【强行继续】的选项
       const actionButtons = `
@@ -488,13 +491,13 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   /**
      * 检查是否需要显示路由映射的预检弹窗
      */
-  function checkAndShowRouteWarning(status, path, port) {
+  function checkAndShowRouteWarning(status, path, port, customBaseUrl = '') {
     if (localStorage.getItem('scp_cftunnel_warn_forever') === 'true') return;
     const dismissedAt = localStorage.getItem('scp_cftunnel_warn_dismissed');
     if (dismissedAt && (Date.now() - parseInt(dismissedAt, 10) < 24 * 60 * 60 * 1000)) return;
 
     // 从预检或兼容模式调用的弹窗，允许显示记忆按钮 (true)
-    showCfTunnelRouteWarning(status === 'legacy', path, port, true);
+    showCfTunnelRouteWarning(status === 'legacy', path, port, true, customBaseUrl);
   }
 
   /**
@@ -906,12 +909,21 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       const d = r.payload || {}
 
       // 将后端推流的数据存为全局变量，供秒开菜单使用
+      const prevPublicUrl = window.__scp_subStorePublicUrl;
+      const nextPublicUrl = String(d.subStorePublicUrl || '').trim();
+
       window.__scp_subStoreRunning = !!d.isSubStoreRunning;
       window.__scp_subStorePort = d.subStorePort || '';
       window.__scp_subStorePath = d.subStorePath || '';
-      window.__scp_subStorePublicUrl = String(d.subStorePublicUrl || '').trim();
+      window.__scp_subStorePublicUrl = nextPublicUrl;
       window.__scp_singboxExtra = d.singboxExtra || '';
       window.__scp_singboxLatest = d.singboxLatest || '';
+
+      // 运行中若修改并保存了 subStorePublicUrl，静默失效缓存并重新探测
+      if (prevPublicUrl !== undefined && prevPublicUrl !== nextPublicUrl && getBaseUrl._prefetchPromise) {
+        getBaseUrl._cacheExpire = 0;
+        prefetchShareDomain(true).catch(() => { });
+      }
 
       const checking = !!d.checking
       const fetching = !!d.fetching
@@ -2505,6 +2517,70 @@ import { initQuickPreview } from './cfg-quickpreview.js';
   // ==================== Sub-Store & Share ====================
 
   /**
+   * 判断是否为本地/内网/IP 访问（localhost、*.localhost、IPv4/IPv6、*.local、*.lan 等）
+   * @param {string} [hostname]
+   * @returns {boolean}
+   */
+  function isLocalAccessHost(hostname = window.location.hostname) {
+    const host = String(hostname || '').trim().toLowerCase();
+    if (!host) return true;
+    const parts = host.split('.');
+    const isIpV4 = /^\d+\.\d+\.\d+\.\d+$/.test(host);
+    const isIpV6 = (host.startsWith('[') && host.endsWith(']')) || host.includes(':');
+    const isLocalhost =
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '[::1]' ||
+      host.endsWith('.localhost');
+    const isLocalTLD =
+      host.endsWith('.local') ||
+      host.endsWith('.lan') ||
+      host.endsWith('.internal') ||
+      host.endsWith('.home.arpa');
+    return isIpV4 || isIpV6 || isLocalhost || isLocalTLD || parts.length < 2;
+  }
+
+  /**
+   * 解析并校验自定义 Sub-Store 公网入口
+   * @param {string} [warnPrefix]
+   */
+  function resolveConfiguredPublicUrl(warnPrefix = '') {
+    const raw = String(window.__scp_subStorePublicUrl || '').trim();
+    if (!raw) return null;
+    try {
+      const configured = new URL(raw);
+      if (
+        !['http:', 'https:'].includes(configured.protocol) ||
+        !configured.host ||
+        configured.username ||
+        configured.password ||
+        configured.search ||
+        configured.hash
+      ) {
+        throw new Error('Sub-Store 公网入口格式无效');
+      }
+      const basePath = configured.pathname.replace(/\/+$/, '');
+      const baseOriginUrl = configured.origin + basePath;
+      return {
+        raw,
+        urlObj: configured,
+        baseOriginUrl,
+        buildTargetUrl(path) {
+          const reqPath = String(path || '');
+          const normalizedPath = reqPath
+            ? (reqPath.startsWith('/') ? reqPath : '/' + reqPath)
+            : '';
+          return baseOriginUrl + normalizedPath;
+        }
+      };
+    } catch (error) {
+      if (warnPrefix) console.warn(warnPrefix, error);
+      return null;
+    }
+  }
+
+
+  /**
    * RFC 域名规范提醒：
    * sub_store_for_subs_check 不符合 RFC 1035 / RFC 1123（域名不能包含下划线 `_`）。
    * 新域名已更换为 scp-store，请在 Cloudflare 添加对应路由。
@@ -2514,8 +2590,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
    */
 
   /**
-     * 构建 Sub-Store 访问 URL (直接读取内存，0延迟)
-     */
+   * 构建 Sub-Store 访问 URL (直接读取内存，0延迟)
+   */
   function buildSubStoreUrl() {
     let path = window.__scp_subStorePath || '';
     if (!path.startsWith('/')) path = '/' + path;
@@ -2538,31 +2614,25 @@ import { initQuickPreview } from './cfg-quickpreview.js';
         baseUrl = wailsBase.replace(/\/$/, '');
       }
     } else {
-      // 显式公网入口优先；未配置或配置无效时，保持原有自动探测规则。
-      const configuredPublicUrl = String(window.__scp_subStorePublicUrl || '').trim();
-      const status = getBaseUrl._routeStatus?.status || 'warn';
-      const targetHost = getBaseUrl._cachedHostname || window.location.hostname;
-
-      // 局域网访问(local)：自动带上后台传来的 cleanPort 端口
-      // 公网访问(ok/legacy/warn)：CF Tunnel 代理，不加端口
-      const portToAdd = (status === 'local' && cleanPort) ? `:${cleanPort}` : '';
-      const fallbackBaseUrl = window.location.protocol + '//' + targetHost + portToAdd;
-
-      if (configuredPublicUrl) {
-        try {
-          const configured = new URL(configuredPublicUrl);
-          if (!['http:', 'https:'].includes(configured.protocol) ||
-            !configured.host || configured.username || configured.password ||
-            configured.search || configured.hash) {
-            throw new Error('Sub-Store 公网入口格式无效');
-          }
-          baseUrl = configured.origin + configured.pathname.replace(/\/+$/, '');
-        } catch (error) {
-          console.warn('Sub-Store 公网入口配置无效，回退自动探测地址：', error);
-          baseUrl = fallbackBaseUrl;
-        }
+      const hostname = window.location.hostname;
+      if (isLocalAccessHost(hostname)) {
+        // 本地/内网/IP 访问不使用 configuredPublicUrl，直接走当前 host + 端口
+        const portToAdd = cleanPort ? `:${cleanPort}` : '';
+        baseUrl = window.location.protocol + '//' + hostname + portToAdd;
+      } else if (getBaseUrl._cachedBaseUrl) {
+        // 公网域名访问：优先使用 getBaseUrl 探测及回退后的最终结果
+        baseUrl = getBaseUrl._cachedBaseUrl;
       } else {
-        baseUrl = fallbackBaseUrl;
+        // 兜底：尚未完成探测时，优先尝试合法的 configuredPublicUrl，否则按原域名规则处理
+        const configured = resolveConfiguredPublicUrl('Sub-Store 公网入口配置无效，回退自动探测地址：');
+        if (configured) {
+          baseUrl = configured.baseOriginUrl;
+        } else {
+          const status = getBaseUrl._routeStatus?.status || 'warn';
+          const targetHost = getBaseUrl._cachedHostname || hostname;
+          const portToAdd = (status === 'local' && cleanPort) ? `:${cleanPort}` : '';
+          baseUrl = window.location.protocol + '//' + targetHost + portToAdd;
+        }
       }
     }
 
@@ -2590,14 +2660,14 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   async function handleOpenSubStore(e) {
     e.preventDefault();
-    if (!sessionKey) { doLogout; return; }
+    if (!sessionKey) { doLogout(); return; }
 
     if (getBaseUrl._prefetchPromise) await getBaseUrl._prefetchPromise;
     const info = getBaseUrl._routeStatus;
 
     if (info && info.status === 'warn') {
       if (localStorage.getItem('scp_cftunnel_warn_forever') !== 'true') {
-        const proceed = await showCfTunnelRouteWarning(false, info.path, info.port, true);
+        const proceed = await showCfTunnelRouteWarning(false, info.path, info.port, true, info.customBaseUrl);
         if (!proceed) return; // 用户点击了取消，中断执行
       }
     }
@@ -2684,7 +2754,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   /**
    * 获取分享链接的 Base URL
-   * 严格探测推荐路由 scp-store 或兼容路由 legacy
+   * - Wails / 本地访问：直接返回本地地址，不使用 configuredPublicUrl
+   * - 公网域名访问：优先探测 configuredPublicUrl，失败或未配置时回退探测 scp-store 与 legacy
    * @param {string} path 路径
    * @param {string|number} port 端口号
    * @returns {Promise<string>} 可用的 Base URL
@@ -2707,71 +2778,69 @@ import { initQuickPreview } from './cfg-quickpreview.js';
       return `${base}${path}`;
     }
 
-    // 自定义公网入口必须同时用于订阅分享链接，避免再次回退到自动探测域名。
-    // Wails 桌面端在上方已优先返回本地服务地址，不受此配置影响。
-    const configuredPublicUrl = String(window.__scp_subStorePublicUrl || '').trim();
-    if (configuredPublicUrl) {
-      try {
-        const configured = new URL(configuredPublicUrl);
-        if (!['http:', 'https:'].includes(configured.protocol) ||
-          !configured.host || configured.username || configured.password ||
-          configured.search || configured.hash) {
-          throw new Error('Sub-Store 公网入口格式无效');
-        }
-        const basePath = configured.pathname.replace(/\/+$/, '');
-        const requestPath = String(path || '');
-        const normalizedPath = requestPath
-          ? (requestPath.startsWith('/') ? requestPath : '/' + requestPath)
-          : '';
-        return configured.origin + basePath + normalizedPath;
-      } catch (error) {
-        console.warn('Sub-Store 公网入口配置无效，分享链接回退自动探测：', error);
-      }
-    }
-
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    const parts = hostname.split('.');
-
-    // 局域网特征识别
-    const isIp = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
-    const isLocalTLD = hostname.endsWith('.local') || hostname.endsWith('.lan');
-
+    const isLocal = isLocalAccessHost(hostname);
     const now = Date.now();
 
-    // 1. 缓存短路优化：加入过期时间 (TTL) 机制
-    if (getBaseUrl._routeStatus && getBaseUrl._cacheExpire > now) {
+    // 1. 局域网/本地环境直通（localhost、IP、host.local 等不使用 configuredPublicUrl）
+    if (isLocal) {
+      const localBaseUrl = `${protocol}//${hostname}${port ? ':' + port : ''}`;
+      getBaseUrl._routeStatus = { status: 'local', path, port };
+      getBaseUrl._cachedHostname = hostname;
+      getBaseUrl._cachedBaseUrl = localBaseUrl;
+      getBaseUrl._cacheExpire = Infinity; // 本地环境永久缓存
+      return `${localBaseUrl}${path}`;
+    }
+
+    const rawPublicUrl = String(window.__scp_subStorePublicUrl || '').trim();
+
+    // 2. 缓存短路优化：加入过期时间 (TTL) 及公网入口变更校验
+    if (
+      getBaseUrl._routeStatus &&
+      getBaseUrl._cacheExpire > now &&
+      getBaseUrl._cachedPublicUrlKey === rawPublicUrl &&
+      getBaseUrl._cachedHostKey === hostname
+    ) {
       const st = getBaseUrl._routeStatus.status;
+      if (st === 'custom' && getBaseUrl._cachedBaseUrl) {
+        const reqPath = String(path || '');
+        const normPath = reqPath ? (reqPath.startsWith('/') ? reqPath : '/' + reqPath) : '';
+        return `${getBaseUrl._cachedBaseUrl}${normPath}`;
+      }
+      if (st === 'warn' && getBaseUrl._cachedBaseUrl) {
+        const reqPath = String(path || '');
+        const normPath = reqPath ? (reqPath.startsWith('/') ? reqPath : '/' + reqPath) : '';
+        return `${getBaseUrl._cachedBaseUrl}${normPath}`;
+      }
       const targetHost = getBaseUrl._cachedHostname;
-      // 局域网带端口，公网 CF 路由不带端口
       if (st === 'local') return `${protocol}//${targetHost}${port ? ':' + port : ''}${path}`;
       return `${protocol}//${targetHost}${path}`;
     }
 
-    // 2. 局域网/本地环境直通
-    if (isIp || isLocalhost || isLocalTLD || parts.length < 2) {
-      getBaseUrl._routeStatus = { status: 'local', path, port };
-      getBaseUrl._cachedHostname = hostname;
-      getBaseUrl._cacheExpire = Infinity; // 本地环境永久缓存
-      return `${protocol}//${hostname}${port ? ':' + port : ''}${path}`;
-    }
+    // 3. 仅公网域名访问才解析并优先尝试自定义公网入口
+    const configured = resolveConfiguredPublicUrl('Sub-Store 公网入口配置无效，回退自动探测：');
 
-    // 3. 公网环境探测：识别并探测专属路由
+    // 4. 公网环境探测：优先探测自定义公网入口，失败后回退探测专属路由
+    const parts = hostname.split('.');
     const baseDomain = parts.length > 2 ? parts.slice(1).join('.') : hostname;
     const scpHost = `scp-store.${baseDomain}`;
     const legacyHost = `sub_store_for_subs_check.${baseDomain}`;
 
-    const scpUrl = `${protocol}//${scpHost}${path}`;
-    const legacyUrl = `${protocol}//${legacyHost}${path}`;
+    const scpBaseUrl = `${protocol}//${scpHost}`;
+    const legacyBaseUrl = `${protocol}//${legacyHost}`;
+    const scpUrl = `${scpBaseUrl}${path}`;
+    const legacyUrl = `${legacyBaseUrl}${path}`;
+    const customUrl = configured ? configured.buildTargetUrl(path) : '';
 
     // --- 动态 Fallback 策略 ---
     // 以 2026年09月10日 00:00:00 (北京时间) 为界限
     const thresholdDate = new Date('2026-09-10T00:00:00+08:00').getTime();
     const useLegacyFallback = now < thresholdDate;
 
-    const fallbackHost = useLegacyFallback ? legacyHost : scpHost;
-    const fallbackUrl = useLegacyFallback ? legacyUrl : scpUrl;
+    const fallbackHost = configured ? configured.urlObj.hostname : (useLegacyFallback ? legacyHost : scpHost);
+    const fallbackBaseUrl = configured ? configured.baseOriginUrl : (useLegacyFallback ? legacyBaseUrl : scpBaseUrl);
+    const fallbackUrl = configured ? customUrl : (useLegacyFallback ? legacyUrl : scpUrl);
 
     try {
       // 带有重试机制的探针
@@ -2797,6 +2866,28 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       showToast("检查订阅管理&分享状态", "info", 3000)
 
+      getBaseUrl._cachedPublicUrlKey = rawPublicUrl;
+      getBaseUrl._cachedHostKey = hostname;
+
+      // 公网域名下：优先探测自定义公网入口，成功则直接使用，不再额外探测默认路由
+      if (configured) {
+        const customOk = await probe(customUrl);
+        if (customOk) {
+          getBaseUrl._cachedHostname = configured.urlObj.hostname;
+          getBaseUrl._cachedBaseUrl = configured.baseOriginUrl;
+          getBaseUrl._routeStatus = {
+            status: 'custom',
+            path,
+            port,
+            customBaseUrl: configured.baseOriginUrl
+          };
+          getBaseUrl._cacheExpire = Infinity;
+          showToast("订阅管理&分享状态正常", "success", 3000);
+          return customUrl;
+        }
+      }
+
+      // 未配置自定义公网入口，或自定义公网入口探测失败时，回退探测默认路由
       const [scpOk, legacyOk] = await Promise.all([
         probe(scpUrl),
         probe(legacyUrl)
@@ -2804,33 +2895,61 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
       if (scpOk) {
         getBaseUrl._cachedHostname = scpHost;
+        getBaseUrl._cachedBaseUrl = scpBaseUrl;
         getBaseUrl._routeStatus = { status: 'ok', path, port };
         getBaseUrl._cacheExpire = Infinity; // 探测成功，永久缓存（当前页面生命周期内）
-        showToast("订阅管理&分享状态正常", "success", 3000)
+        if (configured) {
+          showToast("自定义公网入口探测失败，已自动回退到 scp-store 路由", "warn", 4000);
+        } else {
+          showToast("订阅管理&分享状态正常", "success", 3000);
+        }
         return scpUrl;
       }
 
       if (legacyOk) {
         getBaseUrl._cachedHostname = legacyHost;
+        getBaseUrl._cachedBaseUrl = legacyBaseUrl;
         getBaseUrl._routeStatus = { status: 'legacy', path, port };
         getBaseUrl._cacheExpire = Infinity; // 探测成功，永久缓存
-        showToast("订阅管理&分享-域名包含下划线，建议及时替换为 scp-store", "warn")
+        if (configured) {
+          showToast("自定义公网入口探测失败，已回退到旧版兼容域名，建议替换为 scp-store", "warn", 5000);
+        } else {
+          showToast("订阅管理&分享-域名包含下划线，建议及时替换为 scp-store", "warn");
+        }
         return legacyUrl;
       }
 
-      // 两个都不通：说明遇到严重的网络问题，或者路由真的不存在。
-      // 返回默认的 scpUrl 作为 Fallback，但**只缓存 10 秒**。
-      // 这样 10 秒后如果用户再次触发操作，系统会重新发起探测，给网络恢复留下余地。
+      // 全部不通：说明遇到网络/跨域问题，或路由真的不存在。
+      // 只缓存 10 秒，给网络恢复留下重试余地。
       getBaseUrl._cachedHostname = fallbackHost;
-      getBaseUrl._routeStatus = { status: 'warn', path, port };
+      getBaseUrl._cachedBaseUrl = fallbackBaseUrl;
+      getBaseUrl._routeStatus = {
+        status: 'warn',
+        path,
+        port,
+        customBaseUrl: configured ? configured.baseOriginUrl : ''
+      };
       getBaseUrl._cacheExpire = now + 10000; // 失败状态 TTL = 10s
-      showToast("未检测到可用订阅管理&分享-域名，可能是网络原因，请及时设置路由或稍后重试", "warn")
+      showToast(
+        configured
+          ? "自定义公网入口及默认路由均探测失败，可能是网络/跨域原因或未配置路由"
+          : "未检测到可用订阅管理&分享-域名，可能是网络原因，请及时设置路由或稍后重试",
+        "warn"
+      );
       return fallbackUrl;
 
     } catch (e) {
       // 兜底异常捕获，同样采用短效缓存
+      getBaseUrl._cachedPublicUrlKey = rawPublicUrl;
+      getBaseUrl._cachedHostKey = hostname;
       getBaseUrl._cachedHostname = fallbackHost;
-      getBaseUrl._routeStatus = { status: 'warn', path, port };
+      getBaseUrl._cachedBaseUrl = fallbackBaseUrl;
+      getBaseUrl._routeStatus = {
+        status: 'warn',
+        path,
+        port,
+        customBaseUrl: configured ? configured.baseOriginUrl : ''
+      };
       getBaseUrl._cacheExpire = now + 10000;
       console.error("检测订阅管理&分享-域名出错：", e);
       // 提取可读的错误信息
@@ -3605,7 +3724,7 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
         if (info && info.status === 'warn') {
           if (localStorage.getItem('scp_cftunnel_warn_forever') !== 'true') {
-            const proceed = await showCfTunnelRouteWarning(false, info.path, info.port, true);
+            const proceed = await showCfTunnelRouteWarning(false, info.path, info.port, true, info.customBaseUrl);
             if (!proceed) return; // 用户点击了取消，不弹出分享菜单
           }
         }
@@ -3708,8 +3827,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
           menu.style.transform = 'none';
           menu.classList.add('active');
         } catch (err) {
-          console.error('获取链接失败：', e)
-          showToast(`获取链接失败：${e?.message || e}`, 'error')
+          console.error('获取链接失败：', err)
+          showToast(`获取链接失败：${err?.message || e}`, 'error')
         }
       })
     }
@@ -3874,8 +3993,9 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
   /**
      * 预检分享域名：负责探测路由状态
+     * @param {boolean} [silent=false] 是否静默刷新（不主动弹窗）
      */
-  async function prefetchShareDomain() {
+  async function prefetchShareDomain(silent = false) {
     if (window.__WAILS_GUI?.baseURL) return;
 
     // 读内存状态
@@ -3889,8 +4009,8 @@ import { initQuickPreview } from './cfg-quickpreview.js';
 
     // 登录后预检，如果是旧版或全部不通，带记忆功能尝试弹窗提示用户
     const info = getBaseUrl._routeStatus;
-    if (info && (info.status === 'legacy' || info.status === 'warn')) {
-      checkAndShowRouteWarning(info.status, info.path, info.port);
+    if (!silent && info && (info.status === 'legacy' || info.status === 'warn')) {
+      checkAndShowRouteWarning(info.status, info.path, info.port, info.customBaseUrl);
     }
   }
 
