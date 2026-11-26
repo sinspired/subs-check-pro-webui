@@ -1601,6 +1601,8 @@ const FIELD_VALIDATORS = {
     const n = Number(v);
 
     if (!v || Number.isNaN(n)) return null;
+    if (n <= 0)
+      return { level: 'warn', msg: `使用默认限制，每个订阅链接大小限制 50 MB` };
     if (n <= 20)
       return { level: 'warn', msg: `每个订阅链接大小限制 ${n} MB` };
     if (n <= 50)
